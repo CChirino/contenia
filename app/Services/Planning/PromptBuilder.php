@@ -7,7 +7,6 @@ use App\Enums\PostFormat;
 use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
-use App\Models\MonthlyPlan;
 use App\Models\NetworkStrategy;
 use App\Models\Post;
 use Carbon\CarbonImmutable;
@@ -15,15 +14,17 @@ use Carbon\CarbonImmutable;
 class PromptBuilder
 {
     /**
-     * Prompts para generar la grilla de un mes completo.
+     * Prompts para generar la grilla de una semana del mes
+     * (rango $from..$to ya recortado al mes).
      *
+     * @param  array<int, array{hook: string, pillar: string, network: string}>  $alreadyPlanned
      * @return array{system: string, user: string}
      */
-    public function forMonth(int $year, int $month): array
+    public function forWeek(int $year, int $month, CarbonImmutable $from, CarbonImmutable $to, array $alreadyPlanned): array
     {
         return [
             'system' => $this->systemPrompt(),
-            'user' => $this->monthUserPrompt($year, $month),
+            'user' => $this->weekUserPrompt($year, $month, $from, $to, $alreadyPlanned),
         ];
     }
 
@@ -64,11 +65,11 @@ class PromptBuilder
         PROMPT;
     }
 
-    protected function monthUserPrompt(int $year, int $month): string
+    /**
+     * @param  array<int, array{hook: string, pillar: string, network: string}>  $alreadyPlanned
+     */
+    protected function weekUserPrompt(int $year, int $month, CarbonImmutable $from, CarbonImmutable $to, array $alreadyPlanned): string
     {
-        $first = CarbonImmutable::create($year, $month, 1);
-        $daysInMonth = $first->daysInMonth;
-
         $weekdays = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
         $events = CalendarEvent::all()
@@ -77,8 +78,9 @@ class PromptBuilder
             ->keyBy(fn (CalendarEvent $e) => $e->date->format('m-d'));
 
         $days = [];
-        for ($day = 1; $day <= $daysInMonth; $day++) {
-            $date = $first->setDay($day);
+        $daysInRange = 0;
+        for ($date = $from; $date <= $to; $date = $date->addDay()) {
+            $daysInRange++;
             $label = $date->format('Y-m-d').' ('.$weekdays[$date->dayOfWeek].')';
 
             if ($event = $events->get($date->format('m-d'))) {
@@ -89,7 +91,7 @@ class PromptBuilder
         }
 
         $strategies = NetworkStrategy::all()
-            ->map(function (NetworkStrategy $s) {
+            ->map(function (NetworkStrategy $s) use ($daysInRange) {
                 $formats = implode(', ', $s->preferred_formats);
                 $schedule = match ($s->network) {
                     Network::LinkedIn => '08:00 de lunes a viernes',
@@ -97,7 +99,12 @@ class PromptBuilder
                     Network::TikTok => '19:00',
                 };
 
-                return "- {$s->network->value}: {$s->posts_per_week} posts por semana. "
+                $thisWeek = (int) round($s->posts_per_week * $daysInRange / 7);
+                if ($s->posts_per_week > 0 && $daysInRange >= 3) {
+                    $thisWeek = max(1, $thisWeek);
+                }
+
+                return "- {$s->network->value}: {$thisWeek} posts para esta semana (cadencia habitual {$s->posts_per_week}/semana). "
                     ."Formatos preferidos: {$formats}. Formatos permitidos: "
                     .implode(', ', array_map(fn (PostFormat $f) => $f->value, PostFormat::allowedFor($s->network)))
                     .". Horario sugerido: {$schedule}. Enfoque: {$s->focus}";
@@ -108,26 +115,17 @@ class PromptBuilder
             ->map(fn (ContentPillar $p) => "- {$p->name} ({$p->weight}%): {$p->description}")
             ->implode("\n");
 
-        $previous = MonthlyPlan::where('year', $first->subMonth()->year)
-            ->where('month', $first->subMonth()->month)
-            ->first();
-
-        $previousSummary = 'No hubo plan el mes anterior.';
-        if ($previous) {
-            $lines = $previous->posts()
-                ->with('contentPillar')
-                ->orderBy('scheduled_at')
-                ->get()
-                ->map(fn (Post $p) => "- {$p->network->value} / ".($p->contentPillar->name ?? 'sin pilar').": {$p->hook}")
+        $plannedSummary = 'Aún no hay posts planificados.';
+        if ($alreadyPlanned !== []) {
+            $plannedSummary = collect($alreadyPlanned)
+                ->map(fn (array $p) => "- {$p['network']} / {$p['pillar']}: {$p['hook']}")
                 ->implode("\n");
-
-            $previousSummary = $lines === '' ? 'El plan anterior no tuvo posts.' : $lines;
         }
 
         return <<<PROMPT
-        Genera la grilla de contenido para {$first->translatedFormat('F')} de {$year}.
+        Genera el contenido de la semana del {$from->format('Y-m-d')} al {$to->format('Y-m-d')} de {$from->translatedFormat('F')} de {$year}.
 
-        Días del mes:
+        Días de esta semana:
         {$this->list($days)}
 
         Estrategia por red:
@@ -136,14 +134,14 @@ class PromptBuilder
         Pilares de contenido (distribuye los posts según estos pesos):
         {$pillars}
 
-        Resumen del mes anterior (no repitas temas):
-        {$previousSummary}
+        Posts ya planificados este mes y el anterior (no repitas temas):
+        {$plannedSummary}
 
         Reglas:
-        - Respeta la cadencia semanal por red (±1 post por semana).
+        - Respeta la cantidad de posts indicada para esta semana por red (±1).
         - Distribuye los pilares según sus pesos.
         - No repitas el mismo tema entre redes en la misma semana.
-        - No programes posts en días marcados [SIN PUBLICACIÓN].
+        - No programes posts en días marcados [SIN PUBLICACIÓN] ni fuera del rango indicado.
         - design_payload.slides: 1 slide para image, 3-6 para carousel, 3-5 escenas para reel/video.
         - background_prompt describe una ilustración de fondo SIN texto y SIN personas reales.
         - "pillar" debe ser el nombre exacto de uno de los pilares listados.

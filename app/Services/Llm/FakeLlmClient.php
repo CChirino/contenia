@@ -6,7 +6,7 @@ use App\Models\LlmLog;
 
 class FakeLlmClient implements LlmClient
 {
-    /** @var array<int, array<string, mixed>> */
+    /** @var array<int, array<string, mixed>|LlmException> */
     protected array $responses = [];
 
     /**
@@ -21,9 +21,23 @@ class FakeLlmClient implements LlmClient
         return $this;
     }
 
+    /**
+     * Encola un fallo LlmException para la próxima llamada a complete().
+     */
+    public function withException(string $message = 'Error simulado del LLM.'): static
+    {
+        $this->responses[] = new LlmException($message);
+
+        return $this;
+    }
+
     public function complete(string $system, string $user, array $jsonSchema, string $purpose): array
     {
         $result = array_shift($this->responses) ?? [];
+
+        if ($result instanceof LlmException) {
+            throw $result;
+        }
 
         LlmLog::create([
             'purpose' => $purpose,

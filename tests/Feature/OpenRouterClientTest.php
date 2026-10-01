@@ -63,7 +63,7 @@ class OpenRouterClientTest extends TestCase
             return $request->hasHeader('Authorization', 'Bearer or-key')
                 && $request->hasHeader('X-Title', 'Sabere Marketing')
                 && $body['model'] === 'anthropic/claude-sonnet-4.5'
-                && $body['max_tokens'] === 16000
+                && $body['max_tokens'] === 8000
                 && $body['messages'][0] === ['role' => 'system', 'content' => 'system prompt']
                 && $body['messages'][1] === ['role' => 'user', 'content' => 'user prompt']
                 && $body['tools'][0]['function']['name'] === 'emit_result'
@@ -72,8 +72,41 @@ class OpenRouterClientTest extends TestCase
         });
     }
 
+    public function test_retries_on_429_and_then_succeeds(): void
+    {
+        Http::preventStrayRequests();
+        Http::fakeSequence('openrouter.ai/*')
+            ->push(['error' => 'rate-limited'], 429)
+            ->push([
+                'model' => 'test-model',
+                'choices' => [
+                    [
+                        'message' => [
+                            'tool_calls' => [
+                                [
+                                    'type' => 'function',
+                                    'function' => [
+                                        'name' => 'emit_result',
+                                        'arguments' => json_encode(['posts' => []]),
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'usage' => ['prompt_tokens' => 5, 'completion_tokens' => 5],
+            ]);
+
+        $result = (new OpenRouterClient)->complete('s', 'u', $this->schema, 'test');
+
+        $this->assertSame(['posts' => []], $result);
+        Http::assertSentCount(2);
+    }
+
     public function test_http_error_throws_llm_exception(): void
     {
+        config()->set('llm.retries', 1);
+
         Http::fake([
             'openrouter.ai/*' => Http::response(['error' => 'boom'], 500),
         ]);

@@ -3,20 +3,28 @@
 namespace App\Services\Llm;
 
 use App\Models\LlmLog;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 class OpenRouterClient implements LlmClient
 {
     protected const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
-    protected const MAX_TOKENS = 16000;
-
     public function complete(string $system, string $user, array $jsonSchema, string $purpose): array
     {
         $model = config('llm.openrouter.model');
         $start = hrtime(true);
 
-        $response = Http::timeout(120)
+        $response = Http::timeout((int) config('llm.timeout', 300))
+            ->retry(
+                (int) config('llm.retries', 3),
+                fn (int $attempt) => $attempt * 5000,
+                fn ($exception, $request) => $exception instanceof ConnectionException
+                    || ($exception instanceof RequestException
+                        && ($exception->response->status() === 429 || $exception->response->serverError())),
+                throw: false
+            )
             ->withHeaders([
                 'Authorization' => 'Bearer '.config('llm.openrouter.api_key'),
                 'HTTP-Referer' => config('app.url'),
@@ -24,7 +32,7 @@ class OpenRouterClient implements LlmClient
             ])
             ->post(self::ENDPOINT, [
                 'model' => $model,
-                'max_tokens' => self::MAX_TOKENS,
+                'max_tokens' => (int) config('llm.max_tokens', 8000),
                 'messages' => [
                     ['role' => 'system', 'content' => $system],
                     ['role' => 'user', 'content' => $user],

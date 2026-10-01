@@ -57,7 +57,7 @@ class AnthropicClientTest extends TestCase
             return $request->hasHeader('x-api-key', 'test-key')
                 && $request->hasHeader('anthropic-version', '2023-06-01')
                 && $body['model'] === 'claude-sonnet-4-5'
-                && $body['max_tokens'] === 16000
+                && $body['max_tokens'] === 8000
                 && $body['system'] === 'system prompt'
                 && $body['tools'][0]['name'] === 'emit_result'
                 && $body['tools'][0]['input_schema'] === $this->schema
@@ -65,8 +65,32 @@ class AnthropicClientTest extends TestCase
         });
     }
 
+    public function test_retries_on_429_and_then_succeeds(): void
+    {
+        Http::preventStrayRequests();
+        Http::fakeSequence('api.anthropic.com/*')
+            ->push(['error' => 'rate-limited'], 429)
+            ->push([
+                'content' => [
+                    [
+                        'type' => 'tool_use',
+                        'name' => 'emit_result',
+                        'input' => ['posts' => []],
+                    ],
+                ],
+                'usage' => ['input_tokens' => 5, 'output_tokens' => 5],
+            ]);
+
+        $result = (new AnthropicClient)->complete('s', 'u', $this->schema, 'test');
+
+        $this->assertSame(['posts' => []], $result);
+        Http::assertSentCount(2);
+    }
+
     public function test_http_error_throws_llm_exception(): void
     {
+        config()->set('llm.retries', 1);
+
         Http::fake([
             'api.anthropic.com/*' => Http::response(['error' => 'boom'], 500),
         ]);

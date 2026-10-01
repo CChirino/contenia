@@ -57,11 +57,12 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - `LLM_DRIVER=openrouter` usa OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-4.5`).
 - `LLM_DRIVER=fake` usa `FakeLlmClient` (respuestas encoladas con `withResponse()`); forzado en `phpunit.xml` para tests.
 - La interfaz es `App\Services\Llm\LlmClient`, bindeada en `AppServiceProvider`. Todas las llamadas se registran en `llm_logs`.
+- Ajustes comunes: `LLM_TIMEOUT` (default 300 s por llamada), `LLM_RETRIES` (default 3 intentos, con backoff de 5 s·intento ante 429/5xx/errores de conexión) y `LLM_MAX_TOKENS` (default 8000).
 
 ## Flujo: generar la grilla de un mes
 
 1. En **Configuración → Pilares de contenido**, la suma de pesos debe ser 100 (el indicador lo muestra; el endpoint devuelve 422 si no).
-2. En `/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`).
+2. En `/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`). El job genera **semana por semana** (lunes–domingo recortadas al mes) con una llamada LLM por semana; si una semana falla conserva las demás y anota el fallo en `last_error` del plan (solo relanza si fallan todas).
 3. Corre el worker: `./vendor/bin/sail artisan queue:work --once` (o déjalo corriendo).
 4. Los posts quedan en `drafted`; desde el drawer de cada post se puede **Aprobar**, **Editar** o **Regenerar** (job `RegeneratePost`, también encolado — corre el worker de nuevo).
 
