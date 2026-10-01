@@ -183,6 +183,55 @@ class GenerateMonthlyPlanTest extends TestCase
         $this->assertNull($plan->generating_at);
     }
 
+    public function test_accepts_double_encoded_posts_payload(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        $fake = (new FakeLlmClient)
+            ->withResponse(['posts' => json_encode([
+                $this->postFixture(['date' => '2026-10-02']),
+                $this->postFixture(['date' => '2026-10-03', 'network' => 'linkedin', 'format' => 'image', 'time' => '08:00']),
+            ])])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []]);
+
+        $this->fakeLlm($fake);
+
+        GenerateMonthlyPlan::dispatchSync(2026, 10);
+
+        $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
+
+        $this->assertSame(2, $plan->posts()->count());
+        $this->assertNull($plan->last_error);
+    }
+
+    public function test_undecodable_posts_string_marks_week_and_continues(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        $fake = (new FakeLlmClient)
+            ->withResponse(['posts' => '{esto no es json'])
+            ->withResponse(['posts' => [
+                $this->postFixture(['date' => '2026-10-06']),
+            ]])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []]);
+
+        $this->fakeLlm($fake);
+
+        GenerateMonthlyPlan::dispatchSync(2026, 10);
+
+        $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
+
+        $this->assertSame(1, $plan->posts()->count());
+        $this->assertStringContainsString('Semana del 01/10 al 04/10', $plan->last_error);
+        $this->assertStringContainsString('lista de posts válida', $plan->last_error);
+        $this->assertNotNull($plan->generated_at);
+    }
+
     public function test_regeneration_deletes_only_drafted_posts(): void
     {
         $this->seed(DefaultsSeeder::class);

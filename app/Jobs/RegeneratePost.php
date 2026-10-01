@@ -37,6 +37,13 @@ class RegeneratePost implements ShouldQueue
 
             $result = $llm->complete($system, $user, PlanSchema::single(), 'post_regeneration');
 
+            foreach (['hashtags', 'design_payload'] as $field) {
+                if (isset($result[$field]) && is_string($result[$field])) {
+                    $decoded = json_decode($result[$field], true);
+                    $result[$field] = is_array($decoded) ? $decoded : null;
+                }
+            }
+
             $post->update([
                 'hook' => $result['hook'] ?? $post->hook,
                 'copy' => $result['copy'] ?? $post->copy,

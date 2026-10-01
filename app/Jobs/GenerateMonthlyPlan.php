@@ -57,8 +57,18 @@ class GenerateMonthlyPlan implements ShouldQueue
 
                     $result = $llm->complete($system, $user, PlanSchema::monthly(), 'monthly_plan');
 
+                    $posts = $result['posts'] ?? [];
+
+                    if (is_string($posts)) {
+                        $posts = json_decode($posts, true);
+                    }
+
+                    if (! is_array($posts)) {
+                        throw new LlmException('La respuesta del modelo no contiene una lista de posts válida.');
+                    }
+
                     ['valid' => $valid] = $validator->validate(
-                        $result['posts'] ?? [], $this->year, $this->month
+                        $posts, $this->year, $this->month
                     );
 
                     foreach ($valid as $data) {
