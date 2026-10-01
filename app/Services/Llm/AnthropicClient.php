@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Services\Llm;
+
+use App\Models\LlmLog;
+use Illuminate\Support\Facades\Http;
+
+class AnthropicClient implements LlmClient
+{
+    protected const ENDPOINT = 'https://api.anthropic.com/v1/messages';
+
+    protected const MAX_TOKENS = 16000;
+
+    public function complete(string $system, string $user, array $jsonSchema, string $purpose): array
+    {
+        $model = config('llm.anthropic.model');
+        $start = hrtime(true);
+
+        $response = Http::timeout(120)
+            ->withHeaders([
+                'x-api-key' => config('llm.anthropic.api_key'),
+                'anthropic-version' => '2023-06-01',
+            ])
+            ->post(self::ENDPOINT, [
+                'model' => $model,
+                'max_tokens' => self::MAX_TOKENS,
+                'system' => $system,
+                'messages' => [
+                    ['role' => 'user', 'content' => $user],
+                ],
+                'tools' => [
+                    [
+                        'name' => 'emit_result',
+                        'description' => 'Emite el resultado estructurado de la solicitud.',
+                        'input_schema' => $jsonSchema,
+                    ],
+                ],
+                'tool_choice' => ['type' => 'tool', 'name' => 'emit_result'],
+            ]);
+
+        $durationMs = (int) ((hrtime(true) - $start) / 1e6);
+
+        if (! $response->successful()) {
+            throw new LlmException(
+                'Error HTTP '.$response->status().' de Anthropic: '.$response->body()
+            );
+        }
+
+        $toolUse = collect($response->json('content', []))
+            ->firstWhere('type', 'tool_use');
+
+        if (! is_array($toolUse) || ! isset($toolUse['input']) || ! is_array($toolUse['input'])) {
+            throw new LlmException(
+                'La respuesta de Anthropic no contiene un bloque tool_use válido.'
+            );
+        }
+
+        LlmLog::create([
+            'purpose' => $purpose,
+            'prompt' => $system."\n\n".$user,
+            'response' => $response->body(),
+            'input_tokens' => (int) $response->json('usage.input_tokens', 0),
+            'output_tokens' => (int) $response->json('usage.output_tokens', 0),
+            'model' => $model,
+            'duration_ms' => $durationMs,
+        ]);
+
+        return $toolUse['input'];
+    }
+}

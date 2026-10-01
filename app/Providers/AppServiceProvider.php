@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Llm\AnthropicClient;
+use App\Services\Llm\FakeLlmClient;
+use App\Services\Llm\LlmClient;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +15,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(LlmClient::class, function () {
+            return match (config('llm.driver')) {
+                'fake' => new FakeLlmClient,
+                default => new AnthropicClient,
+            };
+        });
     }
 
     /**
