@@ -53,7 +53,8 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 
 ## LLM
 
-- `LLM_DRIVER=anthropic` usa la API real (requiere `ANTHROPIC_API_KEY`, modelo `ANTHROPIC_MODEL`, default `claude-sonnet-4-5`).
+- `LLM_DRIVER=anthropic` usa la API de Anthropic (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, default `claude-sonnet-4-5`).
+- `LLM_DRIVER=openrouter` usa OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-4.5`).
 - `LLM_DRIVER=fake` usa `FakeLlmClient` (respuestas encoladas con `withResponse()`); forzado en `phpunit.xml` para tests.
 - La interfaz es `App\Services\Llm\LlmClient`, bindeada en `AppServiceProvider`. Todas las llamadas se registran en `llm_logs`.
 
