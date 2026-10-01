@@ -28,59 +28,45 @@ class ContentPillarTest extends TestCase
             ->assertOk();
     }
 
-    public function test_store_requires_total_weight_of_one_hundred(): void
+    public function test_store_creates_pillar(): void
     {
-        ContentPillar::factory()->create(['weight' => 60]);
-
-        $user = User::factory()->create();
-
-        // 60 + 30 = 90: rechazado
-        $this->actingAs($user)
+        $this->actingAs(User::factory()->create())
             ->post(route('settings.pillars.store'), [
                 'name' => 'Nuevo pilar',
                 'description' => 'Descripción',
                 'weight' => 30,
             ])
-            ->assertSessionHasErrors('weight');
+            ->assertRedirect(route('settings.pillars.index'));
 
-        // 60 + 40 = 100: aceptado
-        $this->actingAs($user)
+        $this->assertDatabaseHas('content_pillars', ['name' => 'Nuevo pilar', 'weight' => 30]);
+    }
+
+    public function test_store_validates_weight_range(): void
+    {
+        $this->actingAs(User::factory()->create())
             ->post(route('settings.pillars.store'), [
                 'name' => 'Nuevo pilar',
                 'description' => 'Descripción',
-                'weight' => 40,
-            ])
-            ->assertRedirect(route('settings.pillars.index'));
-
-        $this->assertDatabaseHas('content_pillars', ['name' => 'Nuevo pilar', 'weight' => 40]);
-    }
-
-    public function test_update_validates_weight_against_other_pillars(): void
-    {
-        $a = ContentPillar::factory()->create(['weight' => 60]);
-        $b = ContentPillar::factory()->create(['weight' => 40]);
-
-        $user = User::factory()->create();
-
-        // b a 50 → total 110: rechazado
-        $this->actingAs($user)
-            ->put(route('settings.pillars.update', $b), [
-                'name' => $b->name,
-                'description' => $b->description,
-                'weight' => 50,
+                'weight' => 120,
             ])
             ->assertSessionHasErrors('weight');
+    }
 
-        // b a 20 y a se ajusta… solo probamos que un total válido pasa:
-        $this->actingAs($user)
-            ->put(route('settings.pillars.update', $a), [
+    public function test_update_modifies_pillar(): void
+    {
+        $pillar = ContentPillar::factory()->create(['weight' => 60]);
+
+        $this->actingAs(User::factory()->create())
+            ->put(route('settings.pillars.update', $pillar), [
                 'name' => 'Pilar renombrado',
-                'description' => $a->description,
-                'weight' => 60,
+                'description' => $pillar->description,
+                'weight' => 45,
             ])
             ->assertRedirect(route('settings.pillars.index'));
 
-        $this->assertSame('Pilar renombrado', $a->fresh()->name);
+        $pillar->refresh();
+        $this->assertSame('Pilar renombrado', $pillar->name);
+        $this->assertSame(45, $pillar->weight);
     }
 
     public function test_destroy_deletes_pillar(): void

@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Services\Planning;
+
+use App\Enums\Network;
+use App\Enums\PostFormat;
+
+class PlanSchema
+{
+    /**
+     * JSON Schema de la grilla mensual: {posts: [...]}.
+     *
+     * @return array<string, mixed>
+     */
+    public static function monthly(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'posts' => [
+                    'type' => 'array',
+                    'items' => self::postSchema(true),
+                ],
+            ],
+            'required' => ['posts'],
+            'additionalProperties' => false,
+        ];
+    }
+
+    /**
+     * JSON Schema de un solo post (regeneración): no incluye
+     * date/time/network/pillar porque no cambian al regenerar.
+     *
+     * @return array<string, mixed>
+     */
+    public static function single(): array
+    {
+        return self::postSchema(false);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function postSchema(bool $withSchedule): array
+    {
+        $properties = [
+            'format' => [
+                'type' => 'string',
+                'enum' => array_map(fn (PostFormat $f) => $f->value, PostFormat::cases()),
+            ],
+            'hook' => ['type' => 'string'],
+            'copy' => ['type' => 'string'],
+            'hashtags' => [
+                'type' => 'array',
+                'items' => ['type' => 'string'],
+            ],
+            'design_payload' => [
+                'type' => 'object',
+                'properties' => [
+                    'slides' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'title' => ['type' => 'string'],
+                                'body' => ['type' => 'string'],
+                            ],
+                            'required' => ['title', 'body'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+                'required' => ['slides'],
+                'additionalProperties' => false,
+            ],
+            'background_prompt' => ['type' => 'string'],
+        ];
+
+        $required = ['format', 'hook', 'copy', 'hashtags', 'design_payload', 'background_prompt'];
+
+        if ($withSchedule) {
+            $properties = array_merge([
+                'date' => [
+                    'type' => 'string',
+                    'description' => 'Fecha en formato YYYY-MM-DD',
+                    'pattern' => '^\d{4}-\d{2}-\d{2}$',
+                ],
+                'time' => [
+                    'type' => 'string',
+                    'description' => 'Hora en formato HH:MM (24 h)',
+                    'pattern' => '^\d{2}:\d{2}$',
+                ],
+                'network' => [
+                    'type' => 'string',
+                    'enum' => array_map(fn (Network $n) => $n->value, Network::cases()),
+                ],
+                'pillar' => [
+                    'type' => 'string',
+                    'description' => 'Nombre exacto del pilar de contenido',
+                ],
+            ], $properties);
+
+            $required = array_merge(['date', 'time', 'network', 'pillar'], $required);
+        }
+
+        return [
+            'type' => 'object',
+            'properties' => $properties,
+            'required' => $required,
+            'additionalProperties' => false,
+        ];
+    }
+}

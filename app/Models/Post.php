@@ -32,6 +32,7 @@ class Post extends Model
         'permalink',
         'status',
         'error',
+        'regeneration_error',
         'published_at',
     ];
 

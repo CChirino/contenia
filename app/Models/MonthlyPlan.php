@@ -17,12 +17,15 @@ class MonthlyPlan extends Model
         'month',
         'status',
         'generated_at',
+        'last_error',
+        'generating_at',
     ];
 
     protected function casts(): array
     {
         return [
             'generated_at' => 'datetime',
+            'generating_at' => 'datetime',
         ];
     }
 

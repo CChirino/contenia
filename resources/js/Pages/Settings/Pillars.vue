@@ -81,9 +81,12 @@ const destroy = (pillar: ContentPillar) => {
                         <h3 class="text-lg font-medium text-gray-900">Pilares</h3>
                         <span
                             class="text-sm"
-                            :class="totalWeight === 100 ? 'text-green-600' : 'text-red-600'"
+                            :class="totalWeight === 100 ? 'text-green-600' : 'text-amber-600'"
                         >
                             Suma de pesos: {{ totalWeight }} / 100
+                            <template v-if="totalWeight !== 100">
+                                — La suma debe ser 100 para poder generar la grilla
+                            </template>
                         </span>
                     </div>
 
