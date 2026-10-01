@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Controllers\PlanController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Settings\BrandProfileController;
 use App\Http\Controllers\Settings\CalendarEventController;
 use App\Http\Controllers\Settings\ContentPillarController;
 use App\Http\Controllers\Settings\NetworkStrategyController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return auth()->check()
@@ -15,8 +16,23 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    $now = now('America/Caracas');
+
+    return redirect()->route('plans.show', [
+        'year' => $now->year,
+        'month' => $now->month,
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/plans/{year}/{month}', [PlanController::class, 'show'])->name('plans.show');
+    Route::post('/plans/{year}/{month}/generate', [PlanController::class, 'generate'])->name('plans.generate');
+    Route::get('/plans/{year}/{month}/status', [PlanController::class, 'status'])->name('plans.status');
+
+    Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
+    Route::post('/posts/{post}/approve', [PostController::class, 'approve'])->name('posts.approve');
+    Route::post('/posts/{post}/regenerate', [PostController::class, 'regenerate'])->name('posts.regenerate');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
