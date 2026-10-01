@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Network;
+use App\Enums\PostFormat;
 use App\Enums\PostStatus;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +40,7 @@ class Post extends Model
         return [
             'scheduled_at' => 'datetime',
             'network' => Network::class,
+            'format' => PostFormat::class,
             'hashtags' => 'array',
             'design_payload' => 'array',
             'status' => PostStatus::class,

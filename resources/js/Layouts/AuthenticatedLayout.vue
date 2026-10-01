@@ -39,6 +39,51 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Dashboard
                                 </NavLink>
+
+                                <div class="relative flex">
+                                    <Dropdown align="left" width="48">
+                                        <template #trigger>
+                                            <button
+                                                type="button"
+                                                class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
+                                                :class="
+                                                    route().current('settings.*')
+                                                        ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
+                                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700'
+                                                "
+                                            >
+                                                Configuración
+                                                <svg
+                                                    class="-me-0.5 ms-2 h-4 w-4"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 20 20"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        fill-rule="evenodd"
+                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                        clip-rule="evenodd"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </template>
+
+                                        <template #content>
+                                            <DropdownLink :href="route('settings.brand.edit')">
+                                                Perfil de marca
+                                            </DropdownLink>
+                                            <DropdownLink :href="route('settings.networks.index')">
+                                                Estrategias por red
+                                            </DropdownLink>
+                                            <DropdownLink :href="route('settings.pillars.index')">
+                                                Pilares de contenido
+                                            </DropdownLink>
+                                            <DropdownLink :href="route('settings.calendar.index')">
+                                                Calendario
+                                            </DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                </div>
                             </div>
                         </div>
 
@@ -145,6 +190,30 @@ const showingNavigationDropdown = ref(false);
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('settings.brand.edit')"
+                            :active="route().current('settings.brand.edit')"
+                        >
+                            Perfil de marca
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('settings.networks.index')"
+                            :active="route().current('settings.networks.index')"
+                        >
+                            Estrategias por red
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('settings.pillars.index')"
+                            :active="route().current('settings.pillars.index')"
+                        >
+                            Pilares de contenido
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('settings.calendar.index')"
+                            :active="route().current('settings.calendar.index')"
+                        >
+                            Calendario
                         </ResponsiveNavLink>
                     </div>
 
