@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
@@ -23,9 +22,7 @@ const showingNavigationDropdown = ref(false);
                             <!-- Logo -->
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800"
-                                    />
+                                    <span class="text-xl font-semibold text-sabere-dark">Saberé<span class="text-sabere-accent">.</span></span>
                                 </Link>
                             </div>
 
@@ -35,9 +32,9 @@ const showingNavigationDropdown = ref(false);
                             >
                                 <NavLink
                                     :href="route('dashboard')"
-                                    :active="route().current('dashboard')"
+                                    :active="route().current('dashboard') || route().current('plans.*')"
                                 >
-                                    Dashboard
+                                    Grilla
                                 </NavLink>
 
                                 <div class="relative flex">
@@ -187,9 +184,9 @@ const showingNavigationDropdown = ref(false);
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
                             :href="route('dashboard')"
-                            :active="route().current('dashboard')"
+                            :active="route().current('dashboard') || route().current('plans.*')"
                         >
-                            Dashboard
+                            Grilla
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             :href="route('settings.brand.edit')"
