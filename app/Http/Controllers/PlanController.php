@@ -20,7 +20,14 @@ class PlanController extends Controller
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
         $posts = $plan
-            ? $plan->posts()->with('contentPillar')->orderBy('scheduled_at')->get()
+            ? $plan->posts()
+                ->with('contentPillar')
+                ->orderBy('scheduled_at')
+                ->get()
+                ->map(fn ($post) => $post->toArray() + [
+                    'scheduled_date' => $post->scheduled_at->format('Y-m-d'),
+                    'scheduled_time' => $post->scheduled_at->format('H:i'),
+                ])
             : collect();
 
         $allowedFormats = collect(Network::cases())
