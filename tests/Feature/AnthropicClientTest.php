@@ -57,7 +57,7 @@ class AnthropicClientTest extends TestCase
             return $request->hasHeader('x-api-key', 'test-key')
                 && $request->hasHeader('anthropic-version', '2023-06-01')
                 && $body['model'] === 'claude-sonnet-4-5'
-                && $body['max_tokens'] === 8000
+                && $body['max_tokens'] === (int) config('llm.max_tokens')
                 && $body['system'] === 'system prompt'
                 && $body['tools'][0]['name'] === 'emit_result'
                 && $body['tools'][0]['input_schema'] === $this->schema

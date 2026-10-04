@@ -32,6 +32,12 @@ Diseño completo y fases: `docs/superpowers/specs/2026-10-01-sabere-marketing-ag
 # Colas (los jobs de generación corren por queue 'database')
 ./vendor/bin/sail artisan queue:work          # worker continuo
 ./vendor/bin/sail artisan queue:work --once   # procesa un solo job
+
+# Generación por CLI y depuración del LLM
+./vendor/bin/sail artisan plan:generate 2026 10          # genera la grilla en el momento (semana a semana)
+./vendor/bin/sail artisan plan:generate 2026 10 --queue  # solo encola el job
+./vendor/bin/sail artisan llm:probe 2026-10-05 2026-10-11  # una llamada real de una semana, muestra la respuesta cruda
+./vendor/bin/sail artisan llm:inspect [id]               # inspecciona los arguments guardados en llm_logs
 ```
 
 Sin Sail, los comandos equivalentes usan `php artisan` / `npm` directamente en el host.
@@ -57,7 +63,8 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - `LLM_DRIVER=openrouter` usa OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, default `anthropic/claude-sonnet-4.5`).
 - `LLM_DRIVER=fake` usa `FakeLlmClient` (respuestas encoladas con `withResponse()`); forzado en `phpunit.xml` para tests.
 - La interfaz es `App\Services\Llm\LlmClient`, bindeada en `AppServiceProvider`. Todas las llamadas se registran en `llm_logs`.
-- Ajustes comunes: `LLM_TIMEOUT` (default 300 s por llamada), `LLM_RETRIES` (default 3 intentos, con backoff de 5 s·intento ante 429/5xx/errores de conexión) y `LLM_MAX_TOKENS` (default 8000).
+- Ajustes comunes: `LLM_TIMEOUT` (default 300 s por llamada), `LLM_RETRIES` (default 3 intentos, con backoff de 5 s·intento ante 429/5xx/errores de conexión) y `LLM_MAX_TOKENS` (default 8000; con modelos gratuitos de OpenRouter conviene 16000).
+- Modelos gratuitos de OpenRouter: verificado funcionando `nvidia/nemotron-3-super-120b-a12b:free`; `google/gemma-4-31b-it:free` y `qwen/qwen3.8-27b:free` suelen estar saturados (429 del pool compartido). Algunos modelos ignoran `tool_choice` y devuelven el JSON en `message.content` (con o sin ```json), o `posts` doble-codificado — el cliente y el job lo toleran como fallback.
 
 ## Flujo: generar la grilla de un mes
 

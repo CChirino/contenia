@@ -53,17 +53,30 @@ class OpenRouterClient implements LlmClient
         $durationMs = (int) ((hrtime(true) - $start) / 1e6);
 
         if (! $response->successful()) {
+            $detail = $response->json('error.metadata.raw')
+                ?? $response->json('error.message')
+                ?? substr($response->body(), 0, 200);
+
             throw new LlmException(
-                'Error HTTP '.$response->status().' de OpenRouter: '.$response->body()
+                'Error HTTP '.$response->status().' de OpenRouter: '.$detail
             );
         }
 
         $arguments = $response->json('choices.0.message.tool_calls.0.function.arguments');
 
+        // Algunos modelos ignoran tool_choice y devuelven el JSON como texto plano
+        // (a veces envuelto en ```json ... ```); lo aceptamos como fallback.
         if (! is_string($arguments)) {
-            throw new LlmException(
-                'La respuesta de OpenRouter no contiene tool_calls.'
-            );
+            $content = $response->json('choices.0.message.content');
+
+            if (! is_string($content) || ! preg_match('/\{.*\}/s', $content, $m)) {
+                throw new LlmException(
+                    'La respuesta de OpenRouter no contiene tool_calls ni JSON en el contenido'
+                    .' (finish_reason: '.($response->json('choices.0.finish_reason') ?? 'n/a').').'
+                );
+            }
+
+            $arguments = $m[0];
         }
 
         $decoded = json_decode($arguments, true);

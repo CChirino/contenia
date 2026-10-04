@@ -207,6 +207,29 @@ class GenerateMonthlyPlanTest extends TestCase
         $this->assertNull($plan->last_error);
     }
 
+    public function test_accepts_posts_string_with_trailing_garbage(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        $fake = (new FakeLlmClient)
+            ->withResponse(['posts' => json_encode([
+                $this->postFixture(['date' => '2026-10-02']),
+            ]).'}'])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []])
+            ->withResponse(['posts' => []]);
+
+        $this->fakeLlm($fake);
+
+        GenerateMonthlyPlan::dispatchSync(2026, 10);
+
+        $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
+
+        $this->assertSame(1, $plan->posts()->count());
+        $this->assertNull($plan->last_error);
+    }
+
     public function test_undecodable_posts_string_marks_week_and_continues(): void
     {
         $this->seed(DefaultsSeeder::class);

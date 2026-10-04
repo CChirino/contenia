@@ -60,7 +60,7 @@ class GenerateMonthlyPlan implements ShouldQueue
                     $posts = $result['posts'] ?? [];
 
                     if (is_string($posts)) {
-                        $posts = json_decode($posts, true);
+                        $posts = $this->decodePostsList($posts);
                     }
 
                     if (! is_array($posts)) {
@@ -113,6 +113,29 @@ class GenerateMonthlyPlan implements ShouldQueue
         } finally {
             $plan->forceFill(['generating_at' => null])->save();
         }
+    }
+
+    /**
+     * Decodifica una lista de posts que el modelo devolvió como texto JSON.
+     * Algunos modelos arrastran basura fuera del arreglo (p. ej. una llave de
+     * cierre sobrante), así que se recorta al primer "[" ... último "]".
+     */
+    protected function decodePostsList(string $raw): mixed
+    {
+        $decoded = json_decode($raw, true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        $start = strpos($raw, '[');
+        $end = strrpos($raw, ']');
+
+        if ($start === false || $end === false || $end <= $start) {
+            return null;
+        }
+
+        return json_decode(substr($raw, $start, $end - $start + 1), true);
     }
 
     /**

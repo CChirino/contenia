@@ -63,7 +63,7 @@ class OpenRouterClientTest extends TestCase
             return $request->hasHeader('Authorization', 'Bearer or-key')
                 && $request->hasHeader('X-Title', 'Sabere Marketing')
                 && $body['model'] === 'anthropic/claude-sonnet-4.5'
-                && $body['max_tokens'] === 8000
+                && $body['max_tokens'] === (int) config('llm.max_tokens')
                 && $body['messages'][0] === ['role' => 'system', 'content' => 'system prompt']
                 && $body['messages'][1] === ['role' => 'user', 'content' => 'user prompt']
                 && $body['tools'][0]['function']['name'] === 'emit_result'
@@ -101,6 +101,47 @@ class OpenRouterClientTest extends TestCase
 
         $this->assertSame(['posts' => []], $result);
         Http::assertSentCount(2);
+    }
+
+    public function test_extracts_json_from_content_when_no_tool_calls(): void
+    {
+        Http::fake([
+            'openrouter.ai/*' => Http::response([
+                'choices' => [
+                    [
+                        'finish_reason' => 'stop',
+                        'message' => [
+                            'content' => "```json\n".json_encode(['posts' => [['hook' => 'Hola']]])."\n```",
+                        ],
+                    ],
+                ],
+                'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5],
+            ]),
+        ]);
+
+        $result = (new OpenRouterClient)->complete('s', 'u', $this->schema, 'test');
+
+        $this->assertSame(['posts' => [['hook' => 'Hola']]], $result);
+    }
+
+    public function test_http_error_message_uses_readable_detail(): void
+    {
+        config()->set('llm.retries', 1);
+
+        Http::fake([
+            'openrouter.ai/*' => Http::response(
+                ['error' => ['metadata' => ['raw' => 'saturado'], 'message' => 'Provider returned error']],
+                429
+            ),
+        ]);
+
+        try {
+            (new OpenRouterClient)->complete('s', 'u', $this->schema, 'test');
+            $this->fail('Expected LlmException');
+        } catch (LlmException $e) {
+            $this->assertStringContainsString('saturado', $e->getMessage());
+            $this->assertStringNotContainsString('"metadata"', $e->getMessage());
+        }
     }
 
     public function test_http_error_throws_llm_exception(): void
