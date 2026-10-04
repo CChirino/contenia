@@ -7,6 +7,7 @@ use App\Enums\PostFormat;
 use App\Jobs\GenerateMonthlyPlan;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +36,15 @@ class PlanController extends Controller
                 $network->value => collect(PostFormat::allowedFor($network))->map->value,
             ]);
 
+        $weeks = collect(GenerateMonthlyPlan::weeksOf($year, $month))
+            ->map(fn (array $range) => [
+                'from' => $range[0]->format('Y-m-d'),
+                'to' => $range[1]->format('Y-m-d'),
+                'posts_count' => $plan
+                    ? $plan->posts()->whereBetween('scheduled_at', [$range[0], $range[1]->endOfDay()])->count()
+                    : 0,
+            ]);
+
         return Inertia::render('Plans/Show', [
             'year' => $year,
             'month' => $month,
@@ -51,6 +61,7 @@ class PlanController extends Controller
             'posts' => $posts,
             'pillars' => ContentPillar::orderBy('id')->get(),
             'allowedFormats' => $allowedFormats,
+            'weeks' => $weeks,
         ]);
     }
 
@@ -76,6 +87,30 @@ class PlanController extends Controller
         GenerateMonthlyPlan::dispatch($year, $month);
 
         return back()->with('success', 'Generación de la grilla encolada.');
+    }
+
+    public function regenerateWeek(int $year, int $month, string $from): RedirectResponse
+    {
+        $date = CarbonImmutable::parse($from, 'America/Caracas');
+
+        if ($date->year !== $year || $date->month !== $month) {
+            throw ValidationException::withMessages([
+                'week' => 'La fecha indicada no pertenece al mes.',
+            ]);
+        }
+
+        $plan = MonthlyPlan::firstOrCreate(
+            ['year' => $year, 'month' => $month],
+            ['status' => 'draft']
+        );
+
+        abort_if($plan->generating_at !== null, 409, 'Ya hay una generación en curso para este mes.');
+
+        $plan->update(['generating_at' => now(), 'last_error' => null]);
+
+        GenerateMonthlyPlan::dispatch($year, $month, $date->format('Y-m-d'));
+
+        return back()->with('success', 'Regeneración de la semana encolada.');
     }
 
     public function clearError(int $year, int $month): RedirectResponse

@@ -11,7 +11,7 @@ use Throwable;
 
 class GeneratePlanCommand extends Command
 {
-    protected $signature = 'plan:generate {year} {month} {--queue : Encolar el job en vez de ejecutarlo en el momento}';
+    protected $signature = 'plan:generate {year} {month} {--queue : Encolar el job en vez de ejecutarlo en el momento} {--week= : Regenerar solo la semana que empieza en esta fecha (YYYY-MM-DD)}';
 
     protected $description = 'Genera la grilla mensual de contenido con el LLM configurado';
 
@@ -19,19 +19,20 @@ class GeneratePlanCommand extends Command
     {
         $year = (int) $this->argument('year');
         $month = (int) $this->argument('month');
+        $week = $this->option('week');
 
         if ($this->option('queue')) {
-            GenerateMonthlyPlan::dispatch($year, $month);
-            $this->info("Job encolado para {$year}-{$month}. Corre `queue:work` para procesarlo.");
+            GenerateMonthlyPlan::dispatch($year, $month, $week);
+            $this->info("Job encolado para {$year}-{$month}".($week ? " (semana del {$week})" : '').'. Corre `queue:work` para procesarlo.');
 
             return self::SUCCESS;
         }
 
-        $this->info("Generando grilla de {$year}-{$month} con driver ".config('llm.driver').'...');
+        $this->info("Generando grilla de {$year}-{$month}".($week ? " (semana del {$week})" : '').' con driver '.config('llm.driver').'...');
         $logsBefore = LlmLog::max('id') ?? 0;
 
         try {
-            dispatch_sync(new GenerateMonthlyPlan($year, $month));
+            dispatch_sync(new GenerateMonthlyPlan($year, $month, $week));
         } catch (Throwable $e) {
             $this->error('Falló la generación: '.$e->getMessage());
         }

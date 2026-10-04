@@ -13,6 +13,7 @@ use App\Services\Planning\PromptBuilder;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 
 class GenerateMonthlyPlan implements ShouldQueue
 {
@@ -25,7 +26,27 @@ class GenerateMonthlyPlan implements ShouldQueue
     public function __construct(
         public int $year,
         public int $month,
+        public ?string $weekFrom = null,
     ) {}
+
+    /**
+     * Semanas naturales lunes–domingo recortadas al mes.
+     *
+     * @return array<int, array{0: CarbonImmutable, 1: CarbonImmutable}>
+     */
+    public static function weeksOf(int $year, int $month): array
+    {
+        $first = CarbonImmutable::create($year, $month, 1, 0, 0, 0, 'America/Caracas');
+        $last = $first->endOfMonth();
+
+        $weeks = [];
+        for ($from = $first; $from <= $last; $from = $to->addDay()) {
+            $to = $from->endOfWeek()->min($last)->startOfDay();
+            $weeks[] = [$from, $to];
+        }
+
+        return $weeks;
+    }
 
     public function handle(LlmClient $llm, PromptBuilder $prompts, PlanValidator $validator): void
     {
@@ -35,22 +56,32 @@ class GenerateMonthlyPlan implements ShouldQueue
         );
 
         try {
-            $plan->posts()->where('status', PostStatus::Drafted)->delete();
+            $weeks = static::weeksOf($this->year, $this->month);
 
-            $alreadyPlanned = $this->previouslyPlanned();
-
-            $first = CarbonImmutable::create($this->year, $this->month, 1, 0, 0, 0, 'America/Caracas');
-            $last = $first->endOfMonth();
+            if ($this->weekFrom) {
+                $from = CarbonImmutable::parse($this->weekFrom, 'America/Caracas')->startOfDay();
+                $weeks = [[$from, $from->endOfWeek()->min($weeks[count($weeks) - 1][1])->startOfDay()]];
+            }
 
             $errors = [];
-            $weekCount = 0;
+            $attempted = 0;
             $lastException = null;
 
-            for ($from = $first; $from <= $last; $from = $to->addDay()) {
-                $to = $from->endOfWeek()->min($last)->startOfDay();
-                $weekCount++;
+            foreach ($weeks as [$from, $to]) {
+                $hasPosts = $plan->posts()
+                    ->whereBetween('scheduled_at', [$from, $to->endOfDay()])
+                    ->exists();
+
+                // En modo "completar mes" solo se generan las semanas vacías.
+                if (! $this->weekFrom && $hasPosts) {
+                    continue;
+                }
+
+                $attempted++;
 
                 try {
+                    $alreadyPlanned = $this->alreadyPlanned($plan, $from, $to);
+
                     ['system' => $system, 'user' => $user] = $prompts->forWeek(
                         $this->year, $this->month, $from, $to, $alreadyPlanned
                     );
@@ -67,33 +98,50 @@ class GenerateMonthlyPlan implements ShouldQueue
                         throw new LlmException('La respuesta del modelo no contiene una lista de posts válida.');
                     }
 
-                    ['valid' => $valid] = $validator->validate(
-                        $posts, $this->year, $this->month
-                    );
+                    ['valid' => $valid] = $validator->validate($posts, $this->year, $this->month);
 
-                    foreach ($valid as $data) {
-                        $post = $plan->posts()->create([
-                            'scheduled_at' => CarbonImmutable::parse(
-                                "{$data['date']} {$data['time']}",
-                                'America/Caracas'
-                            ),
-                            'network' => $data['network'],
-                            'content_pillar_id' => $data['content_pillar_id'],
-                            'format' => $data['format'],
-                            'hook' => $data['hook'],
-                            'copy' => $data['copy'],
-                            'hashtags' => $data['hashtags'],
-                            'design_payload' => $data['design_payload'],
-                            'background_prompt' => $data['background_prompt'] ?? null,
-                            'status' => PostStatus::Drafted,
-                        ]);
-
-                        $alreadyPlanned[] = [
-                            'hook' => $post->hook,
-                            'pillar' => $post->contentPillar->name,
-                            'network' => $post->network->value,
+                    if ($valid === []) {
+                        $errors[] = [
+                            'from' => $from->format('Y-m-d'),
+                            'to' => $to->format('Y-m-d'),
+                            'message' => 'La respuesta no contenía posts válidos para la semana.',
                         ];
+
+                        continue;
                     }
+
+                    DB::transaction(function () use ($plan, $from, $to, $valid, &$alreadyPlanned) {
+                        if ($this->weekFrom) {
+                            $plan->posts()
+                                ->where('status', PostStatus::Drafted)
+                                ->whereBetween('scheduled_at', [$from, $to->endOfDay()])
+                                ->delete();
+                        }
+
+                        foreach ($valid as $data) {
+                            $post = $plan->posts()->create([
+                                'scheduled_at' => CarbonImmutable::parse(
+                                    "{$data['date']} {$data['time']}",
+                                    'America/Caracas'
+                                ),
+                                'network' => $data['network'],
+                                'content_pillar_id' => $data['content_pillar_id'],
+                                'format' => $data['format'],
+                                'hook' => $data['hook'],
+                                'copy' => $data['copy'],
+                                'hashtags' => $data['hashtags'],
+                                'design_payload' => $data['design_payload'],
+                                'background_prompt' => $data['background_prompt'] ?? null,
+                                'status' => PostStatus::Drafted,
+                            ]);
+
+                            $alreadyPlanned[] = [
+                                'hook' => $post->hook,
+                                'pillar' => $post->contentPillar->name,
+                                'network' => $post->network->value,
+                            ];
+                        }
+                    });
                 } catch (LlmException $e) {
                     $errors[] = [
                         'from' => $from->format('Y-m-d'),
@@ -104,7 +152,13 @@ class GenerateMonthlyPlan implements ShouldQueue
                 }
             }
 
-            if (count($errors) === $weekCount) {
+            if ($attempted === 0) {
+                $plan->update(['last_error' => null]);
+
+                return;
+            }
+
+            if (count($errors) === $attempted) {
                 $plan->update(['last_error' => $errors]);
 
                 throw $lastException;
@@ -143,28 +197,49 @@ class GenerateMonthlyPlan implements ShouldQueue
     }
 
     /**
+     * Posts ya planificados (mes anterior + los del propio mes, excluyendo los
+     * borradores de la semana que se está regenerando) para no repetir temas.
+     *
      * @return array<int, array{hook: string, pillar: string, network: string}>
      */
-    protected function previouslyPlanned(): array
+    protected function alreadyPlanned(MonthlyPlan $plan, CarbonImmutable $from, CarbonImmutable $to): array
     {
+        $planned = [];
+
         $month = CarbonImmutable::create($this->year, $this->month, 1);
         $previous = MonthlyPlan::where('year', $month->subMonth()->year)
             ->where('month', $month->subMonth()->month)
             ->first();
 
-        if (! $previous) {
-            return [];
+        if ($previous) {
+            $planned = $previous->posts()
+                ->with('contentPillar')
+                ->orderBy('scheduled_at')
+                ->get()
+                ->map(fn (Post $p) => $this->postSummary($p))
+                ->all();
         }
 
-        return $previous->posts()
+        $plan->posts()
             ->with('contentPillar')
             ->orderBy('scheduled_at')
             ->get()
-            ->map(fn (Post $p) => [
-                'hook' => $p->hook,
-                'pillar' => $p->contentPillar->name ?? 'sin pilar',
-                'network' => $p->network->value,
-            ])
-            ->all();
+            ->reject(fn (Post $p) => $p->status === PostStatus::Drafted
+                && $p->scheduled_at->between($from, $to->endOfDay()))
+            ->each(fn (Post $p) => $planned[] = $this->postSummary($p));
+
+        return $planned;
+    }
+
+    /**
+     * @return array{hook: string, pillar: string, network: string}
+     */
+    protected function postSummary(Post $post): array
+    {
+        return [
+            'hook' => $post->hook,
+            'pillar' => $post->contentPillar->name ?? 'sin pilar',
+            'network' => $post->network->value,
+        ];
     }
 }

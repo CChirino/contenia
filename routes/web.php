@@ -28,6 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/plans/{year}/{month}', [PlanController::class, 'show'])->name('plans.show');
     Route::post('/plans/{year}/{month}/generate', [PlanController::class, 'generate'])->name('plans.generate');
     Route::get('/plans/{year}/{month}/status', [PlanController::class, 'status'])->name('plans.status');
+    Route::post('/plans/{year}/{month}/weeks/{from}/regenerate', [PlanController::class, 'regenerateWeek'])
+        ->where('from', '\d{4}-\d{2}-\d{2}')->name('plans.weeks.regenerate');
     Route::delete('/plans/{year}/{month}/error', [PlanController::class, 'clearError'])->name('plans.error.clear');
 
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');

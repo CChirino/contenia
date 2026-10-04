@@ -163,4 +163,36 @@ class PlanControllerTest extends TestCase
     {
         $this->delete('/plans/2026/10/error')->assertRedirect('/login');
     }
+
+    public function test_regenerate_week_dispatches_job_with_week_from(): void
+    {
+        Queue::fake();
+
+        $this->actingAs(User::factory()->create())
+            ->post('/plans/2026/10/weeks/2026-10-05/regenerate')
+            ->assertRedirect();
+
+        Queue::assertPushed(GenerateMonthlyPlan::class, fn ($job) => $job->weekFrom === '2026-10-05');
+        $this->assertNotNull(MonthlyPlan::firstWhere('year', 2026)->generating_at);
+    }
+
+    public function test_regenerate_week_returns_409_when_generating(): void
+    {
+        MonthlyPlan::factory()->create([
+            'year' => 2026,
+            'month' => 10,
+            'generating_at' => now(),
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->post('/plans/2026/10/weeks/2026-10-05/regenerate')
+            ->assertStatus(409);
+    }
+
+    public function test_regenerate_week_rejects_date_outside_month(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->postJson('/plans/2026/10/weeks/2026-11-02/regenerate')
+            ->assertStatus(422);
+    }
 }

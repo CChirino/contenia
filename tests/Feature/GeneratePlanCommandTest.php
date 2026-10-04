@@ -65,4 +65,21 @@ class GeneratePlanCommandTest extends TestCase
 
         Queue::assertPushed(GenerateMonthlyPlan::class);
     }
+
+    public function test_week_option_dispatches_job_with_week_from(): void
+    {
+        Queue::fake();
+
+        $this->artisan('plan:generate', [
+            'year' => 2026,
+            'month' => 10,
+            '--queue' => true,
+            '--week' => '2026-10-05',
+        ])->assertSuccessful();
+
+        Queue::assertPushed(
+            GenerateMonthlyPlan::class,
+            fn ($job) => $job->weekFrom === '2026-10-05'
+        );
+    }
 }

@@ -6,6 +6,12 @@ import { ContentPillar, MonthlyPlan, NetworkName, Post } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
+interface Week {
+    from: string;
+    to: string;
+    posts_count: number;
+}
+
 const props = defineProps<{
     year: number;
     month: number;
@@ -13,6 +19,7 @@ const props = defineProps<{
     posts: Post[];
     pillars: ContentPillar[];
     allowedFormats: Record<NetworkName, string[]>;
+    weeks: Week[];
 }>();
 
 const monthNames = [
@@ -58,6 +65,8 @@ const generateError = computed(() => (page.props.errors as Record<string, string
 
 const pending = computed(() => props.plan?.generating_at != null);
 
+const hasEmptyWeeks = computed(() => props.weeks.some((w) => w.posts_count === 0));
+
 const daysInMonth = new Date(props.year, props.month, 0).getDate();
 const firstDayOffset = (new Date(props.year, props.month - 1, 1).getDay() + 6) % 7;
 
@@ -67,6 +76,14 @@ const cells = computed(() => {
     for (let day = 1; day <= daysInMonth; day++) {
         const date = `${props.year}-${String(props.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         result.push({ date, day });
+    }
+    return result;
+});
+
+const rows = computed(() => {
+    const result: ({ date: string; day: number } | null)[][] = [];
+    for (let i = 0; i < cells.value.length; i += 7) {
+        result.push(cells.value.slice(i, i + 7));
     }
     return result;
 });
@@ -104,14 +121,24 @@ const navigate = (target: { year: number; month: number }) => {
 };
 
 const generate = () => {
+    router.post(route('plans.generate', { year: props.year, month: props.month }));
+};
+
+const regenerateWeek = (week: Week) => {
     if (
-        props.plan &&
-        props.plan.posts_count > 0 &&
-        !confirm('¿Regenerar la grilla del mes? Los posts en borrador serán reemplazados.')
+        !confirm(
+            'Se reemplazarán los borradores de esta semana; los posts aprobados se conservan.'
+        )
     ) {
         return;
     }
-    router.post(route('plans.generate', { year: props.year, month: props.month }));
+    router.post(
+        route('plans.weeks.regenerate', {
+            year: props.year,
+            month: props.month,
+            from: week.from,
+        })
+    );
 };
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -216,6 +243,7 @@ onBeforeUnmount(() => {
 
                     <div class="ms-auto">
                         <button
+                            v-if="pending || !plan || plan.posts_count === 0 || hasEmptyWeeks"
                             type="button"
                             :disabled="pending"
                             class="rounded-md bg-sabere-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
@@ -223,7 +251,7 @@ onBeforeUnmount(() => {
                         >
                             <span v-if="pending">Generando…</span>
                             <span v-else-if="!plan || plan.posts_count === 0">Generar grilla</span>
-                            <span v-else>Regenerar mes</span>
+                            <span v-else>Completar mes</span>
                         </button>
                     </div>
                 </div>
@@ -256,7 +284,8 @@ onBeforeUnmount(() => {
                 </div>
 
                 <!-- Grilla mensual -->
-                <div class="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200">
+                <div class="grid grid-cols-[2.5rem_repeat(7,minmax(0,1fr))] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200">
+                    <div class="bg-gray-50" />
                     <div
                         v-for="weekday in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']"
                         :key="weekday"
@@ -265,42 +294,58 @@ onBeforeUnmount(() => {
                         {{ weekday }}
                     </div>
 
-                    <div
-                        v-for="(cell, i) in cells"
-                        :key="i"
-                        class="min-h-28 bg-white p-1"
-                        :class="{ 'bg-gray-50': cell === null }"
-                    >
-                        <template v-if="cell">
-                            <div class="px-1 text-xs font-medium text-gray-500">
-                                {{ cell.day }}
-                            </div>
+                    <template v-for="(row, weekIndex) in rows" :key="weekIndex">
+                        <div class="flex items-center justify-center bg-gray-50">
                             <button
-                                v-for="post in postsByDate[cell.date] ?? []"
-                                :key="post.id"
+                                v-if="weeks[weekIndex]"
                                 type="button"
-                                class="mt-1 block w-full rounded border border-gray-100 bg-sabere-light p-1 text-left hover:border-sabere-accent"
-                                @click="selectedPostId = post.id"
+                                :disabled="pending"
+                                :title="`Regenerar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to}`"
+                                class="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-sabere-dark disabled:opacity-40"
+                                @click="regenerateWeek(weeks[weekIndex])"
                             >
-                                <div class="flex items-center gap-1">
-                                    <span
-                                        class="rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
-                                        :class="networkChipClass[post.network]"
-                                    >
-                                        {{ networkLabels[post.network] }}
-                                    </span>
-                                    <span
-                                        class="ms-auto inline-block h-2 w-2 rounded-full"
-                                        :class="statusDotClass[post.status]"
-                                        :title="statusLabels[post.status]"
-                                    />
-                                </div>
-                                <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-gray-700">
-                                    {{ post.hook }}
-                                </p>
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.451a.75.75 0 000-1.5H4.5a.75.75 0 00-.75.75v3.75a.75.75 0 001.5 0v-2.033l.364.363a7 7 0 0011.712-3.138.75.75 0 00-1.449-.347zm-10.624-2.85a5.5 5.5 0 019.201-2.465l.312.31H11.75a.75.75 0 000 1.5h3.75a.75.75 0 00.75-.75V3.875a.75.75 0 00-1.5 0v2.033l-.364-.364A7 7 0 002.674 8.682a.75.75 0 001.449.347l.001-.002v.001-.001z" clip-rule="evenodd" />
+                                </svg>
                             </button>
-                        </template>
-                    </div>
+                        </div>
+                        <div
+                            v-for="(cell, i) in row"
+                            :key="i"
+                            class="min-h-28 bg-white p-1"
+                            :class="{ 'bg-gray-50': cell === null }"
+                        >
+                            <template v-if="cell">
+                                <div class="px-1 text-xs font-medium text-gray-500">
+                                    {{ cell.day }}
+                                </div>
+                                <button
+                                    v-for="post in postsByDate[cell.date] ?? []"
+                                    :key="post.id"
+                                    type="button"
+                                    class="mt-1 block w-full rounded border border-gray-100 bg-sabere-light p-1 text-left hover:border-sabere-accent"
+                                    @click="selectedPostId = post.id"
+                                >
+                                    <div class="flex items-center gap-1">
+                                        <span
+                                            class="rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                                            :class="networkChipClass[post.network]"
+                                        >
+                                            {{ networkLabels[post.network] }}
+                                        </span>
+                                        <span
+                                            class="ms-auto inline-block h-2 w-2 rounded-full"
+                                            :class="statusDotClass[post.status]"
+                                            :title="statusLabels[post.status]"
+                                        />
+                                    </div>
+                                    <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-gray-700">
+                                        {{ post.hook }}
+                                    </p>
+                                </button>
+                            </template>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>

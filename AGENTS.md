@@ -69,8 +69,8 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 ## Flujo: generar la grilla de un mes
 
 1. En **Configuración → Pilares de contenido**, la suma de pesos debe ser 100 (el indicador lo muestra; el endpoint devuelve 422 si no).
-2. En `/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`). El job genera **semana por semana** (lunes–domingo recortadas al mes) con una llamada LLM por semana; si una semana falla conserva las demás y anota el fallo en `last_error` del plan (solo relanza si fallan todas).
-3. Corre el worker: `./vendor/bin/sail artisan queue:work --once` (o déjalo corriendo).
+2. En `/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** / **Completar mes** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`). El job recorre las semanas lunes–domingo recortadas al mes con una llamada LLM por semana, **solo en las semanas que no tienen ningún post** (no borra nada). El botón ↻ de cada fila regenera solo esa semana (reemplaza sus `drafted`, conserva aprobados). Si una semana falla conserva las demás y anota el fallo en `last_error` (JSON `[{from,to,message}]`; solo relanza si fallan todas).
+3. Corre el worker: `./vendor/bin/sail artisan queue:work --once` (o déjalo corriendo). Tras cambiar código de los jobs, reinicia el worker con `./vendor/bin/sail artisan queue:restart` — un worker residente mantiene el código viejo cargado.
 4. Los posts quedan en `drafted`; desde el drawer de cada post se puede **Aprobar**, **Editar** o **Regenerar** (job `RegeneratePost`, también encolado — corre el worker de nuevo).
 
 ## Notas

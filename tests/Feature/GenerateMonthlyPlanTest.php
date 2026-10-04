@@ -195,10 +195,10 @@ class GenerateMonthlyPlanTest extends TestCase
                 $this->postFixture(['date' => '2026-10-02']),
                 $this->postFixture(['date' => '2026-10-03', 'network' => 'linkedin', 'format' => 'image', 'time' => '08:00']),
             ])])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []]);
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-06'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-14'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-21'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-28'])]]);
 
         $this->fakeLlm($fake);
 
@@ -206,7 +206,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
-        $this->assertSame(2, $plan->posts()->count());
+        $this->assertSame(6, $plan->posts()->count());
         $this->assertNull($plan->last_error);
     }
 
@@ -218,10 +218,10 @@ class GenerateMonthlyPlanTest extends TestCase
             ->withResponse(['posts' => json_encode([
                 $this->postFixture(['date' => '2026-10-02']),
             ]).'}'])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []]);
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-06'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-14'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-21'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-28'])]]);
 
         $this->fakeLlm($fake);
 
@@ -229,7 +229,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
-        $this->assertSame(1, $plan->posts()->count());
+        $this->assertSame(5, $plan->posts()->count());
         $this->assertNull($plan->last_error);
     }
 
@@ -258,7 +258,100 @@ class GenerateMonthlyPlanTest extends TestCase
         $this->assertNotNull($plan->generated_at);
     }
 
-    public function test_regeneration_deletes_only_drafted_posts(): void
+    public function test_complete_month_only_generates_empty_weeks(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+        $week1Post = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Drafted,
+            'scheduled_at' => '2026-10-02 18:00:00',
+        ]);
+        $week4Post = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Approved,
+            'scheduled_at' => '2026-10-21 08:00:00',
+        ]);
+
+        // Solo 3 semanas vacías (5-11, 12-18, 26-31) → 3 llamadas.
+        $fake = (new FakeLlmClient)
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-06'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-14'])]])
+            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-28'])]]);
+
+        $this->fakeLlm($fake);
+
+        GenerateMonthlyPlan::dispatchSync(2026, 10);
+
+        $this->assertSame(3, LlmLog::count());
+        $this->assertDatabaseHas('posts', ['id' => $week1Post->id]);
+        $this->assertDatabaseHas('posts', ['id' => $week4Post->id]);
+        $this->assertSame(5, $plan->fresh()->posts()->count());
+    }
+
+    public function test_complete_month_without_empty_weeks_does_nothing(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+        foreach (['2026-10-02', '2026-10-06', '2026-10-14', '2026-10-21', '2026-10-28'] as $date) {
+            Post::factory()->create([
+                'monthly_plan_id' => $plan->id,
+                'scheduled_at' => "{$date} 18:00:00",
+            ]);
+        }
+
+        $this->fakeLlm(new FakeLlmClient);
+
+        GenerateMonthlyPlan::dispatchSync(2026, 10);
+
+        $this->assertSame(0, LlmLog::count());
+        $this->assertNull($plan->fresh()->last_error);
+    }
+
+    public function test_week_mode_replaces_drafted_and_keeps_approved(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+        $oldDrafted = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Drafted,
+            'scheduled_at' => '2026-10-06 18:00:00',
+        ]);
+        $approved = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Approved,
+            'scheduled_at' => '2026-10-07 08:00:00',
+        ]);
+        $otherWeek = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Drafted,
+            'scheduled_at' => '2026-10-20 18:00:00',
+        ]);
+
+        $fake = (new FakeLlmClient)
+            ->withResponse(['posts' => [
+                $this->postFixture(['date' => '2026-10-06', 'hook' => 'Nuevo hook']),
+                $this->postFixture(['date' => '2026-10-08', 'network' => 'linkedin', 'format' => 'image', 'time' => '08:00']),
+            ]]);
+
+        $this->fakeLlm($fake);
+
+        GenerateMonthlyPlan::dispatchSync(2026, 10, '2026-10-05');
+
+        $this->assertSame(1, LlmLog::count());
+        $this->assertDatabaseMissing('posts', ['id' => $oldDrafted->id]);
+        $this->assertDatabaseHas('posts', ['id' => $approved->id]);
+        $this->assertDatabaseHas('posts', ['id' => $otherWeek->id]);
+
+        $plan->refresh();
+        $this->assertSame(4, $plan->posts()->count());
+        $this->assertNull($plan->last_error);
+    }
+
+    public function test_week_mode_failure_keeps_existing_drafted(): void
     {
         $this->seed(DefaultsSeeder::class);
 
@@ -266,24 +359,22 @@ class GenerateMonthlyPlanTest extends TestCase
         $drafted = Post::factory()->create([
             'monthly_plan_id' => $plan->id,
             'status' => PostStatus::Drafted,
-        ]);
-        $approved = Post::factory()->create([
-            'monthly_plan_id' => $plan->id,
-            'status' => PostStatus::Approved,
+            'scheduled_at' => '2026-10-06 18:00:00',
         ]);
 
-        $fake = (new FakeLlmClient)
-            ->withResponse(['posts' => [$this->postFixture(['date' => '2026-10-02'])]])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []])
-            ->withResponse(['posts' => []]);
+        $fake = (new FakeLlmClient)->withException('proveedor caído');
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        try {
+            GenerateMonthlyPlan::dispatchSync(2026, 10, '2026-10-05');
+            $this->fail('Expected LlmException');
+        } catch (LlmException) {
+        }
 
-        $this->assertDatabaseMissing('posts', ['id' => $drafted->id]);
-        $this->assertDatabaseHas('posts', ['id' => $approved->id]);
+        $this->assertDatabaseHas('posts', ['id' => $drafted->id]);
+        $plan->refresh();
+        $this->assertSame('2026-10-05', $plan->last_error[0]['from']);
+        $this->assertStringContainsString('proveedor caído', $plan->last_error[0]['message']);
     }
 }
