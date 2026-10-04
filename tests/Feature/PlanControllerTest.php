@@ -143,4 +143,24 @@ class PlanControllerTest extends TestCase
             ->get('/dashboard')
             ->assertRedirect("/plans/{$expected->year}/{$expected->month}");
     }
+
+    public function test_clear_error_resets_last_error(): void
+    {
+        $plan = MonthlyPlan::factory()->create([
+            'year' => 2026,
+            'month' => 10,
+            'last_error' => [['from' => '2026-10-12', 'to' => '2026-10-18', 'message' => 'boom']],
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->delete('/plans/2026/10/error')
+            ->assertRedirect();
+
+        $this->assertNull($plan->fresh()->last_error);
+    }
+
+    public function test_clear_error_requires_auth(): void
+    {
+        $this->delete('/plans/2026/10/error')->assertRedirect('/login');
+    }
 }

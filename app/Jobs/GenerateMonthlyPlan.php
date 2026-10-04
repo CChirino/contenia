@@ -95,20 +95,24 @@ class GenerateMonthlyPlan implements ShouldQueue
                         ];
                     }
                 } catch (LlmException $e) {
-                    $errors[] = "Semana del {$from->format('d/m')} al {$to->format('d/m')}: {$e->getMessage()}";
+                    $errors[] = [
+                        'from' => $from->format('Y-m-d'),
+                        'to' => $to->format('Y-m-d'),
+                        'message' => $e->getMessage(),
+                    ];
                     $lastException = $e;
                 }
             }
 
             if (count($errors) === $weekCount) {
-                $plan->update(['last_error' => implode("\n", $errors)]);
+                $plan->update(['last_error' => $errors]);
 
                 throw $lastException;
             }
 
             $plan->update([
                 'generated_at' => now(),
-                'last_error' => $errors === [] ? null : implode("\n", $errors),
+                'last_error' => $errors === [] ? null : $errors,
             ]);
         } finally {
             $plan->forceFill(['generating_at' => null])->save();

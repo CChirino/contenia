@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import GenerationErrors from '@/Pages/Plans/GenerationErrors.vue';
 import PostDrawer from '@/Pages/Plans/PostDrawer.vue';
 import { ContentPillar, MonthlyPlan, NetworkName, Post } from '@/types';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -137,11 +138,21 @@ const startPolling = () => {
     }, 3000);
 };
 
+const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+        router.reload({ only: ['plan', 'posts'] });
+    }
+};
+
 onMounted(() => {
     if (pending.value) startPolling();
+    document.addEventListener('visibilitychange', onVisibilityChange);
 });
 
-onBeforeUnmount(stopPolling);
+onBeforeUnmount(() => {
+    stopPolling();
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+});
 </script>
 
 <template>
@@ -217,11 +228,24 @@ onBeforeUnmount(stopPolling);
                     </div>
                 </div>
 
+                <GenerationErrors
+                    v-if="plan?.last_error?.length"
+                    :year="year"
+                    :month="month"
+                    :errors="plan.last_error"
+                />
+
                 <div
-                    v-if="plan?.last_error || generateError"
-                    class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                    v-if="generateError"
+                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
                 >
-                    {{ plan?.last_error ?? generateError }}
+                    {{ generateError }}
+                    <Link
+                        :href="route('settings.pillars.index')"
+                        class="font-medium underline hover:text-amber-900"
+                    >
+                        Revisar pilares de contenido
+                    </Link>
                 </div>
 
                 <div

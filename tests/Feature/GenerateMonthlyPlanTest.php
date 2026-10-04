@@ -154,8 +154,10 @@ class GenerateMonthlyPlanTest extends TestCase
         $this->assertSame(4, $plan->posts()->count());
         $this->assertNotNull($plan->generated_at);
         $this->assertNull($plan->generating_at);
-        $this->assertStringContainsString('Semana del 12/10 al 18/10', $plan->last_error);
-        $this->assertStringContainsString('rate-limited upstream', $plan->last_error);
+        $this->assertCount(1, $plan->last_error);
+        $this->assertSame('2026-10-12', $plan->last_error[0]['from']);
+        $this->assertSame('2026-10-18', $plan->last_error[0]['to']);
+        $this->assertStringContainsString('rate-limited upstream', $plan->last_error[0]['message']);
     }
 
     public function test_throws_when_all_weeks_fail(): void
@@ -179,7 +181,8 @@ class GenerateMonthlyPlanTest extends TestCase
         }
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
-        $this->assertStringContainsString('fallo', $plan->last_error);
+        $this->assertCount(5, $plan->last_error);
+        $this->assertStringContainsString('fallo', $plan->last_error[0]['message']);
         $this->assertNull($plan->generating_at);
     }
 
@@ -250,8 +253,8 @@ class GenerateMonthlyPlanTest extends TestCase
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
         $this->assertSame(1, $plan->posts()->count());
-        $this->assertStringContainsString('Semana del 01/10 al 04/10', $plan->last_error);
-        $this->assertStringContainsString('lista de posts válida', $plan->last_error);
+        $this->assertSame('2026-10-01', $plan->last_error[0]['from']);
+        $this->assertStringContainsString('lista de posts válida', $plan->last_error[0]['message']);
         $this->assertNotNull($plan->generated_at);
     }
 

@@ -26,6 +26,7 @@ class MonthlyPlan extends Model
         return [
             'generated_at' => 'datetime',
             'generating_at' => 'datetime',
+            'last_error' => 'array',
         ];
     }
 

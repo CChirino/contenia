@@ -51,6 +51,12 @@ export type PostStatus =
 
 export type PostFormat = 'image' | 'carousel' | 'reel' | 'video';
 
+export interface GenerationError {
+    from: string;
+    to: string;
+    message: string;
+}
+
 export interface MonthlyPlan {
     id: number;
     year: number;
@@ -58,7 +64,7 @@ export interface MonthlyPlan {
     status: string;
     generated_at: string | null;
     generating_at: string | null;
-    last_error: string | null;
+    last_error: GenerationError[] | null;
     posts_count: number;
 }
 

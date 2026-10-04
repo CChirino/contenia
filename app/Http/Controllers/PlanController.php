@@ -78,6 +78,14 @@ class PlanController extends Controller
         return back()->with('success', 'Generación de la grilla encolada.');
     }
 
+    public function clearError(int $year, int $month): RedirectResponse
+    {
+        MonthlyPlan::where('year', $year)->where('month', $month)
+            ->update(['last_error' => null]);
+
+        return back();
+    }
+
     public function status(int $year, int $month): JsonResponse
     {
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();

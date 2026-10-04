@@ -37,12 +37,12 @@ const showingNavigationDropdown = ref(false);
                                     Grilla
                                 </NavLink>
 
-                                <div class="relative flex">
+                                <div class="relative flex items-stretch">
                                     <Dropdown align="left" width="48">
                                         <template #trigger>
                                             <button
                                                 type="button"
-                                                class="inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
+                                                class="inline-flex h-full items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="
                                                     route().current('settings.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'

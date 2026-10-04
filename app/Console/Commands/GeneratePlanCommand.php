@@ -38,8 +38,8 @@ class GeneratePlanCommand extends Command
 
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
-        if ($plan?->last_error) {
-            $this->warn($plan->last_error);
+        foreach ((array) ($plan?->last_error ?? []) as $error) {
+            $this->warn("Semana del {$error['from']} al {$error['to']}: {$error['message']}");
         }
 
         $this->table(
