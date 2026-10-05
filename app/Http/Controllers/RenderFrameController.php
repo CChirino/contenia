@@ -34,6 +34,7 @@ class RenderFrameController extends Controller
             'frame' => $frame,
             'framesTotal' => $framesTotal,
             'post' => [
+                'network' => $post->network->value,
                 'hook' => $post->hook,
                 'copy' => $post->copy,
                 'design_payload' => $post->design_payload,
@@ -50,26 +51,13 @@ class RenderFrameController extends Controller
 
     private function backgroundUrl(Post $post, int $frame, bool $usesAi): ?string
     {
-        if (! $usesAi) {
-            return null;
-        }
-
-        // Carrusel: el fondo IA solo va en la portada; el resto usa el
-        // geométrico alterno (bg-alt.png) si existe.
-        $file = match (true) {
-            $frame === 1 && Storage::disk('local')->exists("assets/{$post->id}/bg.png") => 'bg.png',
-            Storage::disk('local')->exists("assets/{$post->id}/bg-alt.png") => 'bg-alt.png',
-            Storage::disk('local')->exists("assets/{$post->id}/bg.png") => 'bg.png',
-            default => null,
-        };
-
-        if ($file === null) {
+        if (! $usesAi || ! Storage::disk('local')->exists("assets/{$post->id}/bg.png")) {
             return null;
         }
 
         return URL::temporarySignedRoute('assets.show', now()->addMinutes(10), [
             'post' => $post->id,
-            'file' => $file,
+            'file' => 'bg.png',
         ]);
     }
 }

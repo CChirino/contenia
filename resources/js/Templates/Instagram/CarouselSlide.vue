@@ -22,10 +22,11 @@ const slide = computed(() => slideAt(props.post, props.frame - 1));
     <BrandFrame
         :width="1080"
         :height="1350"
-        :background-url="isCover ? backgroundUrl : null"
+        :background-url="backgroundUrl"
         :logo-url="logoUrl"
         :brand-url="brand.url"
         :pillar="post.content_pillar?.name"
+        :full-overlay="!isCover"
     >
         <template v-if="isCover">
             <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />
@@ -36,7 +37,10 @@ const slide = computed(() => slideAt(props.post, props.frame - 1));
         <template v-else-if="isCta">
             <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />
             <h1 class="text-[64px] font-bold leading-tight text-sabere-light">{{ brand.cta ?? 'Conoce más' }}</h1>
-            <p v-if="brand.url" class="mt-8 text-[40px] font-semibold text-sabere-accent">{{ brand.url }}</p>
+            <p v-if="brand.url" class="mt-8 text-[44px] font-semibold text-sabere-accent">{{ brand.url }}</p>
+            <span class="mt-10 inline-flex w-fit rounded-full bg-sabere-purple px-6 py-2.5 text-[28px] font-medium text-white">
+                Síguenos en {{ post.network === 'instagram' ? 'Instagram' : post.network === 'tiktok' ? 'TikTok' : 'LinkedIn' }}
+            </span>
         </template>
 
         <template v-else>

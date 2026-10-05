@@ -11,6 +11,8 @@ const props = withDefaults(
         pillar?: string | null;
         safeTop?: number;
         safeBottom?: number;
+        /** true → overlay fuerte en todo el alto (slides interiores de carrusel) */
+        fullOverlay?: boolean;
     }>(),
     {
         backgroundUrl: null,
@@ -18,14 +20,24 @@ const props = withDefaults(
         pillar: null,
         safeTop: 0,
         safeBottom: 0,
+        fullOverlay: false,
     },
 );
 
 const containerStyle = computed(() => ({
     width: `${props.width}px`,
     height: `${props.height}px`,
-    paddingTop: `${64 + props.safeTop}px`,
-    paddingBottom: `${56 + props.safeBottom}px`,
+    paddingTop: `${56 + props.safeTop}px`,
+    paddingBottom: `${48 + props.safeBottom}px`,
+}));
+
+// Degradado vertical: deja ver la ilustración en el 45% superior y oscurece
+// hacia el tercio inferior donde va el texto. Con fullOverlay el oscurecido
+// es fuerte de principio a fin (continuidad en carrusel).
+const overlayStyle = computed(() => ({
+    background: props.fullOverlay
+        ? 'linear-gradient(180deg, rgba(26, 42, 66, 0.70) 0%, rgba(26, 42, 66, 0.94) 100%)'
+        : 'linear-gradient(180deg, rgba(26, 42, 66, 0.10) 0%, rgba(26, 42, 66, 0.35) 45%, rgba(26, 42, 66, 0.94) 100%)',
 }));
 
 onMounted(async () => {
@@ -55,9 +67,11 @@ onMounted(async () => {
             alt=""
             class="absolute inset-0 h-full w-full object-cover"
         >
+        <div class="absolute inset-0" :style="overlayStyle" />
+        <!-- Franja ligera tras el logo para legibilidad sobre cualquier fondo -->
         <div
-            class="absolute inset-0"
-            style="background: linear-gradient(160deg, rgba(26, 42, 66, 0.6) 0%, rgba(26, 42, 66, 0.92) 100%)"
+            class="absolute inset-x-0 top-0"
+            style="height: 160px; background: linear-gradient(180deg, rgba(26, 42, 66, 0.25) 0%, rgba(26, 42, 66, 0) 100%)"
         />
 
         <div class="relative flex h-full flex-col px-16">
@@ -66,11 +80,11 @@ onMounted(async () => {
                 <span class="text-[40px] font-semibold text-sabere-light">Saberé.</span>
             </div>
 
-            <div class="flex flex-1 flex-col justify-center">
+            <div class="flex flex-1 flex-col justify-end">
                 <slot />
             </div>
 
-            <div class="flex items-center justify-between">
+            <div class="mt-8 flex items-center justify-between">
                 <span v-if="brandUrl" class="text-[28px] text-sabere-light/70">{{ brandUrl }}</span>
                 <span v-else />
                 <span

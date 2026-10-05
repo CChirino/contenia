@@ -26,9 +26,11 @@ const slide = computed(() => slideAt(props.post, props.frame - 1));
         :safe-top="220"
         :safe-bottom="320"
     >
-        <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />
-        <h1 class="text-[72px] font-bold leading-tight text-sabere-light">{{ slide.title }}</h1>
-        <p class="mt-8 text-[40px] leading-snug text-sabere-light/85">{{ slide.body }}</p>
+        <div class="flex flex-col items-center text-center">
+            <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />
+            <h1 class="text-[72px] font-bold leading-tight text-sabere-light">{{ slide.title }}</h1>
+            <p class="mt-8 text-[40px] leading-snug text-sabere-light/85">{{ slide.body }}</p>
+        </div>
 
         <p class="absolute right-16 text-[30px] font-medium text-sabere-light/60" :style="{ bottom: `${376}px` }">
             {{ frame }}/{{ framesTotal }}

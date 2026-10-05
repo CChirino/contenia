@@ -2,11 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Enums\PostFormat;
 use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Services\Images\BackgroundService;
-use App\Services\Images\GeometricGenerator;
 use App\Services\Render\FrameRenderer;
 use App\Services\Render\TemplateRegistry;
 use Illuminate\Bus\Queueable;
@@ -14,7 +12,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class RenderPost implements ShouldQueue
@@ -47,12 +44,6 @@ class RenderPost implements ShouldQueue
                 $backgrounds->for($post, $this->freshBackground);
             }
 
-            // Carrusel: solo la portada usa el fondo IA; el resto de slides
-            // usa un fondo geométrico alterno.
-            if ($post->format === PostFormat::Carousel) {
-                $this->ensureAlternateBackground($post);
-            }
-
             $frames = $renderer->render($post);
 
             $post->forceFill([
@@ -82,24 +73,5 @@ class RenderPost implements ShouldQueue
                 throw $e;
             }
         }
-    }
-
-    private function ensureAlternateBackground(Post $post): void
-    {
-        $relative = "assets/{$post->id}/bg-alt.png";
-
-        if (! $this->freshBackground && Storage::disk('local')->exists($relative)) {
-            return;
-        }
-
-        $template = TemplateRegistry::for($post->network, $post->format);
-        $bytes = (new GeometricGenerator)->generate(
-            'sabere brand geometric background',
-            $template->width,
-            $template->height,
-            $post->id + 1000,
-        );
-
-        Storage::disk('local')->put($relative, $bytes);
     }
 }
