@@ -87,7 +87,7 @@ onMounted(async () => {
             <div class="relative flex flex-1 flex-col justify-end">
                 <!-- Panel de refuerzo tras el texto: mejora legibilidad sin bordes -->
                 <div
-                    class="absolute -inset-y-[120px] inset-x-0 pointer-events-none"
+                    class="absolute -inset-y-[120px] -inset-x-16 pointer-events-none"
                     style="background: linear-gradient(180deg, rgba(26, 42, 66, 0) 0%, rgba(26, 42, 66, 0.85) 55%, rgba(26, 42, 66, 0.85) 100%)"
                 />
                 <div class="relative" style="text-shadow: 0 2px 12px rgba(26, 42, 66, 0.6)">
@@ -95,7 +95,7 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div class="mt-8 flex items-center justify-between">
+            <div class="relative z-10 mt-8 flex items-center justify-between">
                 <span v-if="brandUrl" class="text-[28px] text-sabere-light/70">{{ brandUrl }}</span>
                 <span v-else />
                 <span
