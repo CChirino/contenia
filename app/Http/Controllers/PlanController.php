@@ -7,9 +7,12 @@ use App\Enums\PostFormat;
 use App\Jobs\GenerateMonthlyPlan;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
+use App\Models\Post;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,6 +31,7 @@ class PlanController extends Controller
                 ->map(fn ($post) => $post->toArray() + [
                     'scheduled_date' => $post->scheduled_at->format('Y-m-d'),
                     'scheduled_time' => $post->scheduled_at->format('H:i'),
+                    'asset_urls' => $this->assetUrls($post),
                 ])
             : collect();
 
@@ -125,11 +129,42 @@ class PlanController extends Controller
     {
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
+        $renderingIds = $plan
+            ? $plan->posts()->where('status', 'approved')->whereNull('rendered_at')->pluck('id')
+            : collect();
+
         return response()->json([
             'generated_at' => $plan?->generated_at?->toIso8601String(),
             'posts_count' => $plan?->posts()->count() ?? 0,
             'pending' => $plan !== null && $plan->generating_at !== null,
+            'rendering_ids' => $renderingIds,
             'last_error' => $plan?->last_error,
         ]);
+    }
+
+    /**
+     * URLs firmadas (60 min) para previsualizar los frames del post.
+     *
+     * @return array{frames: array<int, string>, final: string|null}
+     */
+    private function assetUrls(Post $post): array
+    {
+        $sign = fn (string $file) => URL::temporarySignedRoute(
+            'assets.show',
+            now()->addMinutes(60),
+            ['post' => $post->id, 'file' => $file],
+        );
+
+        $frames = collect($post->frames ?? [])
+            ->filter(fn ($file) => Storage::disk('local')->exists("assets/{$post->id}/{$file}"))
+            ->map($sign)
+            ->values()
+            ->all();
+
+        $final = $post->asset_path && Storage::disk('local')->exists($post->asset_path)
+            ? $sign(basename($post->asset_path))
+            : null;
+
+        return ['frames' => $frames, 'final' => $final];
     }
 }

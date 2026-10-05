@@ -150,6 +150,8 @@ const stopPolling = () => {
     }
 };
 
+let lastRenderingIds = '';
+
 const startPolling = () => {
     stopPolling();
     pollTimer = setInterval(async () => {
@@ -158,9 +160,17 @@ const startPolling = () => {
             { headers: { Accept: 'application/json' } }
         );
         const data = await res.json();
-        if (!data.pending) {
+        const ids = (data.rendering_ids ?? []).join(',');
+
+        if (!data.pending && ids === '') {
             stopPolling();
             router.reload({ only: ['plan', 'posts'] });
+            return;
+        }
+
+        if (ids !== lastRenderingIds) {
+            lastRenderingIds = ids;
+            router.reload({ only: ['posts'] });
         }
     }, 3000);
 };
@@ -172,7 +182,10 @@ const onVisibilityChange = () => {
 };
 
 onMounted(() => {
-    if (pending.value) startPolling();
+    const hasRendering = props.posts.some(
+        (p) => p.status === 'approved' && !p.rendered_at
+    );
+    if (pending.value || hasRendering) startPolling();
     document.addEventListener('visibilitychange', onVisibilityChange);
 });
 
@@ -327,6 +340,12 @@ onBeforeUnmount(() => {
                                     @click="selectedPostId = post.id"
                                 >
                                     <div class="flex items-center gap-1">
+                                        <img
+                                            v-if="post.status === 'rendered' && (post.asset_urls?.final ?? post.asset_urls?.frames?.[0])"
+                                            :src="post.asset_urls?.final ?? post.asset_urls?.frames?.[0]"
+                                            alt=""
+                                            class="h-10 w-10 shrink-0 rounded object-cover"
+                                        >
                                         <span
                                             class="rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
                                             :class="networkChipClass[post.network]"

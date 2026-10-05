@@ -6,6 +6,7 @@ use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Enums\PostStatus;
 use App\Jobs\RenderPost;
+use App\Models\MonthlyPlan;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Images\BackgroundService;
@@ -185,6 +186,62 @@ class RenderPostTest extends TestCase
         ]);
 
         $this->get($url)->assertOk();
+    }
+
+    public function test_download_single_frame_returns_png(): void
+    {
+        $post = $this->makePost(PostStatus::Rendered);
+        $post->update(['frames' => ['frame-01.png']]);
+        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png-bytes');
+
+        $this->actingAs($this->user())
+            ->get(route('posts.download', $post))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
+    }
+
+    public function test_download_multiple_frames_returns_zip(): void
+    {
+        $post = $this->makePost(PostStatus::Rendered);
+        $post->update(['frames' => ['frame-01.png', 'frame-02.png']]);
+        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'a');
+        Storage::disk('local')->put("assets/{$post->id}/frame-02.png", 'b');
+
+        $response = $this->actingAs($this->user())
+            ->get(route('posts.download', $post))
+            ->assertOk();
+
+        $this->assertSame('application/zip', $response->headers->get('content-type'));
+    }
+
+    public function test_download_without_frames_returns_404(): void
+    {
+        $post = $this->makePost(PostStatus::Drafted);
+
+        $this->actingAs($this->user())
+            ->get(route('posts.download', $post))
+            ->assertNotFound();
+    }
+
+    public function test_plan_status_includes_rendering_ids(): void
+    {
+        $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+        $rendering = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Approved,
+            'rendered_at' => null,
+        ]);
+        Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'status' => PostStatus::Rendered,
+            'rendered_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user())
+            ->getJson(route('plans.status', ['year' => 2026, 'month' => 10]))
+            ->assertOk();
+
+        $this->assertSame([$rendering->id], $response->json('rendering_ids'));
     }
 
     private function user(): User

@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/approve', [PostController::class, 'approve'])->name('posts.approve');
     Route::post('/posts/{post}/regenerate', [PostController::class, 'regenerate'])->name('posts.regenerate');
     Route::post('/posts/{post}/render', [PostController::class, 'render'])->name('posts.render');
+    Route::get('/posts/{post}/download', [PostController::class, 'download'])->name('posts.download');
 });
 
 Route::middleware('auth')->group(function () {

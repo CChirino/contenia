@@ -46,8 +46,40 @@ const scheduledInput = computed(() =>
 );
 
 const editable = computed(() =>
-    ['drafted', 'approved'].includes(props.post.status)
+    ['drafted', 'approved', 'rendered'].includes(props.post.status)
 );
+
+const isVideo = computed(() => ['reel', 'video'].includes(props.post.format));
+
+const frameUrls = computed(() => props.post.asset_urls?.frames ?? []);
+
+const currentFrame = ref(0);
+
+const rendering = computed(
+    () => props.post.status === 'approved' && !props.post.rendered_at
+);
+
+const backgroundSourceLabel = computed(() =>
+    props.post.background_source === 'geometric' ? 'Fondo: geométrico' : 'Fondo: IA (Pollinations)'
+);
+
+const rerender = (freshBackground: boolean) => {
+    router.post(
+        route('posts.render', props.post.id),
+        { fresh_background: freshBackground },
+        { preserveScroll: true }
+    );
+};
+
+const copied = ref(false);
+
+const copyContent = async () => {
+    await navigator.clipboard.writeText(
+        `${props.post.copy}\n\n${props.post.hashtags.join(' ')}`
+    );
+    copied.value = true;
+    setTimeout(() => (copied.value = false), 2000);
+};
 
 const editing = ref(false);
 const showRegenerate = ref(false);
@@ -184,8 +216,107 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                         <p class="mt-1 text-sm text-gray-700">{{ post.background_prompt }}</p>
                     </div>
 
-                    <div class="flex h-32 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-400">
-                        Diseño pendiente (Fase 2)
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-semibold uppercase text-gray-500">Diseño</h4>
+                            <span
+                                v-if="post.background_source"
+                                class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600"
+                            >{{ backgroundSourceLabel }}</span>
+                        </div>
+
+                        <div
+                            v-if="rendering"
+                            class="mt-2 flex h-32 items-center justify-center gap-2 rounded-md bg-gray-100 text-sm text-gray-500"
+                        >
+                            <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            </svg>
+                            Generando diseño…
+                        </div>
+
+                        <div
+                            v-else-if="post.render_error"
+                            class="mt-2 rounded-md border border-red-200 bg-red-50 p-3"
+                        >
+                            <p class="text-sm text-red-700">{{ post.render_error }}</p>
+                            <SecondaryButton type="button" class="mt-2" @click="rerender(false)">
+                                Reintentar
+                            </SecondaryButton>
+                        </div>
+
+                        <div v-else-if="frameUrls.length">
+                            <!-- Carrusel con flechas -->
+                            <div v-if="post.format === 'carousel'" class="mt-2">
+                                <div class="relative">
+                                    <img
+                                        :src="frameUrls[currentFrame]"
+                                        alt=""
+                                        class="w-full rounded-md border border-gray-200"
+                                    >
+                                    <button
+                                        v-if="frameUrls.length > 1"
+                                        type="button"
+                                        class="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 px-2 py-1 text-lg shadow hover:bg-white"
+                                        @click="currentFrame = (currentFrame - 1 + frameUrls.length) % frameUrls.length"
+                                    >‹</button>
+                                    <button
+                                        v-if="frameUrls.length > 1"
+                                        type="button"
+                                        class="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 px-2 py-1 text-lg shadow hover:bg-white"
+                                        @click="currentFrame = (currentFrame + 1) % frameUrls.length"
+                                    >›</button>
+                                </div>
+                                <p class="mt-1 text-center text-xs text-gray-500">
+                                    {{ currentFrame + 1 }}/{{ frameUrls.length }}
+                                </p>
+                            </div>
+
+                            <!-- Reel/video: grid de frames hasta el Bloque B -->
+                            <div v-else-if="isVideo" class="mt-2">
+                                <div class="grid grid-cols-3 gap-1">
+                                    <img
+                                        v-for="(url, i) in frameUrls"
+                                        :key="i"
+                                        :src="url"
+                                        alt=""
+                                        class="rounded border border-gray-200"
+                                    >
+                                </div>
+                                <p class="mt-1 text-xs text-gray-400">Video: pendiente (Bloque B)</p>
+                            </div>
+
+                            <!-- Imagen única -->
+                            <img
+                                v-else
+                                :src="post.asset_urls?.final ?? frameUrls[0]"
+                                alt=""
+                                class="mt-2 w-full rounded-md border border-gray-200"
+                            >
+                        </div>
+
+                        <div
+                            v-else
+                            class="mt-2 flex h-32 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-400"
+                        >
+                            Sin diseño renderizado
+                        </div>
+
+                        <div v-if="post.status === 'rendered'" class="mt-3 flex flex-wrap gap-2">
+                            <a :href="route('posts.download', post.id)">
+                                <SecondaryButton type="button">Descargar</SecondaryButton>
+                            </a>
+                            <SecondaryButton type="button" @click="rerender(false)">
+                                Regenerar diseño
+                            </SecondaryButton>
+                            <SecondaryButton type="button" @click="rerender(true)">
+                                Nuevo fondo
+                            </SecondaryButton>
+                            <SecondaryButton type="button" @click="copyContent">
+                                {{ copied ? '¡Copiado!' : 'Copiar copy + hashtags' }}
+                            </SecondaryButton>
+                        </div>
                     </div>
 
                     <!-- Edición inline -->

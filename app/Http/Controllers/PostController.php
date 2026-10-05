@@ -10,6 +10,10 @@ use App\Jobs\RenderPost;
 use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipArchive;
 
 class PostController extends Controller
 {
@@ -60,6 +64,34 @@ class PostController extends Controller
         RenderPost::dispatch($post, $request->boolean('fresh_background'));
 
         return back()->with('success', 'Render del diseño encolado.');
+    }
+
+    public function download(Post $post): BinaryFileResponse|StreamedResponse
+    {
+        $frames = collect($post->frames ?? [])
+            ->filter(fn ($file) => Storage::disk('local')->exists("assets/{$post->id}/{$file}"))
+            ->values();
+
+        abort_if($frames->isEmpty(), 404, 'El post no tiene frames renderizados.');
+
+        if ($frames->count() === 1) {
+            return Storage::disk('local')->download(
+                "assets/{$post->id}/{$frames->first()}",
+                "post-{$post->id}.png",
+            );
+        }
+
+        $zipPath = tempnam(sys_get_temp_dir(), 'frames').'.zip';
+        $zip = new ZipArchive;
+        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+        foreach ($frames as $file) {
+            $zip->addFile(Storage::disk('local')->path("assets/{$post->id}/{$file}"), $file);
+        }
+
+        $zip->close();
+
+        return response()->download($zipPath, "post-{$post->id}-frames.zip")->deleteFileAfterSend();
     }
 
     public function regenerate(RegeneratePostRequest $request, Post $post): RedirectResponse

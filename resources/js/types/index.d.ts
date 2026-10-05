@@ -89,6 +89,7 @@ export interface Post {
     render_error: string | null;
     rendered_at: string | null;
     frames: string[] | null;
+    asset_urls?: { frames: string[]; final: string | null };
     status: PostStatus;
     error: string | null;
     regeneration_error: string | null;
