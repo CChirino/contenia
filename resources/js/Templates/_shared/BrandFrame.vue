@@ -31,13 +31,17 @@ const containerStyle = computed(() => ({
     paddingBottom: `${48 + props.safeBottom}px`,
 }));
 
-// Degradado vertical: deja ver la ilustración en el 45% superior y oscurece
-// hacia el tercio inferior donde va el texto. Con fullOverlay el oscurecido
-// es fuerte de principio a fin (continuidad en carrusel).
+const isVertical = computed(() => props.height > props.width);
+
+// Degradado vertical: deja ver la ilustración arriba y oscurece hacia abajo
+// donde va el texto. En vertical el oscurecido fuerte empieza al 50%.
+// Con fullOverlay el oscurecido es fuerte de principio a fin (carrusel).
 const overlayStyle = computed(() => ({
     background: props.fullOverlay
         ? 'linear-gradient(180deg, rgba(26, 42, 66, 0.70) 0%, rgba(26, 42, 66, 0.94) 100%)'
-        : 'linear-gradient(180deg, rgba(26, 42, 66, 0.10) 0%, rgba(26, 42, 66, 0.35) 45%, rgba(26, 42, 66, 0.94) 100%)',
+        : isVertical.value
+            ? 'linear-gradient(180deg, rgba(26, 42, 66, 0.10) 0%, rgba(26, 42, 66, 0.35) 45%, rgba(26, 42, 66, 0.60) 50%, rgba(26, 42, 66, 0.96) 100%)'
+            : 'linear-gradient(180deg, rgba(26, 42, 66, 0.10) 0%, rgba(26, 42, 66, 0.35) 45%, rgba(26, 42, 66, 0.94) 100%)',
 }));
 
 onMounted(async () => {
@@ -80,8 +84,15 @@ onMounted(async () => {
                 <span class="text-[40px] font-semibold text-sabere-light">Saberé.</span>
             </div>
 
-            <div class="flex flex-1 flex-col justify-end">
-                <slot />
+            <div class="relative flex flex-1 flex-col justify-end">
+                <!-- Panel de refuerzo tras el texto: mejora legibilidad sin bordes -->
+                <div
+                    class="absolute -inset-y-[120px] inset-x-0 pointer-events-none"
+                    style="background: linear-gradient(180deg, rgba(26, 42, 66, 0) 0%, rgba(26, 42, 66, 0.85) 55%, rgba(26, 42, 66, 0.85) 100%)"
+                />
+                <div class="relative" style="text-shadow: 0 2px 12px rgba(26, 42, 66, 0.6)">
+                    <slot />
+                </div>
             </div>
 
             <div class="mt-8 flex items-center justify-between">

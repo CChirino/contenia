@@ -341,8 +341,8 @@ onBeforeUnmount(() => {
                                 >
                                     <div class="flex items-center gap-1">
                                         <img
-                                            v-if="post.status === 'rendered' && (post.asset_urls?.final ?? post.asset_urls?.frames?.[0])"
-                                            :src="post.asset_urls?.final ?? post.asset_urls?.frames?.[0]"
+                                            v-if="post.status === 'rendered' && post.asset_urls?.frames?.[0]"
+                                            :src="post.asset_urls.frames[0]"
                                             alt=""
                                             class="h-10 w-10 shrink-0 rounded object-cover"
                                         >
