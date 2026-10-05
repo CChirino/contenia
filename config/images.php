@@ -19,9 +19,10 @@ return [
 
     'pollinations' => [
         'api_key' => env('POLLINATIONS_API_KEY'),
-        'model' => env('POLLINATIONS_MODEL', 'flux'),
+        'model' => env('POLLINATIONS_MODEL', 'z-image-turbo'),
+        'base_url' => env('POLLINATIONS_BASE_URL', 'https://gen.pollinations.ai'),
     ],
 
-    'style_suffix' => 'ilustración plana minimalista, paleta azul oscuro #1A2A42, teal #27C2A5, morado #7854D2, crema #F8F5F0, sin texto, sin letras, sin personas reales, alta calidad',
+    'style_suffix' => 'flat minimalist vector illustration, dark navy #1A2A42 background, teal #27C2A5 and purple #7854D2 accents, cream #F8F5F0 highlights, soft shapes, no text, no letters, no words, no watermark, no people, high quality',
 
 ];

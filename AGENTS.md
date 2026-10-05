@@ -66,6 +66,14 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - Ajustes comunes: `LLM_TIMEOUT` (default 300 s por llamada), `LLM_RETRIES` (default 3 intentos, con backoff de 5 s·intento ante 429/5xx/errores de conexión) y `LLM_MAX_TOKENS` (default 8000; con modelos gratuitos de OpenRouter conviene 16000).
 - Modelos gratuitos de OpenRouter: verificado funcionando `nvidia/nemotron-3-super-120b-a12b:free`; `google/gemma-4-31b-it:free` y `qwen/qwen3.8-27b:free` suelen estar saturados (429 del pool compartido). Algunos modelos ignoran `tool_choice` y devuelven el JSON en `message.content` (con o sin ```json), o `posts` doble-codificado — el cliente y el job lo toleran como fallback.
 
+## Imágenes (fondos de diseño)
+
+- `IMAGE_DRIVER=pollinations` usa la API vigente `gen.pollinations.ai/image/{prompt}` (`POLLINATIONS_API_KEY`, `POLLINATIONS_MODEL`, `POLLINATIONS_BASE_URL`). La clave debe ser `sk_...` de enter.pollinations.ai; la API legacy `image.pollinations.ai` está obsoleta (ignora el token y añade marca de agua).
+- Modelos sugeridos: `z-image-turbo` (default, buena adherencia a paleta y a "sin texto"), `flux` (alternativa barata).
+- La respuesta es JPEG con dimensiones aproximadas — `PollinationsGenerator` la normaliza a PNG exacto (cover). `geometric` es el fallback sin dependencias externas; `fake` va en `phpunit.xml`.
+- `BackgroundService::for($post)` genera `storage/app/assets/{id}/bg.png` (seed = post id, prompt = `background_prompt ?? hook` + `images.style_suffix`) y marca `posts.background_source`.
+- Prueba rápida del driver: `./vendor/bin/sail artisan images:test [ancho] [alto] --prompt="..."` → guarda `storage/app/test-bg.png`.
+
 ## Flujo: generar la grilla de un mes
 
 1. En **Configuración → Pilares de contenido**, la suma de pesos debe ser 100 (el indicador lo muestra; el endpoint devuelve 422 si no).

@@ -21,10 +21,10 @@ class PollinationsGeneratorTest extends TestCase
     public function test_returns_image_bytes(): void
     {
         config()->set('images.pollinations.api_key', 'pol-key');
-        config()->set('images.pollinations.model', 'flux');
+        config()->set('images.pollinations.model', 'z-image-turbo');
 
         Http::fake([
-            'image.pollinations.ai/*' => Http::response($this->fakePng()),
+            'gen.pollinations.ai/*' => Http::response($this->fakePng()),
         ]);
 
         $bytes = (new PollinationsGenerator)->generate('un aula iluminada', 1200, 1200, 42);
@@ -35,18 +35,19 @@ class PollinationsGeneratorTest extends TestCase
 
         Http::assertSent(function (Request $request) {
             return $request->hasHeader('Authorization', 'Bearer pol-key')
-                && str_starts_with($request->url(), 'https://image.pollinations.ai/prompt/')
-                && str_contains($request->url(), 'model=flux')
+                && str_starts_with($request->url(), 'https://gen.pollinations.ai/image/')
+                && str_contains($request->url(), 'model=z-image-turbo')
                 && str_contains($request->url(), 'width=1200')
                 && str_contains($request->url(), 'height=1200')
                 && str_contains($request->url(), 'seed=42')
-                && str_contains($request->url(), 'nologo=true');
+                && ! str_contains($request->url(), 'nologo')
+                && ! str_contains($request->url(), 'enhance');
         });
     }
 
     public function test_retries_on_429_and_then_succeeds(): void
     {
-        Http::fakeSequence('image.pollinations.ai/*')
+        Http::fakeSequence('gen.pollinations.ai/*')
             ->push('busy', 429)
             ->push($this->fakePng());
 
@@ -57,16 +58,23 @@ class PollinationsGeneratorTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    public function test_http_error_throws_exception(): void
+    public function test_http_error_throws_exception_with_api_message(): void
     {
         config()->set('images.pollinations.api_key', 'pol-key');
 
         Http::fake([
-            'image.pollinations.ai/*' => Http::response('boom', 500),
+            'gen.pollinations.ai/*' => Http::response(
+                ['success' => false, 'error' => ['message' => 'modelo saturado', 'code' => 'UPSTREAM']],
+                500
+            ),
         ]);
 
-        $this->expectException(ImageGenerationException::class);
-
-        (new PollinationsGenerator)->generate('p', 100, 100, 1);
+        try {
+            (new PollinationsGenerator)->generate('p', 100, 100, 1);
+            $this->fail('No lanzó ImageGenerationException');
+        } catch (ImageGenerationException $e) {
+            $this->assertStringContainsString('modelo saturado', $e->getMessage());
+            $this->assertStringNotContainsString('"success"', $e->getMessage());
+        }
     }
 }

@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Http;
 
 class PollinationsGenerator implements ImageGenerator
 {
-    protected const ENDPOINT = 'https://image.pollinations.ai/prompt/';
-
     public function name(): string
     {
         return 'pollinations';
@@ -29,19 +27,18 @@ class PollinationsGenerator implements ImageGenerator
             ->withHeaders([
                 'Authorization' => 'Bearer '.config('images.pollinations.api_key'),
             ])
-            ->get(self::ENDPOINT.rawurlencode($prompt), [
+            ->get($this->endpoint().rawurlencode($prompt), [
                 'model' => config('images.pollinations.model'),
                 'width' => $width,
                 'height' => $height,
                 'seed' => $seed,
-                'nologo' => 'true',
-                'private' => 'true',
-                'enhance' => 'false',
             ]);
 
         if (! $response->successful()) {
+            $message = $response->json('error.message') ?? substr($response->body(), 0, 300);
+
             throw new ImageGenerationException(
-                'Error HTTP '.$response->status().' de Pollinations: '.substr($response->body(), 0, 300)
+                'Error HTTP '.$response->status().' de Pollinations: '.$message
             );
         }
 
@@ -52,6 +49,11 @@ class PollinationsGenerator implements ImageGenerator
         }
 
         return $this->normalizeToPng($bytes, $width, $height);
+    }
+
+    private function endpoint(): string
+    {
+        return rtrim(config('images.pollinations.base_url') ?? 'https://gen.pollinations.ai', '/').'/image/';
     }
 
     /**
