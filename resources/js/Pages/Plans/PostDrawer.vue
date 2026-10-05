@@ -273,9 +273,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 </p>
                             </div>
 
-                            <!-- Reel/video: grid de frames hasta el Bloque B -->
+                            <!-- Reel/video: MP4 ensamblado con ffmpeg -->
                             <div v-else-if="isVideo" class="mt-2">
-                                <div class="grid grid-cols-3 gap-1">
+                                <video
+                                    v-if="post.asset_urls?.final"
+                                    :src="post.asset_urls.final"
+                                    :poster="frameUrls[0]"
+                                    controls
+                                    playsinline
+                                    class="w-full rounded-md border border-gray-200"
+                                />
+                                <div v-else class="grid grid-cols-3 gap-1">
                                     <img
                                         v-for="(url, i) in frameUrls"
                                         :key="i"
@@ -284,7 +292,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                         class="rounded border border-gray-200"
                                     >
                                 </div>
-                                <p class="mt-1 text-xs text-gray-400">Video: pendiente (Bloque B)</p>
                             </div>
 
                             <!-- Imagen única -->

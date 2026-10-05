@@ -2,16 +2,19 @@
 
 namespace App\Jobs;
 
+use App\Enums\PostFormat;
 use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Services\Images\BackgroundService;
 use App\Services\Render\FrameRenderer;
 use App\Services\Render\TemplateRegistry;
+use App\Services\Render\VideoAssembler;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class RenderPost implements ShouldQueue
@@ -28,7 +31,7 @@ class RenderPost implements ShouldQueue
         public bool $force = false,
     ) {}
 
-    public function handle(FrameRenderer $renderer, BackgroundService $backgrounds): void
+    public function handle(FrameRenderer $renderer, BackgroundService $backgrounds, VideoAssembler $assembler): void
     {
         $post = $this->post->fresh() ?? $this->post;
         $originalStatus = $post->status;
@@ -46,9 +49,19 @@ class RenderPost implements ShouldQueue
 
             $frames = $renderer->render($post);
 
+            $assetPath = "assets/{$post->id}/frame-01.png";
+
+            // Bloque B: reel/video ensambla final.mp4 a partir de los frames.
+            if (in_array($post->format, [PostFormat::Reel, PostFormat::Video], true)) {
+                $outDir = Storage::disk('local')->path("assets/{$post->id}");
+                $framePaths = array_map(fn ($f) => "{$outDir}/{$f}", $frames);
+                $assembler->assemble($framePaths, "{$outDir}/final.mp4", $template->width, $template->height);
+                $assetPath = "assets/{$post->id}/final.mp4";
+            }
+
             $post->forceFill([
                 'frames' => $frames,
-                'asset_path' => "assets/{$post->id}/frame-01.png",
+                'asset_path' => $assetPath,
                 'rendered_at' => now(),
                 'render_error' => null,
             ]);

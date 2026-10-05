@@ -11,7 +11,9 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\Images\BackgroundService;
 use App\Services\Render\FakeFrameRenderer;
+use App\Services\Render\FakeVideoAssembler;
 use App\Services\Render\FrameRenderer;
+use App\Services\Render\VideoAssembler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -47,6 +49,7 @@ class RenderPostTest extends TestCase
         (new RenderPost($post))->handle(
             app(FrameRenderer::class),
             app(BackgroundService::class),
+            app(VideoAssembler::class),
         );
 
         $post->refresh();
@@ -65,6 +68,7 @@ class RenderPostTest extends TestCase
         (new RenderPost($post))->handle(
             app(FrameRenderer::class),
             app(BackgroundService::class),
+            app(VideoAssembler::class),
         );
 
         $this->assertSame(PostStatus::Drafted, $post->fresh()->status);
@@ -80,6 +84,7 @@ class RenderPostTest extends TestCase
             (new RenderPost($post))->handle(
                 app(FrameRenderer::class),
                 app(BackgroundService::class),
+                app(VideoAssembler::class),
             );
         } catch (\Throwable) {
         }
@@ -97,6 +102,7 @@ class RenderPostTest extends TestCase
         (new RenderPost($post, force: true))->handle(
             app(FrameRenderer::class),
             app(BackgroundService::class),
+            app(VideoAssembler::class),
         );
 
         $post->refresh();
@@ -221,6 +227,61 @@ class RenderPostTest extends TestCase
         $this->actingAs($this->user())
             ->get(route('posts.download', $post))
             ->assertNotFound();
+    }
+
+    public function test_video_post_assembles_final_mp4(): void
+    {
+        $this->app->instance(FrameRenderer::class, new FakeFrameRenderer);
+        $assembler = new FakeVideoAssembler;
+        $this->app->instance(VideoAssembler::class, $assembler);
+
+        $post = $this->makePost(PostStatus::Approved, PostFormat::Video);
+        $post->update(['network' => Network::TikTok]);
+
+        (new RenderPost($post))->handle(
+            app(FrameRenderer::class),
+            app(BackgroundService::class),
+            app(VideoAssembler::class),
+        );
+
+        $post->refresh();
+        $this->assertSame(PostStatus::Rendered, $post->status);
+        $this->assertSame("assets/{$post->id}/final.mp4", $post->asset_path);
+        $this->assertCount(1, $assembler->calls);
+        $this->assertCount(count($post->frames), $assembler->calls[0]['frames']);
+        $this->assertSame([1080, 1920], [$assembler->calls[0]['width'], $assembler->calls[0]['height']]);
+    }
+
+    public function test_image_post_does_not_invoke_assembler(): void
+    {
+        $this->app->instance(FrameRenderer::class, new FakeFrameRenderer);
+        $assembler = new FakeVideoAssembler;
+        $this->app->instance(VideoAssembler::class, $assembler);
+
+        $post = $this->makePost(PostStatus::Approved, PostFormat::Image);
+
+        (new RenderPost($post))->handle(
+            app(FrameRenderer::class),
+            app(BackgroundService::class),
+            app(VideoAssembler::class),
+        );
+
+        $this->assertCount(0, $assembler->calls);
+        $this->assertSame("assets/{$post->id}/frame-01.png", $post->fresh()->asset_path);
+    }
+
+    public function test_download_video_returns_mp4(): void
+    {
+        $post = $this->makePost(PostStatus::Rendered, PostFormat::Video);
+        $post->update(['network' => Network::TikTok]);
+        Storage::disk('local')->put("assets/{$post->id}/final.mp4", 'mp4-bytes');
+        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png');
+
+        $response = $this->actingAs($this->user())
+            ->get(route('posts.download', $post))
+            ->assertOk();
+
+        $this->assertSame('video/mp4', $response->headers->get('content-type'));
     }
 
     public function test_plan_status_includes_rendering_ids(): void

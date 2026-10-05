@@ -13,6 +13,7 @@ use App\Services\Images\BackgroundService;
 use App\Services\Images\GeometricGenerator;
 use App\Services\Images\ImageGenerator;
 use App\Services\Render\FrameRenderer;
+use App\Services\Render\VideoAssembler;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
@@ -52,6 +53,7 @@ class RenderPostRealTest extends TestCase
             (new RenderPost($post))->handle(
                 app(FrameRenderer::class),
                 app(BackgroundService::class),
+                app(VideoAssembler::class),
             );
 
             $post->refresh();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PostFormat;
 use App\Enums\PostStatus;
 use App\Http\Requests\RegeneratePostRequest;
 use App\Http\Requests\UpdatePostRequest;
@@ -68,6 +69,14 @@ class PostController extends Controller
 
     public function download(Post $post): BinaryFileResponse|StreamedResponse
     {
+        // Video: el MP4 es la descarga principal.
+        $final = "assets/{$post->id}/final.mp4";
+
+        if (in_array($post->format, [PostFormat::Reel, PostFormat::Video], true)
+            && Storage::disk('local')->exists($final)) {
+            return Storage::disk('local')->download($final, "post-{$post->id}.mp4");
+        }
+
         $frames = collect($post->frames ?? [])
             ->filter(fn ($file) => Storage::disk('local')->exists("assets/{$post->id}/{$file}"))
             ->values();

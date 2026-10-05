@@ -74,6 +74,13 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - `BackgroundService::for($post)` genera `storage/app/assets/{id}/bg.png` (seed = post id, prompt = `background_prompt ?? hook` + `images.style_suffix`) y marca `posts.background_source`.
 - Prueba rápida del driver: `./vendor/bin/sail artisan images:test [ancho] [alto] --prompt="..."` → guarda `storage/app/test-bg.png`.
 
+## Video (reel/TikTok)
+
+- `RenderPost` ensambla `final.mp4` para formatos `reel`/`video` tras los frames PNG: `VideoAssembler` → `FfmpegVideoAssembler` (ffmpeg en el contenedor) con `FakeVideoAssembler` para tests.
+- Parámetros en `config/render.php`: `seconds_per_frame` (3.5), `transition_seconds` (0.5, xfade=fade), `ffmpeg_binary`, `audio_track` (`resources/audio/bg-upbeat.mp3`, loop recortado con `-shortest`, volumen 0.6 y fade-out 1.5 s). Salida h264 `yuv420p` 30 fps `+faststart` + AAC 128k; duración = n·3.5 − (n−1)·0.5.
+- La pista es un pad ambiente sintético generado con ffmpeg (`resources/audio/LICENSE.md`); freepd.com está cerrado.
+- `assets.show` sirve `final.mp4` con `BinaryFileResponse` (Content-Type y Range); `posts.download` devuelve el MP4 directo.
+
 ## Flujo: generar la grilla de un mes
 
 1. En **Configuración → Pilares de contenido**, la suma de pesos debe ser 100 (el indicador lo muestra; el endpoint devuelve 422 si no).
