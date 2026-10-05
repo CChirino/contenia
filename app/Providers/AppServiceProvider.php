@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Services\Images\FakeGenerator;
+use App\Services\Images\GeometricGenerator;
+use App\Services\Images\ImageGenerator;
+use App\Services\Images\PollinationsGenerator;
 use App\Services\Llm\AnthropicClient;
 use App\Services\Llm\FakeLlmClient;
 use App\Services\Llm\LlmClient;
@@ -23,6 +27,17 @@ class AppServiceProvider extends ServiceProvider
                 'fake' => new FakeLlmClient,
                 default => throw new InvalidArgumentException(
                     'Driver LLM desconocido: '.config('llm.driver')
+                ),
+            };
+        });
+
+        $this->app->singleton(ImageGenerator::class, function () {
+            return match (config('images.driver')) {
+                'pollinations' => new PollinationsGenerator,
+                'geometric' => new GeometricGenerator,
+                'fake' => new FakeGenerator,
+                default => throw new InvalidArgumentException(
+                    'Driver de imágenes desconocido: '.config('images.driver')
                 ),
             };
         });

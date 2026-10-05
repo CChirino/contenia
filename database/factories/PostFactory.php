@@ -38,4 +38,14 @@ class PostFactory extends Factory
             'status' => PostStatus::Drafted,
         ];
     }
+
+    public function rendered(): static
+    {
+        return $this->state(fn () => [
+            'status' => PostStatus::Rendered,
+            'background_source' => 'pollinations',
+            'asset_path' => 'assets/'.fake()->numberBetween(1, 9999).'/frame-01.png',
+            'rendered_at' => now(),
+        ]);
+    }
 }

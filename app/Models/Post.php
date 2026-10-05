@@ -28,6 +28,10 @@ class Post extends Model
         'background_prompt',
         'template',
         'asset_path',
+        'background_source',
+        'render_error',
+        'rendered_at',
+        'frames',
         'external_id',
         'permalink',
         'status',
@@ -46,6 +50,8 @@ class Post extends Model
             'design_payload' => 'array',
             'status' => PostStatus::class,
             'published_at' => 'datetime',
+            'rendered_at' => 'datetime',
+            'frames' => 'array',
         ];
     }
 
