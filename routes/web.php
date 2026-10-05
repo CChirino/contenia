@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RenderFrameController;
 use App\Http\Controllers\Settings\BrandProfileController;
 use App\Http\Controllers\Settings\CalendarEventController;
 use App\Http\Controllers\Settings\ContentPillarController;
@@ -14,6 +16,16 @@ Route::get('/', function () {
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 });
+
+// Rutas públicas usadas por el render (logo) y por Chromium (firmadas).
+Route::get('/brand/logo.svg', function () {
+    return response()->file(resource_path('brand/logo.svg'), ['Content-Type' => 'image/svg+xml']);
+})->name('brand.logo');
+
+Route::get('/render/{post}/{frame}', RenderFrameController::class)
+    ->middleware('signed')->name('render.frame');
+Route::get('/assets/{post}/{file}', AssetController::class)
+    ->middleware('signed')->name('assets.show');
 
 Route::get('/dashboard', function () {
     $now = now('America/Caracas');
@@ -35,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::post('/posts/{post}/approve', [PostController::class, 'approve'])->name('posts.approve');
     Route::post('/posts/{post}/regenerate', [PostController::class, 'regenerate'])->name('posts.regenerate');
+    Route::post('/posts/{post}/render', [PostController::class, 'render'])->name('posts.render');
 });
 
 Route::middleware('auth')->group(function () {

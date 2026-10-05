@@ -10,6 +10,8 @@ use App\Services\Llm\AnthropicClient;
 use App\Services\Llm\FakeLlmClient;
 use App\Services\Llm\LlmClient;
 use App\Services\Llm\OpenRouterClient;
+use App\Services\Render\FrameRenderer;
+use App\Services\Render\PlaywrightFrameRenderer;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -41,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
                 ),
             };
         });
+
+        $this->app->bind(FrameRenderer::class, PlaywrightFrameRenderer::class);
     }
 
     /**

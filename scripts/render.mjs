@@ -4,7 +4,7 @@
 // La plantilla debe setear window.__RENDER_READY__ = true cuando esté lista.
 
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import path from 'node:path';
 
@@ -12,6 +12,7 @@ const { values: args } = parseArgs({
     options: {
         'url-template': { type: 'string' },
         url: { type: 'string' }, // alias: usa {frame} o se comporta como url-template
+        'urls-file': { type: 'string' }, // JSON array de URLs ya firmadas (una por frame)
         'out-dir': { type: 'string' },
         width: { type: 'string', default: '1080' },
         height: { type: 'string', default: '1350' },
@@ -21,21 +22,31 @@ const { values: args } = parseArgs({
 });
 
 const urlTemplate = args['url-template'] ?? args.url;
+const urlsFile = args['urls-file'];
 const outDir = args['out-dir'];
 const width = parseInt(args.width, 10);
 const height = parseInt(args.height, 10);
-const frames = parseInt(args.frames, 10);
 const timeout = parseInt(args.timeout, 10);
 
-if (!urlTemplate || !outDir) {
-    console.error('Uso: render.mjs --url-template <url con {frame}> --out-dir <dir> [--width --height --frames --timeout]');
+let urls = null;
+if (urlsFile) {
+    urls = JSON.parse(readFileSync(urlsFile, 'utf8'));
+}
+
+const frames = urls ? urls.length : parseInt(args.frames, 10);
+
+if ((!urlTemplate && !urls) || !outDir) {
+    console.error('Uso: render.mjs (--url-template <url con {frame}> | --urls-file <json>) --out-dir <dir> [--width --height --frames --timeout]');
     process.exit(2);
 }
 
-const urlFor = (frame) =>
-    urlTemplate.includes('{frame}')
+const urlFor = (frame) => {
+    if (urls) return urls[frame - 1];
+
+    return urlTemplate.includes('{frame}')
         ? urlTemplate.replace('{frame}', String(frame))
         : `${urlTemplate}&frame=${frame}`;
+};
 
 mkdirSync(outDir, { recursive: true });
 

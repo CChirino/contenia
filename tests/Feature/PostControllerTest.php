@@ -71,7 +71,7 @@ class PostControllerTest extends TestCase
 
     public function test_update_rejects_post_not_in_editable_status(): void
     {
-        $post = $this->makePost(PostStatus::Rendered);
+        $post = $this->makePost(PostStatus::Scheduled);
 
         $this->actingAs(User::factory()->create())
             ->patchJson("/posts/{$post->id}", $this->validPayload())
@@ -80,6 +80,7 @@ class PostControllerTest extends TestCase
 
     public function test_approve_transitions_drafted_post(): void
     {
+        Queue::fake();
         $post = $this->makePost(PostStatus::Drafted);
 
         $this->actingAs(User::factory()->create())
