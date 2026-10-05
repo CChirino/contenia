@@ -73,7 +73,10 @@ class PlanSchema
                 'required' => ['slides'],
                 'additionalProperties' => false,
             ],
-            'background_prompt' => ['type' => 'string'],
+            'background_prompt' => [
+                'type' => 'string',
+                'description' => 'En inglés: escena u objeto simbólico sin personas ni letreros ni texto, estilo flat minimalist vector illustration, máx. 25 palabras',
+            ],
         ];
 
         $required = ['format', 'hook', 'copy', 'hashtags', 'design_payload', 'background_prompt'];

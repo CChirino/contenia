@@ -24,7 +24,9 @@ class BackgroundService
 
         $template = TemplateRegistry::for($post->network, $post->format);
 
-        $prompt = ($post->background_prompt ?: $post->hook).', '.config('images.style_suffix');
+        $prompt = 'no text, no letters, no signs, no people, no faces. '
+            .($post->background_prompt ?: $post->hook)
+            .', '.config('images.style_suffix');
 
         $source = config('images.driver');
 

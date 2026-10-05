@@ -4,6 +4,7 @@ namespace App\Services\Render;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Models\Post;
 use InvalidArgumentException;
 
 class TemplateRegistry
@@ -33,5 +34,20 @@ class TemplateRegistry
         throw new InvalidArgumentException(
             "No hay plantilla para {$network->value}/{$format->value}."
         );
+    }
+
+    /**
+     * Número de frames que produce un post: image=1; carousel = slides + 1
+     * (CTA final), mín 3 máx 7; reel/video = escenas, mín 2 máx 5.
+     */
+    public static function frameCount(Post $post): int
+    {
+        $slides = count($post->design_payload['slides'] ?? []);
+
+        return match ($post->format) {
+            PostFormat::Image => 1,
+            PostFormat::Carousel => max(3, min(7, $slides + 1)),
+            PostFormat::Reel, PostFormat::Video => max(2, min(5, $slides)),
+        };
     }
 }

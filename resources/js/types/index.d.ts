@@ -85,6 +85,10 @@ export interface Post {
     background_prompt: string | null;
     template: string | null;
     asset_path: string | null;
+    background_source: string | null;
+    render_error: string | null;
+    rendered_at: string | null;
+    frames: string[] | null;
     status: PostStatus;
     error: string | null;
     regeneration_error: string | null;

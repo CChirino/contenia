@@ -143,7 +143,7 @@ class PromptBuilder
         - No repitas el mismo tema entre redes en la misma semana.
         - No programes posts en días marcados [SIN PUBLICACIÓN] ni fuera del rango indicado.
         - design_payload.slides: 1 slide para image, 3-6 para carousel, 3-5 escenas para reel/video.
-        - background_prompt describe una ilustración de fondo SIN texto y SIN personas reales.
+        - background_prompt debe estar EN INGLÉS, describir una escena u objeto simbólico (sin personas, sin letreros, sin pantallas con texto), estilo "flat minimalist vector illustration", máximo 25 palabras.
         - "pillar" debe ser el nombre exacto de uno de los pilares listados.
         PROMPT;
     }
