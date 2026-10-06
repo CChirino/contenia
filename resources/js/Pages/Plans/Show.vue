@@ -4,7 +4,7 @@ import GenerationErrors from '@/Pages/Plans/GenerationErrors.vue';
 import PostDrawer from '@/Pages/Plans/PostDrawer.vue';
 import { ContentPillar, MonthlyPlan, NetworkName, Post } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 interface Week {
     from: string;
@@ -164,7 +164,7 @@ const startPolling = () => {
 
         if (!data.pending && ids === '') {
             stopPolling();
-            router.reload({ only: ['plan', 'posts'] });
+            router.reload({ only: ['plan', 'posts', 'weeks'] });
             return;
         }
 
@@ -177,15 +177,25 @@ const startPolling = () => {
 
 const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-        router.reload({ only: ['plan', 'posts'] });
+        router.reload({ only: ['plan', 'posts', 'weeks'] });
     }
 };
 
+const hasRendering = computed(() =>
+    props.posts.some((p) => p.status === 'approved' && !p.rendered_at)
+);
+
+// Arranca el polling tanto al montar como cuando una acción (generar,
+// regenerar semana, aprobar) deja el plan o algún post en proceso.
+watch(
+    () => pending.value || hasRendering.value,
+    (active) => {
+        if (active && !pollTimer) startPolling();
+    },
+    { immediate: true }
+);
+
 onMounted(() => {
-    const hasRendering = props.posts.some(
-        (p) => p.status === 'approved' && !p.rendered_at
-    );
-    if (pending.value || hasRendering) startPolling();
     document.addEventListener('visibilitychange', onVisibilityChange);
 });
 
