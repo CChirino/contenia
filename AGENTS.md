@@ -29,9 +29,11 @@ Diseño completo y fases: `docs/superpowers/specs/2026-10-01-sabere-marketing-ag
 # Estilo de código
 ./vendor/bin/sail pint
 
-# Colas (los jobs de generación corren por queue 'database')
-./vendor/bin/sail artisan queue:work          # worker continuo
-./vendor/bin/sail artisan queue:work --once   # procesa un solo job
+# Colas (los jobs de generación/render corren por queue 'database')
+# El servicio `queue` de compose.yaml levanta un worker permanente con `sail up -d`.
+./vendor/bin/sail restart queue               # recargar el worker tras cambiar código de jobs
+./vendor/bin/sail logs -f queue               # ver qué está procesando
+./vendor/bin/sail artisan queue:work --once   # procesar un solo job a mano (si el servicio está parado)
 
 # Generación por CLI y depuración del LLM
 ./vendor/bin/sail artisan plan:generate 2026 10          # genera la grilla en el momento (semana a semana)
@@ -85,7 +87,7 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 
 1. En **Configuración → Pilares de contenido**, la suma de pesos debe ser 100 (el indicador lo muestra; el endpoint devuelve 422 si no).
 2. En `/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** / **Completar mes** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`). El job recorre las semanas lunes–domingo recortadas al mes con una llamada LLM por semana, **solo en las semanas que no tienen ningún post** (no borra nada). El botón ↻ de cada fila regenera solo esa semana (reemplaza sus `drafted`, conserva aprobados). Si una semana falla conserva las demás y anota el fallo en `last_error` (JSON `[{from,to,message}]`; solo relanza si fallan todas).
-3. Corre el worker: `./vendor/bin/sail artisan queue:work --once` (o déjalo corriendo). Tras cambiar código de los jobs, reinicia el worker con `./vendor/bin/sail artisan queue:restart` — un worker residente mantiene el código viejo cargado.
+3. El servicio `queue` de Sail procesa el job (si "Generando..." no avanza, comprueba `./vendor/bin/sail ps` — sin worker el job queda esperando en la tabla `jobs`). Tras cambiar código de los jobs, `./vendor/bin/sail restart queue` — un worker residente mantiene el código viejo cargado.
 4. Los posts quedan en `drafted`; desde el drawer de cada post se puede **Aprobar**, **Editar** o **Regenerar** (job `RegeneratePost`, también encolado — corre el worker de nuevo).
 
 ## Notas
