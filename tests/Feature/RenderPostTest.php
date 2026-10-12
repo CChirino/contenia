@@ -334,13 +334,15 @@ class RenderPostTest extends TestCase
         $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
         $rendering = Post::factory()->create([
             'monthly_plan_id' => $plan->id,
-            'status' => PostStatus::Approved,
+            'status' => PostStatus::Drafted,
             'rendered_at' => null,
+            'render_requested_at' => now(),
         ]);
         Post::factory()->create([
             'monthly_plan_id' => $plan->id,
             'status' => PostStatus::Rendered,
             'rendered_at' => now(),
+            'render_requested_at' => null,
         ]);
 
         $response = $this->actingAs($this->user())

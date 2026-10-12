@@ -34,9 +34,10 @@ class PostController extends Controller
         // Editar un post con render previo lo re-renderiza; si estaba
         // renderizado vuelve a aprobado (un borrador queda en borrador).
         if ($hadRender) {
-            if ($wasRendered) {
-                $post->update(['status' => PostStatus::Approved]);
-            }
+            $post->update([
+                'status' => $wasRendered ? PostStatus::Approved : $post->status,
+                'render_requested_at' => now(),
+            ]);
             RenderPost::dispatch($post->fresh());
         }
 
@@ -59,7 +60,10 @@ class PostController extends Controller
         if ($hasFreshRender) {
             $post->update(['status' => PostStatus::Rendered]);
         } else {
-            $post->update(['status' => PostStatus::Approved]);
+            $post->update([
+                'status' => PostStatus::Approved,
+                'render_requested_at' => now(),
+            ]);
             RenderPost::dispatch($post->fresh());
         }
 
@@ -73,6 +77,8 @@ class PostController extends Controller
             422,
             'Solo se puede renderizar un post en borrador, aprobado o renderizado.'
         );
+
+        $post->update(['render_requested_at' => now()]);
 
         RenderPost::dispatch($post, $request->boolean('fresh_background'));
 

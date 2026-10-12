@@ -63,6 +63,7 @@ class RenderPost implements ShouldQueue
                 'frames' => $frames,
                 'asset_path' => $assetPath,
                 'rendered_at' => now(),
+                'render_requested_at' => null,
                 'render_error' => null,
             ]);
 
@@ -77,7 +78,10 @@ class RenderPost implements ShouldQueue
 
             $post->save();
         } catch (Throwable $e) {
-            $post->forceFill(['render_error' => $e->getMessage()])->save();
+            $post->forceFill([
+                'render_error' => $e->getMessage(),
+                'render_requested_at' => null,
+            ])->save();
 
             if (! $this->force) {
                 throw $e;

@@ -7,6 +7,7 @@ const props = defineProps<{
     framesTotal: number;
     post: any;
     backgroundUrl?: string | null;
+    icon?: string | null;
     logoUrl: string;
     brand: { url?: string | null; cta?: string | null };
 }>();
@@ -30,6 +31,8 @@ const component = computed(() => components[props.template.component]);
         :frame="frame"
         :frames-total="framesTotal"
         :background-url="backgroundUrl"
+        :photo-height="template.photo_height"
+        :icon="icon"
         :logo-url="logoUrl"
         :brand="brand"
     />

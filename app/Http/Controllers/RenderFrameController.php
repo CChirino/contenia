@@ -42,6 +42,7 @@ class RenderFrameController extends Controller
                 'content_pillar' => ['name' => $post->contentPillar?->name],
             ],
             'backgroundUrl' => $this->backgroundUrl($post, $frame, $template->usesAiBackground),
+            'icon' => $post->icon?->value ?? 'lightbulb',
             'logoUrl' => route('brand.logo'),
             'brand' => [
                 'url' => $brand->url,

@@ -8,6 +8,8 @@ const props = defineProps<{
     frame: number;
     framesTotal: number;
     backgroundUrl?: string | null;
+    photoHeight: number;
+    icon?: string | null;
     logoUrl: string;
     brand: { url?: string | null; cta?: string | null };
 }>();
@@ -22,11 +24,13 @@ const slide = computed(() => slideAt(props.post, props.frame - 1));
     <BrandFrame
         :width="1080"
         :height="1350"
-        :background-url="backgroundUrl"
+        :photo-url="backgroundUrl"
+        :photo-height="photoHeight"
+        :icon="icon"
         :logo-url="logoUrl"
         :brand-url="brand.url"
         :pillar="post.content_pillar?.name"
-        :full-overlay="!isCover"
+        :compact="!isCover"
     >
         <template v-if="isCover">
             <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />

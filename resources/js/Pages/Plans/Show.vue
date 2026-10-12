@@ -182,7 +182,7 @@ const onVisibilityChange = () => {
 };
 
 const hasRendering = computed(() =>
-    props.posts.some((p) => p.status === 'approved' && !p.rendered_at)
+    props.posts.some((p) => p.render_requested_at !== null)
 );
 
 // Arranca el polling tanto al montar como cuando una acción (generar,
@@ -351,7 +351,7 @@ onBeforeUnmount(() => {
                                 >
                                     <div class="flex items-center gap-1">
                                         <img
-                                            v-if="post.status === 'rendered' && post.asset_urls?.frames?.[0]"
+                                            v-if="post.rendered_at && post.asset_urls?.frames?.[0]"
                                             :src="post.asset_urls.frames[0]"
                                             alt=""
                                             class="h-10 w-10 shrink-0 rounded object-cover"

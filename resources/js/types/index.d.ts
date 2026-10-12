@@ -86,8 +86,20 @@ export interface Post {
     template: string | null;
     asset_path: string | null;
     background_source: string | null;
+    background_meta: {
+        source?: string;
+        model?: string;
+        user?: string;
+        page_url?: string;
+        id?: number;
+        tags?: string;
+        skip?: number;
+    } | null;
+    photo_keywords: string | null;
+    icon: string | null;
     render_error: string | null;
     rendered_at: string | null;
+    render_requested_at: string | null;
     frames: string[] | null;
     asset_urls?: { frames: string[]; final: string | null };
     status: PostStatus;

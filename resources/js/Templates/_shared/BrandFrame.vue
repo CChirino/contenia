@@ -1,53 +1,71 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
+import { iconPaths } from './icons';
 
 const props = withDefaults(
     defineProps<{
         width: number;
         height: number;
-        backgroundUrl?: string | null;
+        /** Foto de la cabecera; null → degradado de marca */
+        photoUrl?: string | null;
+        /** Alto del bloque de foto en px (según plantilla) */
+        photoHeight: number;
         logoUrl: string;
         brandUrl?: string | null;
         pillar?: string | null;
+        icon?: string | null;
         safeTop?: number;
         safeBottom?: number;
-        /** true → overlay fuerte en todo el alto (slides interiores de carrusel) */
-        fullOverlay?: boolean;
+        /** Versión reducida (slides interiores del carrusel) */
+        compact?: boolean;
     }>(),
     {
-        backgroundUrl: null,
+        photoUrl: null,
         brandUrl: null,
         pillar: null,
+        icon: 'lightbulb',
         safeTop: 0,
         safeBottom: 0,
-        fullOverlay: false,
+        compact: false,
     },
 );
+
+const isVertical = computed(() => props.height > props.width);
+
+const photoH = computed(() =>
+    props.compact ? Math.round(props.photoHeight * 0.7) : props.photoHeight
+);
+
+const circleSize = computed(() =>
+    props.compact ? 140 : isVertical.value ? 180 : 200
+);
+
+const iconSize = computed(() => (props.compact ? 68 : 96));
+
+const paths = computed(() => iconPaths(props.icon));
 
 const containerStyle = computed(() => ({
     width: `${props.width}px`,
     height: `${props.height}px`,
+}));
+
+const columnStyle = computed(() => ({
     paddingTop: `${56 + props.safeTop}px`,
     paddingBottom: `${48 + props.safeBottom}px`,
 }));
 
-const isVertical = computed(() => props.height > props.width);
-
-// Degradado vertical: deja ver la ilustración arriba y oscurece hacia abajo
-// donde va el texto. En vertical el oscurecido fuerte empieza al 50%.
-// Con fullOverlay el oscurecido es fuerte de principio a fin (carrusel).
-const overlayStyle = computed(() => ({
-    background: props.fullOverlay
-        ? 'linear-gradient(180deg, rgba(26, 42, 66, 0.70) 0%, rgba(26, 42, 66, 0.94) 100%)'
-        : isVertical.value
-            ? 'linear-gradient(180deg, rgba(26, 42, 66, 0.10) 0%, rgba(26, 42, 66, 0.35) 45%, rgba(26, 42, 66, 0.60) 50%, rgba(26, 42, 66, 0.96) 100%)'
-            : 'linear-gradient(180deg, rgba(26, 42, 66, 0.10) 0%, rgba(26, 42, 66, 0.35) 45%, rgba(26, 42, 66, 0.94) 100%)',
+const circleStyle = computed(() => ({
+    top: `${photoH.value - circleSize.value / 2 + 4}px`,
+    right: '64px',
+    width: `${circleSize.value}px`,
+    height: `${circleSize.value}px`,
+    background: '#7854D2',
 }));
 
 onMounted(async () => {
     await document.fonts.ready;
 
-    if (!props.backgroundUrl) {
+    if (!props.photoUrl) {
         window.__RENDER_READY__ = true;
         return;
     }
@@ -56,43 +74,66 @@ onMounted(async () => {
     img.onload = img.onerror = () => {
         window.__RENDER_READY__ = true;
     };
-    img.src = props.backgroundUrl;
+    img.src = props.photoUrl;
 });
 </script>
 
 <template>
-    <div
-        class="relative overflow-hidden font-sans"
-        :style="containerStyle"
-    >
+    <div class="relative overflow-hidden font-sans" :style="containerStyle">
+        <!-- Bloque de foto (sin overlay) -->
         <img
-            v-if="backgroundUrl"
-            :src="backgroundUrl"
+            v-if="photoUrl"
+            :src="photoUrl"
             alt=""
-            class="absolute inset-0 h-full w-full object-cover"
+            class="absolute inset-x-0 top-0 w-full object-cover"
+            :style="{ height: `${photoH}px` }"
         >
-        <div class="absolute inset-0" :style="overlayStyle" />
-        <!-- Franja ligera tras el logo para legibilidad sobre cualquier fondo -->
         <div
+            v-else
             class="absolute inset-x-0 top-0"
-            style="height: 160px; background: linear-gradient(180deg, rgba(26, 42, 66, 0.25) 0%, rgba(26, 42, 66, 0) 100%)"
+            :style="{ height: `${photoH}px`, background: 'linear-gradient(135deg, #27C2A5, #7854D2)' }"
         />
 
-        <div class="relative flex h-full flex-col px-16">
-            <div class="flex items-center gap-4">
+        <!-- Costura teal + panel de marca -->
+        <div
+            class="absolute inset-x-0"
+            :style="{ top: `${photoH}px`, height: '8px', background: '#27C2A5' }"
+        />
+        <div
+            class="absolute inset-x-0 bottom-0"
+            :style="{ top: `${photoH}px`, background: '#1A2A42' }"
+        />
+
+        <!-- Círculo púrpura con icono, mordiendo la foto -->
+        <div
+            class="absolute flex items-center justify-center rounded-full"
+            :style="circleStyle"
+        >
+            <svg
+                :width="iconSize"
+                :height="iconSize"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <path v-for="(d, i) in paths" :key="i" :d="d" />
+            </svg>
+        </div>
+
+        <div class="relative flex h-full flex-col px-16" :style="columnStyle">
+            <div
+                class="flex w-fit items-center gap-4 rounded-full px-6 py-4"
+                style="background: rgba(26, 42, 66, 0.75)"
+            >
                 <img :src="logoUrl" alt="Saberé" class="h-[72px] w-[72px]">
                 <span class="text-[40px] font-semibold text-sabere-light">Saberé.</span>
             </div>
 
             <div class="relative flex flex-1 flex-col justify-end">
-                <!-- Panel de refuerzo tras el texto: mejora legibilidad sin bordes -->
-                <div
-                    class="absolute -inset-y-[120px] -inset-x-16 pointer-events-none"
-                    style="background: linear-gradient(180deg, rgba(26, 42, 66, 0) 0%, rgba(26, 42, 66, 0.85) 55%, rgba(26, 42, 66, 0.85) 100%)"
-                />
-                <div class="relative" style="text-shadow: 0 2px 12px rgba(26, 42, 66, 0.6)">
-                    <slot />
-                </div>
+                <slot />
             </div>
 
             <div class="relative z-10 mt-8 flex items-center justify-between">

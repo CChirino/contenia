@@ -55,13 +55,42 @@ const frameUrls = computed(() => props.post.asset_urls?.frames ?? []);
 
 const currentFrame = ref(0);
 
-const rendering = computed(
-    () => props.post.status === 'approved' && !props.post.rendered_at
+const rendering = computed(() => props.post.render_requested_at !== null);
+
+const iconOptions = [
+    'fingerprint', 'checklist', 'calendar', 'chart', 'book', 'bell',
+    'chat', 'clock', 'shield', 'lightbulb', 'users', 'device',
+];
+
+const backgroundBadge = computed(() => {
+    const meta = props.post.background_meta;
+    switch (props.post.background_source) {
+        case 'pixabay':
+            return {
+                label: `Foto: Pixabay · ${meta?.user ?? 'desconocido'}`,
+                url: meta?.page_url ?? null,
+            };
+        case 'geometric':
+            return { label: 'Fondo: geométrico', url: null };
+        default:
+            return {
+                label: `Fondo: IA (${meta?.model ?? 'pollinations'})`,
+                url: null,
+            };
+    }
+});
+
+const canGenerateDesign = computed(
+    () => props.post.status === 'drafted' && !props.post.rendered_at
 );
 
-const backgroundSourceLabel = computed(() =>
-    props.post.background_source === 'geometric' ? 'Fondo: geométrico' : 'Fondo: IA (Pollinations)'
-);
+const generateDesign = () => {
+    router.post(
+        route('posts.render', props.post.id),
+        {},
+        { preserveScroll: true }
+    );
+};
 
 const rerender = (freshBackground: boolean) => {
     router.post(
@@ -91,6 +120,8 @@ const editForm = useForm({
     hashtags: props.post.hashtags,
     scheduled_at: scheduledInput.value,
     format: props.post.format as PostFormat,
+    photo_keywords: props.post.photo_keywords ?? '',
+    icon: props.post.icon,
 });
 
 const regenerateForm = useForm({
@@ -111,6 +142,7 @@ const submitEdit = () => {
                 .split(',')
                 .map((t) => t.trim())
                 .filter((t) => t.length > 0),
+            photo_keywords: data.photo_keywords || null,
         }))
         .patch(route('posts.update', props.post.id), {
             preserveScroll: true,
@@ -211,18 +243,32 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                         </ol>
                     </div>
 
-                    <div v-if="post.background_prompt">
+                    <div v-if="post.background_prompt || post.photo_keywords || post.icon">
                         <h4 class="text-xs font-semibold uppercase text-gray-500">Fondo (prompt)</h4>
-                        <p class="mt-1 text-sm text-gray-700">{{ post.background_prompt }}</p>
+                        <p v-if="post.background_prompt" class="mt-1 text-sm text-gray-700">
+                            {{ post.background_prompt }}
+                        </p>
+                        <p v-if="post.photo_keywords || post.icon" class="mt-1 text-sm text-gray-500">
+                            <template v-if="post.photo_keywords">Foto: {{ post.photo_keywords }}</template>
+                            <template v-if="post.photo_keywords && post.icon"> · </template>
+                            <template v-if="post.icon">Icono: {{ post.icon }}</template>
+                        </p>
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between">
                             <h4 class="text-xs font-semibold uppercase text-gray-500">Diseño</h4>
+                            <a
+                                v-if="post.background_source && backgroundBadge.url"
+                                :href="backgroundBadge.url"
+                                target="_blank"
+                                rel="noopener"
+                                class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-200 hover:underline"
+                            >{{ backgroundBadge.label }}</a>
                             <span
-                                v-if="post.background_source"
+                                v-else-if="post.background_source"
                                 class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600"
-                            >{{ backgroundSourceLabel }}</span>
+                            >{{ backgroundBadge.label }}</span>
                         </div>
 
                         <div
@@ -307,10 +353,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                             v-else
                             class="mt-2 flex h-32 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-400"
                         >
-                            Sin diseño renderizado
+                            {{ canGenerateDesign ? 'Sin diseño todavía' : 'Sin diseño renderizado' }}
                         </div>
 
-                        <div v-if="post.status === 'rendered'" class="mt-3 flex flex-wrap gap-2">
+                        <div v-if="post.rendered_at" class="mt-3 flex flex-wrap gap-2">
                             <a :href="route('posts.download', post.id)">
                                 <SecondaryButton type="button">Descargar</SecondaryButton>
                             </a>
@@ -377,6 +423,32 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 <InputError :message="editForm.errors.format" class="mt-1" />
                             </div>
                         </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <InputLabel for="edit_photo_keywords" value="Foto (keywords, opcional)" />
+                                <TextInput
+                                    id="edit_photo_keywords"
+                                    v-model="editForm.photo_keywords"
+                                    type="text"
+                                    maxlength="120"
+                                    placeholder="school hallway lockers"
+                                    class="mt-1 block w-full"
+                                />
+                                <InputError :message="editForm.errors.photo_keywords" class="mt-1" />
+                            </div>
+                            <div>
+                                <InputLabel for="edit_icon" value="Icono (opcional)" />
+                                <select
+                                    id="edit_icon"
+                                    v-model="editForm.icon"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option :value="null">—</option>
+                                    <option v-for="i in iconOptions" :key="i" :value="i">{{ i }}</option>
+                                </select>
+                                <InputError :message="editForm.errors.icon" class="mt-1" />
+                            </div>
+                        </div>
                         <div class="flex gap-2">
                             <PrimaryButton :disabled="editForm.processing">Guardar</PrimaryButton>
                             <SecondaryButton type="button" @click="editing = false">Cancelar</SecondaryButton>
@@ -418,6 +490,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                         @click="editing = true; showRegenerate = false"
                     >
                         Editar
+                    </SecondaryButton>
+                    <SecondaryButton
+                        v-if="canGenerateDesign"
+                        type="button"
+                        @click="generateDesign"
+                    >
+                        Generar diseño
                     </SecondaryButton>
                     <SecondaryButton
                         v-if="post.status === 'drafted' && !showRegenerate"

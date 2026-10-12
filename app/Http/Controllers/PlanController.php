@@ -130,7 +130,7 @@ class PlanController extends Controller
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
         $renderingIds = $plan
-            ? $plan->posts()->where('status', 'approved')->whereNull('rendered_at')->pluck('id')
+            ? $plan->posts()->whereNotNull('render_requested_at')->pluck('id')
             : collect();
 
         return response()->json([

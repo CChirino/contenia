@@ -8,6 +8,8 @@ const props = defineProps<{
     frame: number;
     framesTotal: number;
     backgroundUrl?: string | null;
+    photoHeight: number;
+    icon?: string | null;
     logoUrl: string;
     brand: { url?: string | null; cta?: string | null };
 }>();
@@ -19,7 +21,9 @@ const slide = computed(() => slideAt(props.post, 0));
     <BrandFrame
         :width="1200"
         :height="1200"
-        :background-url="backgroundUrl"
+        :photo-url="backgroundUrl"
+        :photo-height="photoHeight"
+        :icon="icon"
         :logo-url="logoUrl"
         :brand-url="brand.url"
         :pillar="post.content_pillar?.name"
