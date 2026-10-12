@@ -137,8 +137,10 @@ onMounted(async () => {
             </div>
 
             <div class="relative z-10 mt-8 flex items-center justify-between">
-                <span v-if="brandUrl" class="text-[28px] text-sabere-light/70">{{ brandUrl }}</span>
-                <span v-else />
+                <span class="flex items-center gap-6">
+                    <span v-if="brandUrl" class="text-[28px] text-sabere-light/70">{{ brandUrl }}</span>
+                    <slot name="footer-extra" />
+                </span>
                 <span
                     v-if="pillar"
                     class="rounded-full bg-sabere-purple px-5 py-2 text-[24px] font-medium text-white"

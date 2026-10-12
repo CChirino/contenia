@@ -49,4 +49,32 @@ class EnrichPhotosTest extends TestCase
         $this->assertSame('ya tiene', $done->fresh()->photo_keywords);
         $this->assertSame(1, LlmLog::count());
     }
+
+    public function test_force_reprocesses_posts_with_keywords(): void
+    {
+        $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+        $post = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'photo_keywords' => 'ya tiene',
+        ]);
+
+        // Sin --force no hay nada que procesar.
+        $this->artisan('posts:enrich-photos', ['year' => 2026, 'month' => 10])
+            ->assertSuccessful();
+        $this->assertSame(0, LlmLog::count());
+
+        app(LlmClient::class)->withResponse([
+            'items' => [
+                ['id' => $post->id, 'photo_keywords' => 'school hallway', 'icon' => 'chart', 'background_prompt' => 'a hallway'],
+            ],
+        ]);
+
+        $this->artisan('posts:enrich-photos', ['year' => 2026, 'month' => 10, '--force' => true])
+            ->assertSuccessful();
+
+        $post->refresh();
+        $this->assertSame('school hallway', $post->photo_keywords);
+        $this->assertSame('chart', $post->icon->value);
+        $this->assertSame(1, LlmLog::count());
+    }
 }

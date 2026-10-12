@@ -144,7 +144,7 @@ class PromptBuilder
         - No repitas el mismo tema entre redes en la misma semana.
         - No programes posts en días marcados [SIN PUBLICACIÓN] ni fuera del rango indicado.
         - design_payload.slides: 1 slide para image, 3-6 para carousel, 3-5 escenas para reel/video.
-        - photo_keywords: 2-4 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios.
+        - photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, classroom, whiteboard, backpack, books, tablet, pencils, hallway); evita abstractos (rubric, assessment, performance, strategy, biometric).
         - icon: elige del catálogo [{$this->iconCatalog()}] el que mejor simbolice el tema.
         - background_prompt debe estar EN INGLÉS y describir una ESCENA FOTOGRÁFICA de respaldo (sin personas, sin letreros, sin pantallas con texto), máximo 25 palabras. No menciones estilos de ilustración.
         - "pillar" debe ser el nombre exacto de uno de los pilares listados.

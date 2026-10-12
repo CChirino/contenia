@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 
 class EnrichPhotosCommand extends Command
 {
-    protected $signature = 'posts:enrich-photos {year} {month}';
+    protected $signature = 'posts:enrich-photos {year} {month} {--force : Re-procesa todos los posts del mes aunque ya tengan keywords}';
 
     protected $description = 'Rellena photo_keywords, icon y background_prompt de los posts del mes que no los tengan (lotes de 15).';
 
@@ -19,7 +19,7 @@ class EnrichPhotosCommand extends Command
         $month = (int) $this->argument('month');
 
         $posts = Post::query()
-            ->whereNull('photo_keywords')
+            ->when(! $this->option('force'), fn ($q) => $q->whereNull('photo_keywords'))
             ->whereHas('monthlyPlan', fn ($q) => $q->where('year', $year)->where('month', $month))
             ->with('contentPillar')
             ->orderBy('scheduled_at')
@@ -57,7 +57,7 @@ class EnrichPhotosCommand extends Command
 
         $system = <<<PROMPT
         Eres el community manager de Saberé, una plataforma de gestión escolar para colegios privados en Venezuela. Para cada post debes proponer los campos visuales del diseño:
-        - photo_keywords: 2-4 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios.
+        - photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, classroom, whiteboard, backpack, books, tablet, pencils, hallway); evita abstractos (rubric, assessment, performance, strategy, biometric).
         - icon: elige del catálogo [{$this->catalog()}] el que mejor simbolice el tema.
         - background_prompt: EN INGLÉS, una ESCENA FOTOGRÁFICA de respaldo (sin personas, sin letreros, sin pantallas con texto), máximo 25 palabras. No menciones estilos de ilustración.
         Responde únicamente con la herramienta emit_result, devolviendo un item por cada post listado.

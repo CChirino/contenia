@@ -4,6 +4,7 @@ namespace App\Services\Images;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class PixabayPhotoSource implements PhotoSource
@@ -47,7 +48,30 @@ class PixabayPhotoSource implements PhotoSource
             return null;
         }
 
-        $hit = $hits->get(($seed + $skip) % $hits->count());
+        // Relevancia: puntúa cada hit por palabras de la query presentes en
+        // sus tags (palabra completa). Sin coincidencias → null para que el
+        // llamador caiga al generador IA, que sí es temático.
+        $queryWords = collect(preg_split('/[^a-z0-9]+/i', mb_strtolower($keywords)))
+            ->filter(fn ($w) => mb_strlen($w) > 2)
+            ->values();
+
+        $scored = $hits
+            ->map(fn (array $hit) => [
+                'hit' => $hit,
+                'score' => $this->score($hit['tags'] ?? '', $queryWords),
+            ])
+            ->sortByDesc('score') // sortByDesc es estable: desempata por orden original
+            ->values();
+
+        if ($scored->first()['score'] === 0) {
+            return null;
+        }
+
+        $maxScore = $scored->first()['score'];
+        $candidates = $scored->where('score', $maxScore)->take(5)->values();
+
+        $chosen = $candidates->get(($seed + $skip) % $candidates->count());
+        $hit = $chosen['hit'];
 
         $image = Http::timeout(30)->get($hit['largeImageURL'])->body();
 
@@ -60,8 +84,21 @@ class PixabayPhotoSource implements PhotoSource
                 'user' => $hit['user'] ?? null,
                 'tags' => $hit['tags'] ?? null,
                 'skip' => $skip,
+                'score' => $chosen['score'],
             ],
         );
+    }
+
+    /**
+     * Nº de palabras de la query que aparecen como palabra completa en los tags.
+     *
+     * @param  Collection<int, string>  $queryWords
+     */
+    protected function score(string $tags, $queryWords): int
+    {
+        return $queryWords
+            ->filter(fn ($w) => preg_match('/\b'.preg_quote($w, '/').'\b/i', $tags))
+            ->count();
     }
 
     /**

@@ -53,8 +53,8 @@ const slide = computed(() => slideAt(props.post, props.frame - 1));
             <p class="mt-8 text-[38px] leading-snug text-sabere-light/85">{{ slide.body }}</p>
         </template>
 
-        <p class="absolute bottom-24 right-16 text-[30px] font-medium text-sabere-light/60">
-            {{ frame }}/{{ framesTotal }}
-        </p>
+        <template #footer-extra>
+            <span class="text-[28px] text-sabere-light/60">{{ frame }}/{{ framesTotal }}</span>
+        </template>
     </BrandFrame>
 </template>
