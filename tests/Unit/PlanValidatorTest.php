@@ -123,4 +123,22 @@ class PlanValidatorTest extends TestCase
         $this->assertStringContainsString('copy', $rejected[0]['reason']);
         $this->assertStringContainsString('hashtags', $rejected[0]['reason']);
     }
+
+    public function test_normalizes_icon_and_photo_keywords(): void
+    {
+        ['valid' => $valid] = $this->validate([
+            $this->validPost(['icon' => 'fingerprint', 'photo_keywords' => 'school hallway']),
+        ]);
+        $this->assertSame('fingerprint', $valid[0]['icon']);
+        $this->assertSame('school hallway', $valid[0]['photo_keywords']);
+    }
+
+    public function test_invalid_icon_or_empty_keywords_become_null(): void
+    {
+        ['valid' => $valid] = $this->validate([
+            $this->validPost(['icon' => 'emoji-raro', 'photo_keywords' => '   ']),
+        ]);
+        $this->assertNull($valid[0]['icon']);
+        $this->assertNull($valid[0]['photo_keywords']);
+    }
 }

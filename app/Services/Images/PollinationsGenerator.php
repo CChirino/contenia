@@ -13,8 +13,16 @@ class PollinationsGenerator implements ImageGenerator
         return 'pollinations';
     }
 
+    use CoverCrop;
+
     public function generate(string $prompt, int $width, int $height, int $seed): string
     {
+        // Algunos modelos (p. ej. microsoft/mai-image-2.6-flash) exigen
+        // dimensiones múltiplos de 16; se piden redondeadas hacia arriba y
+        // el resultado se recorta al tamaño exacto.
+        $requestWidth = (int) (ceil($width / 16) * 16);
+        $requestHeight = (int) (ceil($height / 16) * 16);
+
         $response = Http::timeout(120)
             ->retry(
                 2,
@@ -29,8 +37,8 @@ class PollinationsGenerator implements ImageGenerator
             ])
             ->get($this->endpoint().rawurlencode($prompt), [
                 'model' => config('images.pollinations.model'),
-                'width' => $width,
-                'height' => $height,
+                'width' => $requestWidth,
+                'height' => $requestHeight,
                 'seed' => $seed,
             ]);
 
@@ -48,49 +56,11 @@ class PollinationsGenerator implements ImageGenerator
             throw new ImageGenerationException('Pollinations devolvió una respuesta que no es una imagen válida.');
         }
 
-        return $this->normalizeToPng($bytes, $width, $height);
+        return $this->coverCropPng($bytes, $width, $height);
     }
 
     private function endpoint(): string
     {
         return rtrim(config('images.pollinations.base_url') ?? 'https://gen.pollinations.ai', '/').'/image/';
-    }
-
-    /**
-     * Pollinations puede devolver JPEG y dimensiones distintas de las pedidas;
-     * se normaliza a PNG con las dimensiones exactas (recorte tipo "cover").
-     */
-    private function normalizeToPng(string $bytes, int $width, int $height): string
-    {
-        $source = @imagecreatefromstring($bytes);
-
-        if ($source === false) {
-            throw new ImageGenerationException('No se pudo decodificar la imagen de Pollinations.');
-        }
-
-        $sourceWidth = imagesx($source);
-        $sourceHeight = imagesy($source);
-
-        $canvas = imagecreatetruecolor($width, $height);
-        $scale = max($width / $sourceWidth, $height / $sourceHeight);
-        $scaledWidth = (int) ceil($sourceWidth * $scale);
-        $scaledHeight = (int) ceil($sourceHeight * $scale);
-
-        imagecopyresampled(
-            $canvas, $source,
-            (int) (($width - $scaledWidth) / 2), (int) (($height - $scaledHeight) / 2),
-            0, 0,
-            $scaledWidth, $scaledHeight,
-            $sourceWidth, $sourceHeight
-        );
-
-        ob_start();
-        imagepng($canvas);
-        $png = ob_get_clean();
-
-        imagedestroy($canvas);
-        imagedestroy($source);
-
-        return $png;
     }
 }

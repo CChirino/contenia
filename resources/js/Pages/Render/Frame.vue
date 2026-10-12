@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent } from 'vue';
 
 const props = defineProps<{
-    template: { name: string; component: string; width: number; height: number };
+    template: { name: string; component: string; width: number; height: number; photo_height: number };
     frame: number;
     framesTotal: number;
     post: any;

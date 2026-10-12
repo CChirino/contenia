@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\PostIcon;
 use App\Enums\PostStatus;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
@@ -35,6 +36,8 @@ class PostFactory extends Factory
             'hashtags' => ['#sabere', '#educacion'],
             'design_payload' => ['slides' => [['title' => fake()->sentence(), 'body' => fake()->sentence()]]],
             'background_prompt' => fake()->optional()->sentence(),
+            'photo_keywords' => fake()->optional()->words(3, true),
+            'icon' => fake()->optional()->randomElement(PostIcon::cases()),
             'status' => PostStatus::Drafted,
         ];
     }

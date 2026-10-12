@@ -4,6 +4,7 @@ namespace App\Services\Planning;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\PostIcon;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
 use Carbon\CarbonImmutable;
@@ -36,6 +37,12 @@ class PlanValidator
             $reasons = $this->validatePost(is_array($post) ? $post : [], $year, $month, $pillars, $noPosting);
 
             if ($reasons === []) {
+                // El icono y las keywords de foto no descartan el post: se
+                // normalizan a null cuando faltan o son inválidos.
+                $post['icon'] = PostIcon::normalize($post['icon'] ?? null)?->value;
+                $post['photo_keywords'] = isset($post['photo_keywords']) && is_string($post['photo_keywords'])
+                    ? (trim($post['photo_keywords']) !== '' ? trim($post['photo_keywords']) : null)
+                    : null;
                 $post['content_pillar_id'] = $pillars->get(mb_strtolower($post['pillar']))->id;
                 $valid[] = $post;
             } else {

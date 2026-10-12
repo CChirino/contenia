@@ -4,6 +4,7 @@ namespace App\Services\Planning;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\PostIcon;
 
 class PlanSchema
 {
@@ -75,11 +76,19 @@ class PlanSchema
             ],
             'background_prompt' => [
                 'type' => 'string',
-                'description' => 'En inglés: escena u objeto simbólico sin personas ni letreros ni texto, estilo flat minimalist vector illustration, máx. 25 palabras',
+                'description' => 'En inglés: escena FOTOGRÁFICA de respaldo sin personas ni letreros ni pantallas con texto, máx. 25 palabras',
+            ],
+            'photo_keywords' => [
+                'type' => 'string',
+                'description' => 'En inglés, 2-4 palabras para buscar una foto de stock de ambiente (escena escolar u oficina)',
+            ],
+            'icon' => [
+                'type' => 'string',
+                'enum' => PostIcon::values(),
             ],
         ];
 
-        $required = ['format', 'hook', 'copy', 'hashtags', 'design_payload', 'background_prompt'];
+        $required = ['format', 'hook', 'copy', 'hashtags', 'design_payload', 'background_prompt', 'photo_keywords', 'icon'];
 
         if ($withSchedule) {
             $properties = array_merge([

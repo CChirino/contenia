@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\PostIcon;
 use App\Enums\PostStatus;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,7 +29,10 @@ class Post extends Model
         'background_prompt',
         'template',
         'asset_path',
+        'photo_keywords',
+        'icon',
         'background_source',
+        'background_meta',
         'render_error',
         'rendered_at',
         'frames',
@@ -52,6 +56,8 @@ class Post extends Model
             'published_at' => 'datetime',
             'rendered_at' => 'datetime',
             'frames' => 'array',
+            'background_meta' => 'array',
+            'icon' => PostIcon::class,
         ];
     }
 

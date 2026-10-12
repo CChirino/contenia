@@ -30,6 +30,7 @@ class RenderFrameController extends Controller
                 'component' => $template->component,
                 'width' => $template->width,
                 'height' => $template->height,
+                'photo_height' => $template->photoHeight,
             ],
             'frame' => $frame,
             'framesTotal' => $framesTotal,

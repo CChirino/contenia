@@ -45,6 +45,21 @@ class PollinationsGeneratorTest extends TestCase
         });
     }
 
+    public function test_rounds_dimensions_up_to_multiple_of_16(): void
+    {
+        Http::fake([
+            'gen.pollinations.ai/*' => Http::response($this->fakePng()),
+        ]);
+
+        // 1080×1350 no son múltiplos de 16 → pide 1088×1360 y recorta a lo exacto.
+        $bytes = (new PollinationsGenerator)->generate('p', 1080, 1350, 7);
+
+        $size = getimagesizefromstring($bytes);
+        $this->assertSame([1080, 1350], [$size[0], $size[1]]);
+        Http::assertSent(fn (Request $request) => str_contains($request->url(), 'width=1088')
+            && str_contains($request->url(), 'height=1360'));
+    }
+
     public function test_retries_on_429_and_then_succeeds(): void
     {
         Http::fakeSequence('gen.pollinations.ai/*')

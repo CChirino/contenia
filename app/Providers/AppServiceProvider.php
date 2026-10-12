@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use App\Services\Images\FakeGenerator;
+use App\Services\Images\FakePhotoSource;
 use App\Services\Images\GeometricGenerator;
 use App\Services\Images\ImageGenerator;
+use App\Services\Images\PhotoResult;
+use App\Services\Images\PhotoSource;
+use App\Services\Images\PixabayPhotoSource;
 use App\Services\Images\PollinationsGenerator;
 use App\Services\Llm\AnthropicClient;
 use App\Services\Llm\FakeLlmClient;
@@ -42,6 +46,23 @@ class AppServiceProvider extends ServiceProvider
                 'fake' => new FakeGenerator,
                 default => throw new InvalidArgumentException(
                     'Driver de imágenes desconocido: '.config('images.driver')
+                ),
+            };
+        });
+
+        $this->app->singleton(PhotoSource::class, function () {
+            return match (config('images.photo_source')) {
+                'pixabay' => new PixabayPhotoSource,
+                'fake' => new FakePhotoSource,
+                'none', null => new class implements PhotoSource
+                {
+                    public function find(string $keywords, int $width, int $height, int $seed, int $skip = 0): ?PhotoResult
+                    {
+                        return null;
+                    }
+                },
+                default => throw new InvalidArgumentException(
+                    'Fuente de fotos desconocida: '.config('images.photo_source')
                 ),
             };
         });

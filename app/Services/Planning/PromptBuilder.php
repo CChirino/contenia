@@ -4,6 +4,7 @@ namespace App\Services\Planning;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\PostIcon;
 use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
@@ -143,7 +144,9 @@ class PromptBuilder
         - No repitas el mismo tema entre redes en la misma semana.
         - No programes posts en días marcados [SIN PUBLICACIÓN] ni fuera del rango indicado.
         - design_payload.slides: 1 slide para image, 3-6 para carousel, 3-5 escenas para reel/video.
-        - background_prompt debe estar EN INGLÉS, describir una escena u objeto simbólico (sin personas, sin letreros, sin pantallas con texto), estilo "flat minimalist vector illustration", máximo 25 palabras.
+        - photo_keywords: 2-4 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios.
+        - icon: elige del catálogo [{$this->iconCatalog()}] el que mejor simbolice el tema.
+        - background_prompt debe estar EN INGLÉS y describir una ESCENA FOTOGRÁFICA de respaldo (sin personas, sin letreros, sin pantallas con texto), máximo 25 palabras. No menciones estilos de ilustración.
         - "pillar" debe ser el nombre exacto de uno de los pilares listados.
         PROMPT;
     }
@@ -172,6 +175,11 @@ class PromptBuilder
         }
 
         return $prompt;
+    }
+
+    protected function iconCatalog(): string
+    {
+        return implode(', ', PostIcon::values());
     }
 
     /**

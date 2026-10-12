@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enums\PostIcon;
 use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Services\Llm\LlmClient;
@@ -50,6 +51,8 @@ class RegeneratePost implements ShouldQueue
                 'hashtags' => $result['hashtags'] ?? $post->hashtags,
                 'design_payload' => $result['design_payload'] ?? $post->design_payload,
                 'background_prompt' => $result['background_prompt'] ?? $post->background_prompt,
+                'photo_keywords' => $result['photo_keywords'] ?? $post->photo_keywords,
+                'icon' => PostIcon::normalize($result['icon'] ?? $post->icon?->value),
                 'regeneration_error' => null,
             ]);
         } catch (LlmException $e) {

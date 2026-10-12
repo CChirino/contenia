@@ -31,6 +31,7 @@ class RenderPostTest extends TestCase
             'format' => $format,
             'status' => $status,
             'background_prompt' => 'minimalist school office',
+            'photo_keywords' => null,
         ]);
     }
 
@@ -61,8 +62,9 @@ class RenderPostTest extends TestCase
         $this->assertSame('fake', $post->background_source);
     }
 
-    public function test_skips_post_not_approved(): void
+    public function test_render_on_drafted_keeps_drafted_status(): void
     {
+        $this->app->instance(FrameRenderer::class, new FakeFrameRenderer);
         $post = $this->makePost(PostStatus::Drafted);
 
         (new RenderPost($post))->handle(
@@ -71,7 +73,23 @@ class RenderPostTest extends TestCase
             app(VideoAssembler::class),
         );
 
-        $this->assertSame(PostStatus::Drafted, $post->fresh()->status);
+        $post->refresh();
+        $this->assertSame(PostStatus::Drafted, $post->status);
+        $this->assertSame(['frame-01.png'], $post->frames);
+        $this->assertNotNull($post->rendered_at);
+    }
+
+    public function test_skips_post_not_renderable(): void
+    {
+        $post = $this->makePost(PostStatus::Scheduled);
+
+        (new RenderPost($post))->handle(
+            app(FrameRenderer::class),
+            app(BackgroundService::class),
+            app(VideoAssembler::class),
+        );
+
+        $this->assertSame(PostStatus::Scheduled, $post->fresh()->status);
         $this->assertNull($post->fresh()->frames);
     }
 
@@ -123,13 +141,39 @@ class RenderPostTest extends TestCase
         Queue::assertPushed(RenderPost::class);
     }
 
-    public function test_render_endpoint_rejects_drafted(): void
+    public function test_render_endpoint_rejects_scheduled(): void
     {
-        $post = $this->makePost(PostStatus::Drafted);
+        $post = $this->makePost(PostStatus::Scheduled);
 
         $this->actingAs($this->user())
             ->post(route('posts.render', $post))
             ->assertStatus(422);
+    }
+
+    public function test_render_endpoint_dispatches_for_drafted(): void
+    {
+        Queue::fake();
+        $post = $this->makePost(PostStatus::Drafted);
+
+        $this->actingAs($this->user())
+            ->post(route('posts.render', $post))
+            ->assertRedirect();
+
+        Queue::assertPushed(RenderPost::class);
+    }
+
+    public function test_approve_with_fresh_render_goes_straight_to_rendered(): void
+    {
+        Queue::fake();
+        $post = $this->makePost(PostStatus::Drafted);
+        $post->update(['rendered_at' => now()]);
+
+        $this->actingAs($this->user())
+            ->post(route('posts.approve', $post))
+            ->assertRedirect();
+
+        $this->assertSame(PostStatus::Rendered, $post->fresh()->status);
+        Queue::assertNotPushed(RenderPost::class);
     }
 
     public function test_render_endpoint_dispatches_for_approved(): void
@@ -148,6 +192,7 @@ class RenderPostTest extends TestCase
     {
         Queue::fake();
         $post = $this->makePost(PostStatus::Rendered);
+        $post->update(['rendered_at' => now()]);
 
         $this->actingAs($this->user())
             ->patch(route('posts.update', $post), [

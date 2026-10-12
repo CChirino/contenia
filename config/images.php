@@ -19,10 +19,25 @@ return [
 
     'pollinations' => [
         'api_key' => env('POLLINATIONS_API_KEY'),
-        'model' => env('POLLINATIONS_MODEL', 'z-image-turbo'),
+        'model' => env('POLLINATIONS_MODEL', 'microsoft/mai-image-2.6-flash'),
         'base_url' => env('POLLINATIONS_BASE_URL', 'https://gen.pollinations.ai'),
     ],
 
-    'style_suffix' => 'flat minimalist vector illustration, dark navy #1A2A42 background, teal #27C2A5 and purple #7854D2 accents, cream #F8F5F0 highlights, soft shapes, no text, no letters, no words, no watermark, no people, high quality',
+    /*
+    | Fotos de stock (Pixabay) para los fondos "foto real + marca". Se usa
+    | antes que el generador IA cuando el post tiene photo_keywords.
+    */
+
+    'photo_source' => env('PHOTO_SOURCE', 'pixabay'),
+
+    'pixabay' => [
+        'api_key' => env('PIXABAY_API_KEY'),
+        'exclude_tags' => [
+            'child', 'children', 'kid', 'kids', 'boy', 'boys', 'girl', 'girls',
+            'baby', 'toddler', 'infant', 'teen', 'teenager', 'pupil', 'pupils',
+        ],
+    ],
+
+    'style_suffix' => 'natural soft daylight, shot on 35mm lens, shallow depth of field, muted natural colors, slightly desaturated, realistic, no HDR, no oversaturation, no people, no faces, no text, no letters, no signs, no watermark',
 
 ];

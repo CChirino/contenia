@@ -132,6 +132,8 @@ class GenerateMonthlyPlan implements ShouldQueue
                                 'hashtags' => $data['hashtags'],
                                 'design_payload' => $data['design_payload'],
                                 'background_prompt' => $data['background_prompt'] ?? null,
+                                'photo_keywords' => $data['photo_keywords'] ?? null,
+                                'icon' => $data['icon'] ?? null,
                                 'status' => PostStatus::Drafted,
                             ]);
 

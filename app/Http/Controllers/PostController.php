@@ -26,13 +26,17 @@ class PostController extends Controller
             'Solo se puede editar un post en estado borrador, aprobado o renderizado.'
         );
 
+        $hadRender = $post->rendered_at !== null;
         $wasRendered = $post->status === PostStatus::Rendered;
 
         $post->update($request->validated());
 
-        // Editar un post ya renderizado lo devuelve a aprobado y re-renderiza.
-        if ($wasRendered) {
-            $post->update(['status' => PostStatus::Approved]);
+        // Editar un post con render previo lo re-renderiza; si estaba
+        // renderizado vuelve a aprobado (un borrador queda en borrador).
+        if ($hadRender) {
+            if ($wasRendered) {
+                $post->update(['status' => PostStatus::Approved]);
+            }
             RenderPost::dispatch($post->fresh());
         }
 
@@ -47,9 +51,17 @@ class PostController extends Controller
             'Solo se puede aprobar un post en estado borrador.'
         );
 
-        $post->update(['status' => PostStatus::Approved]);
+        // Si ya hay un render fresco (posterior al último cambio del
+        // contenido) se pasa directo a rendered sin re-renderizar.
+        $hasFreshRender = $post->rendered_at !== null
+            && $post->rendered_at->gte($post->updated_at);
 
-        RenderPost::dispatch($post->fresh());
+        if ($hasFreshRender) {
+            $post->update(['status' => PostStatus::Rendered]);
+        } else {
+            $post->update(['status' => PostStatus::Approved]);
+            RenderPost::dispatch($post->fresh());
+        }
 
         return back();
     }
@@ -57,9 +69,9 @@ class PostController extends Controller
     public function render(Request $request, Post $post): RedirectResponse
     {
         abort_unless(
-            in_array($post->status, [PostStatus::Approved, PostStatus::Rendered], true),
+            in_array($post->status, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true),
             422,
-            'Solo se puede renderizar un post aprobado o ya renderizado.'
+            'Solo se puede renderizar un post en borrador, aprobado o renderizado.'
         );
 
         RenderPost::dispatch($post, $request->boolean('fresh_background'));

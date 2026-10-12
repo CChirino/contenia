@@ -13,6 +13,7 @@ class Template
         public PostFormat $format,
         public int $width,
         public int $height,
+        public int $photoHeight,
         public string $component,
         public bool $usesAiBackground,
     ) {}

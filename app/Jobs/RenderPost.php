@@ -36,7 +36,7 @@ class RenderPost implements ShouldQueue
         $post = $this->post->fresh() ?? $this->post;
         $originalStatus = $post->status;
 
-        if (! $this->force && ! in_array($originalStatus, [PostStatus::Approved, PostStatus::Rendered], true)) {
+        if (! $this->force && ! in_array($originalStatus, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true)) {
             return;
         }
 
@@ -69,12 +69,9 @@ class RenderPost implements ShouldQueue
             if ($this->force) {
                 // --force es solo depuración: no altera el estado del post.
                 $post->status = $originalStatus;
-            } elseif ($post->status !== PostStatus::Rendered) {
-                if (! $post->status->canTransitionTo(PostStatus::Rendered)) {
-                    throw new \RuntimeException(
-                        "No se puede pasar de {$post->status->value} a rendered."
-                    );
-                }
+            } elseif ($post->status === PostStatus::Approved) {
+                // Solo los aprobados pasan a rendered; un render sobre un
+                // borrador es una vista previa que conserva su estado.
                 $post->status = PostStatus::Rendered;
             }
 
