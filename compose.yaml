@@ -30,6 +30,8 @@ services:
         environment:
             WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: 1
+            # Chromium corre en este contenedor; el servidor web está en laravel.test
+            RENDER_INTERNAL_URL: 'http://laravel.test'
         volumes:
             - '.:/var/www/html'
         networks:
