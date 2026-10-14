@@ -6,6 +6,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { NetworkStrategy } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 const props = defineProps<{
     strategies: NetworkStrategy[];

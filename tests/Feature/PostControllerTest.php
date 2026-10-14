@@ -40,9 +40,9 @@ class PostControllerTest extends TestCase
     {
         $post = $this->makePost();
 
-        $this->patch("/posts/{$post->id}", [])->assertRedirect(route('login'));
-        $this->post("/posts/{$post->id}/approve")->assertRedirect(route('login'));
-        $this->post("/posts/{$post->id}/regenerate")->assertRedirect(route('login'));
+        $this->patch("/b/sabere/posts/{$post->id}", [])->assertRedirect(route('login'));
+        $this->post("/b/sabere/posts/{$post->id}/approve")->assertRedirect(route('login'));
+        $this->post("/b/sabere/posts/{$post->id}/regenerate")->assertRedirect(route('login'));
     }
 
     public function test_update_modifies_post(): void
@@ -50,7 +50,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost();
 
         $this->actingAs(User::factory()->create())
-            ->patch("/posts/{$post->id}", $this->validPayload())
+            ->patch("/b/sabere/posts/{$post->id}", $this->validPayload())
             ->assertRedirect();
 
         $post->refresh();
@@ -65,7 +65,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost(PostStatus::Drafted, Network::LinkedIn);
 
         $this->actingAs(User::factory()->create())
-            ->patch("/posts/{$post->id}", $this->validPayload(['format' => 'video']))
+            ->patch("/b/sabere/posts/{$post->id}", $this->validPayload(['format' => 'video']))
             ->assertSessionHasErrors('format');
     }
 
@@ -74,7 +74,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost(PostStatus::Scheduled);
 
         $this->actingAs(User::factory()->create())
-            ->patchJson("/posts/{$post->id}", $this->validPayload())
+            ->patchJson("/b/sabere/posts/{$post->id}", $this->validPayload())
             ->assertStatus(422);
     }
 
@@ -84,7 +84,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost(PostStatus::Drafted);
 
         $this->actingAs(User::factory()->create())
-            ->post("/posts/{$post->id}/approve")
+            ->post("/b/sabere/posts/{$post->id}/approve")
             ->assertRedirect();
 
         $this->assertSame(PostStatus::Approved, $post->fresh()->status);
@@ -95,7 +95,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost(PostStatus::Scheduled);
 
         $this->actingAs(User::factory()->create())
-            ->postJson("/posts/{$post->id}/approve")
+            ->postJson("/b/sabere/posts/{$post->id}/approve")
             ->assertStatus(422);
     }
 
@@ -105,7 +105,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost(PostStatus::Drafted);
 
         $this->actingAs(User::factory()->create())
-            ->post("/posts/{$post->id}/regenerate", ['comment' => 'más corto'])
+            ->post("/b/sabere/posts/{$post->id}/regenerate", ['comment' => 'más corto'])
             ->assertRedirect();
 
         Queue::assertPushed(RegeneratePost::class, fn ($job) => $job->post->is($post) && $job->comment === 'más corto');
@@ -117,7 +117,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost(PostStatus::Approved);
 
         $this->actingAs(User::factory()->create())
-            ->postJson("/posts/{$post->id}/regenerate")
+            ->postJson("/b/sabere/posts/{$post->id}/regenerate")
             ->assertStatus(422);
 
         Queue::assertNotPushed(RegeneratePost::class);
@@ -128,7 +128,7 @@ class PostControllerTest extends TestCase
         $post = $this->makePost();
 
         $this->actingAs(User::factory()->create())
-            ->post("/posts/{$post->id}/regenerate", ['comment' => str_repeat('a', 501)])
+            ->post("/b/sabere/posts/{$post->id}/regenerate", ['comment' => str_repeat('a', 501)])
             ->assertSessionHasErrors('comment');
     }
 }

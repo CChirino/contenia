@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Network;
 use App\Enums\PostStatus;
 use App\Jobs\GenerateMonthlyPlan;
+use App\Models\Brand;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
 use App\Models\LlmLog;
@@ -70,7 +71,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
@@ -115,7 +116,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
@@ -147,7 +148,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
@@ -174,7 +175,7 @@ class GenerateMonthlyPlanTest extends TestCase
         $this->fakeLlm($fake);
 
         try {
-            GenerateMonthlyPlan::dispatchSync(2026, 10);
+            GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
             $this->fail('Expected LlmException');
         } catch (LlmException $e) {
             $this->assertSame('fallo 5', $e->getMessage());
@@ -202,7 +203,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
@@ -225,7 +226,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
@@ -248,7 +249,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $plan = MonthlyPlan::where('year', 2026)->where('month', 10)->firstOrFail();
 
@@ -282,7 +283,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $this->assertSame(3, LlmLog::count());
         $this->assertDatabaseHas('posts', ['id' => $week1Post->id]);
@@ -304,7 +305,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm(new FakeLlmClient);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10);
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10);
 
         $this->assertSame(0, LlmLog::count());
         $this->assertNull($plan->fresh()->last_error);
@@ -339,7 +340,7 @@ class GenerateMonthlyPlanTest extends TestCase
 
         $this->fakeLlm($fake);
 
-        GenerateMonthlyPlan::dispatchSync(2026, 10, '2026-10-05');
+        GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10, '2026-10-05');
 
         $this->assertSame(1, LlmLog::count());
         $this->assertDatabaseMissing('posts', ['id' => $oldDrafted->id]);
@@ -367,7 +368,7 @@ class GenerateMonthlyPlanTest extends TestCase
         $this->fakeLlm($fake);
 
         try {
-            GenerateMonthlyPlan::dispatchSync(2026, 10, '2026-10-05');
+            GenerateMonthlyPlan::dispatchSync(Brand::first(), 2026, 10, '2026-10-05');
             $this->fail('Expected LlmException');
         } catch (LlmException) {
         }

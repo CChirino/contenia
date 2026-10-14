@@ -17,8 +17,8 @@ class ContentPillarTest extends TestCase
 
         $this->get(route('settings.pillars.index'))->assertRedirect(route('login'));
         $this->post(route('settings.pillars.store'), [])->assertRedirect(route('login'));
-        $this->put(route('settings.pillars.update', $pillar), [])->assertRedirect(route('login'));
-        $this->delete(route('settings.pillars.destroy', $pillar))->assertRedirect(route('login'));
+        $this->put(route('settings.pillars.update', ['pillar' => $pillar]), [])->assertRedirect(route('login'));
+        $this->delete(route('settings.pillars.destroy', ['pillar' => $pillar]))->assertRedirect(route('login'));
     }
 
     public function test_index_renders(): void
@@ -57,7 +57,7 @@ class ContentPillarTest extends TestCase
         $pillar = ContentPillar::factory()->create(['weight' => 60]);
 
         $this->actingAs(User::factory()->create())
-            ->put(route('settings.pillars.update', $pillar), [
+            ->put(route('settings.pillars.update', ['pillar' => $pillar]), [
                 'name' => 'Pilar renombrado',
                 'description' => $pillar->description,
                 'weight' => 45,
@@ -74,7 +74,7 @@ class ContentPillarTest extends TestCase
         $pillar = ContentPillar::factory()->create();
 
         $this->actingAs(User::factory()->create())
-            ->delete(route('settings.pillars.destroy', $pillar))
+            ->delete(route('settings.pillars.destroy', ['pillar' => $pillar]))
             ->assertRedirect(route('settings.pillars.index'));
 
         $this->assertDatabaseMissing('content_pillars', ['id' => $pillar->id]);

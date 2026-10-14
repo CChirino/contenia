@@ -9,6 +9,9 @@ import TextInput from '@/Components/TextInput.vue';
 import { ContentPillar } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 const props = defineProps<{
     pillars: ContentPillar[];
@@ -52,14 +55,14 @@ const submitCreate = () => {
 };
 
 const submitEdit = (pillar: ContentPillar) => {
-    editForm.put(route('settings.pillars.update', pillar.id), {
+    editForm.put(route('settings.pillars.update', { pillar: pillar.id }), {
         onSuccess: () => cancelEdit(),
     });
 };
 
 const destroy = (pillar: ContentPillar) => {
     if (confirm(`¿Eliminar el pilar «${pillar.name}»?`)) {
-        router.delete(route('settings.pillars.destroy', pillar.id));
+        router.delete(route('settings.pillars.destroy', { pillar: pillar.id }));
     }
 };
 </script>

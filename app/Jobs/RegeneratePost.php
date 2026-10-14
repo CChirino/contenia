@@ -29,7 +29,14 @@ class RegeneratePost implements ShouldQueue
     {
         $post = $this->post->fresh();
 
-        if (! $post || $post->status !== PostStatus::Drafted) {
+        if (! $post) {
+            return;
+        }
+
+        // El job no depende de sesión: fija la marca del post.
+        app()->instance('brand', $post->brand);
+
+        if ($post->status !== PostStatus::Drafted) {
             return;
         }
 

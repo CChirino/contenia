@@ -5,6 +5,9 @@ import PostDrawer from '@/Pages/Plans/PostDrawer.vue';
 import { ContentPillar, MonthlyPlan, NetworkName, Post } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 interface Week {
     from: string;

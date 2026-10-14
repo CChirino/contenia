@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\PostStatus;
+use App\Models\Brand;
 use App\Models\MonthlyPlan;
 use App\Models\Post;
 use App\Services\Llm\LlmClient;
@@ -24,6 +25,7 @@ class GenerateMonthlyPlan implements ShouldQueue
     public int $timeout = 1800;
 
     public function __construct(
+        public Brand $brand,
         public int $year,
         public int $month,
         public ?string $weekFrom = null,
@@ -50,6 +52,10 @@ class GenerateMonthlyPlan implements ShouldQueue
 
     public function handle(LlmClient $llm, PromptBuilder $prompts, PlanValidator $validator): void
     {
+        // El job no depende de sesión: fija la marca para que el scope,
+        // el perfil, pilares, estrategias y eventos queden filtrados.
+        app()->instance('brand', $this->brand);
+
         $plan = MonthlyPlan::firstOrCreate(
             ['year' => $this->year, 'month' => $this->month],
             ['status' => 'draft']

@@ -34,6 +34,10 @@ class RenderPost implements ShouldQueue
     public function handle(FrameRenderer $renderer, BackgroundService $backgrounds, VideoAssembler $assembler): void
     {
         $post = $this->post->fresh() ?? $this->post;
+
+        // El job no depende de sesión: fija la marca del post.
+        app()->instance('brand', $post->brand);
+
         $originalStatus = $post->status;
 
         if (! $this->force && ! in_array($originalStatus, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true)) {

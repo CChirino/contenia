@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\GenerateMonthlyPlan;
+use App\Models\Brand;
 use App\Models\LlmLog;
 use App\Models\MonthlyPlan;
 use App\Models\Post;
@@ -11,7 +12,7 @@ use Throwable;
 
 class GeneratePlanCommand extends Command
 {
-    protected $signature = 'plan:generate {year} {month} {--queue : Encolar el job en vez de ejecutarlo en el momento} {--week= : Regenerar solo la semana que empieza en esta fecha (YYYY-MM-DD)}';
+    protected $signature = 'plan:generate {year} {month} {--brand=sabere : Slug de la marca} {--queue : Encolar el job en vez de ejecutarlo en el momento} {--week= : Regenerar solo la semana que empieza en esta fecha (YYYY-MM-DD)}';
 
     protected $description = 'Genera la grilla mensual de contenido con el LLM configurado';
 
@@ -21,8 +22,16 @@ class GeneratePlanCommand extends Command
         $month = (int) $this->argument('month');
         $week = $this->option('week');
 
+        $brand = Brand::where('slug', $this->option('brand'))->first();
+
+        if (! $brand) {
+            $this->error("Marca no encontrada: {$this->option('brand')}");
+
+            return self::FAILURE;
+        }
+
         if ($this->option('queue')) {
-            GenerateMonthlyPlan::dispatch($year, $month, $week);
+            GenerateMonthlyPlan::dispatch($brand, $year, $month, $week);
             $this->info("Job encolado para {$year}-{$month}".($week ? " (semana del {$week})" : '').'. Corre `queue:work` para procesarlo.');
 
             return self::SUCCESS;
@@ -32,7 +41,7 @@ class GeneratePlanCommand extends Command
         $logsBefore = LlmLog::max('id') ?? 0;
 
         try {
-            dispatch_sync(new GenerateMonthlyPlan($year, $month, $week));
+            dispatch_sync(new GenerateMonthlyPlan($brand, $year, $month, $week));
         } catch (Throwable $e) {
             $this->error('Falló la generación: '.$e->getMessage());
         }

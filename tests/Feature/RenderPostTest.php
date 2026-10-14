@@ -134,7 +134,7 @@ class RenderPostTest extends TestCase
         $post = $this->makePost(PostStatus::Drafted);
 
         $this->actingAs($this->user())
-            ->post(route('posts.approve', $post))
+            ->post(route('posts.approve', ['post' => $post]))
             ->assertRedirect();
 
         $this->assertSame(PostStatus::Approved, $post->fresh()->status);
@@ -146,7 +146,7 @@ class RenderPostTest extends TestCase
         $post = $this->makePost(PostStatus::Scheduled);
 
         $this->actingAs($this->user())
-            ->post(route('posts.render', $post))
+            ->post(route('posts.render', ['post' => $post]))
             ->assertStatus(422);
     }
 
@@ -156,7 +156,7 @@ class RenderPostTest extends TestCase
         $post = $this->makePost(PostStatus::Drafted);
 
         $this->actingAs($this->user())
-            ->post(route('posts.render', $post))
+            ->post(route('posts.render', ['post' => $post]))
             ->assertRedirect();
 
         Queue::assertPushed(RenderPost::class);
@@ -169,7 +169,7 @@ class RenderPostTest extends TestCase
         $post->update(['rendered_at' => now()]);
 
         $this->actingAs($this->user())
-            ->post(route('posts.approve', $post))
+            ->post(route('posts.approve', ['post' => $post]))
             ->assertRedirect();
 
         $this->assertSame(PostStatus::Rendered, $post->fresh()->status);
@@ -182,7 +182,7 @@ class RenderPostTest extends TestCase
         $post = $this->makePost(PostStatus::Approved);
 
         $this->actingAs($this->user())
-            ->post(route('posts.render', $post), ['fresh_background' => true])
+            ->post(route('posts.render', ['post' => $post]), ['fresh_background' => true])
             ->assertRedirect();
 
         Queue::assertPushed(RenderPost::class, fn ($job) => $job->freshBackground === true);
@@ -195,7 +195,7 @@ class RenderPostTest extends TestCase
         $post->update(['rendered_at' => now()]);
 
         $this->actingAs($this->user())
-            ->patch(route('posts.update', $post), [
+            ->patch(route('posts.update', ['post' => $post]), [
                 'copy' => 'nuevo copy',
                 'hashtags' => ['#a'],
                 'scheduled_at' => '2026-10-05 09:00',
@@ -211,7 +211,7 @@ class RenderPostTest extends TestCase
     {
         $post = $this->makePost(PostStatus::Rendered);
 
-        $this->get("/render/{$post->id}/1")->assertForbidden();
+        $this->get("/render/sabere/{$post->id}/1")->assertForbidden();
     }
 
     public function test_assets_show_rejects_unknown_filename(): void
@@ -246,7 +246,7 @@ class RenderPostTest extends TestCase
         Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png-bytes');
 
         $this->actingAs($this->user())
-            ->get(route('posts.download', $post))
+            ->get(route('posts.download', ['post' => $post]))
             ->assertOk()
             ->assertHeader('content-type', 'image/png');
     }
@@ -259,7 +259,7 @@ class RenderPostTest extends TestCase
         Storage::disk('local')->put("assets/{$post->id}/frame-02.png", 'b');
 
         $response = $this->actingAs($this->user())
-            ->get(route('posts.download', $post))
+            ->get(route('posts.download', ['post' => $post]))
             ->assertOk();
 
         $this->assertSame('application/zip', $response->headers->get('content-type'));
@@ -270,7 +270,7 @@ class RenderPostTest extends TestCase
         $post = $this->makePost(PostStatus::Drafted);
 
         $this->actingAs($this->user())
-            ->get(route('posts.download', $post))
+            ->get(route('posts.download', ['post' => $post]))
             ->assertNotFound();
     }
 
@@ -323,7 +323,7 @@ class RenderPostTest extends TestCase
         Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png');
 
         $response = $this->actingAs($this->user())
-            ->get(route('posts.download', $post))
+            ->get(route('posts.download', ['post' => $post]))
             ->assertOk();
 
         $this->assertSame('video/mp4', $response->headers->get('content-type'));

@@ -3,13 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Enums\PostIcon;
+use App\Models\Brand;
 use App\Models\Post;
 use App\Services\Llm\LlmClient;
 use Illuminate\Console\Command;
 
 class EnrichPhotosCommand extends Command
 {
-    protected $signature = 'posts:enrich-photos {year} {month} {--force : Re-procesa todos los posts del mes aunque ya tengan keywords}';
+    protected $signature = 'posts:enrich-photos {year} {month} {--brand=sabere : Slug de la marca} {--force : Re-procesa todos los posts del mes aunque ya tengan keywords}';
 
     protected $description = 'Rellena photo_keywords, icon y background_prompt de los posts del mes que no los tengan (lotes de 15).';
 
@@ -17,6 +18,16 @@ class EnrichPhotosCommand extends Command
     {
         $year = (int) $this->argument('year');
         $month = (int) $this->argument('month');
+
+        $brand = Brand::where('slug', $this->option('brand'))->first();
+
+        if (! $brand) {
+            $this->error("Marca no encontrada: {$this->option('brand')}");
+
+            return self::FAILURE;
+        }
+
+        app()->instance('brand', $brand);
 
         $posts = Post::query()
             ->when(! $this->option('force'), fn ($q) => $q->whereNull('photo_keywords'))

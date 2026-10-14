@@ -20,6 +20,7 @@ class PlaywrightFrameRenderer implements FrameRenderer
         URL::forceRootUrl(config('render.internal_url'));
         $urls = collect(range(1, $frames))
             ->map(fn (int $i) => URL::temporarySignedRoute('render.frame', now()->addMinutes(10), [
+                'brand' => $post->brand->slug,
                 'post' => $post->id,
                 'frame' => $i,
             ]))

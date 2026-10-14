@@ -9,7 +9,18 @@ use App\Http\Controllers\Settings\BrandProfileController;
 use App\Http\Controllers\Settings\CalendarEventController;
 use App\Http\Controllers\Settings\ContentPillarController;
 use App\Http\Controllers\Settings\NetworkStrategyController;
+use App\Models\Brand;
 use Illuminate\Support\Facades\Route;
+
+/**
+ * Marca por defecto para redirecciones: la última usada o la primera
+ * asignada (los admin ven todas las marcas).
+ */
+$defaultBrand = function () {
+    $user = auth()->user();
+
+    return $user?->lastBrand ?? $user?->brands()->first() ?? Brand::first();
+};
 
 Route::get('/', function () {
     return auth()->check()
@@ -22,21 +33,35 @@ Route::get('/brand/logo.svg', function () {
     return response()->file(resource_path('brand/logo.svg'), ['Content-Type' => 'image/svg+xml']);
 })->name('brand.logo');
 
-Route::get('/render/{post}/{frame}', RenderFrameController::class)
+Route::get('/render/{brand:slug}/{post}/{frame}', RenderFrameController::class)
     ->middleware('signed')->name('render.frame');
-Route::get('/assets/{post}/{file}', AssetController::class)
+Route::get('/assets/{brand:slug}/{post}/{file}', AssetController::class)
     ->middleware('signed')->name('assets.show');
 
-Route::get('/dashboard', function () {
+// URL antigua sin marca: redirige a la marca del usuario (301).
+Route::get('/plans/{year}/{month}', function (int $year, int $month) use ($defaultBrand) {
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    return redirect()->route('plans.show', [
+        'brand' => $defaultBrand()?->slug,
+        'year' => $year,
+        'month' => $month,
+    ], 301);
+});
+
+Route::get('/dashboard', function () use ($defaultBrand) {
     $now = now('America/Caracas');
 
     return redirect()->route('plans.show', [
+        'brand' => $defaultBrand()?->slug,
         'year' => $now->year,
         'month' => $now->month,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::prefix('b/{brand:slug}')->middleware(['auth', 'brand'])->group(function () {
     Route::get('/plans/{year}/{month}', [PlanController::class, 'show'])->name('plans.show');
     Route::post('/plans/{year}/{month}/generate', [PlanController::class, 'generate'])->name('plans.generate');
     Route::get('/plans/{year}/{month}/status', [PlanController::class, 'status'])->name('plans.status');
@@ -57,7 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware('auth')->prefix('settings')->name('settings.')->group(function () {
+Route::prefix('b/{brand:slug}/settings')->middleware(['auth', 'brand'])->name('settings.')->group(function () {
     Route::get('brand', [BrandProfileController::class, 'edit'])->name('brand.edit');
     Route::put('brand', [BrandProfileController::class, 'update'])->name('brand.update');
 

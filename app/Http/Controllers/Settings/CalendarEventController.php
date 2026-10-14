@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreCalendarEventRequest;
 use App\Http\Requests\Settings\UpdateCalendarEventRequest;
+use App\Models\Brand;
 use App\Models\CalendarEvent;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -26,14 +27,14 @@ class CalendarEventController extends Controller
         return redirect()->route('settings.calendar.index');
     }
 
-    public function update(UpdateCalendarEventRequest $request, CalendarEvent $event): RedirectResponse
+    public function update(UpdateCalendarEventRequest $request, Brand $brand, CalendarEvent $event): RedirectResponse
     {
         $event->update($request->validated());
 
         return redirect()->route('settings.calendar.index');
     }
 
-    public function destroy(CalendarEvent $event): RedirectResponse
+    public function destroy(Brand $brand, CalendarEvent $event): RedirectResponse
     {
         $event->delete();
 

@@ -17,8 +17,8 @@ class CalendarEventTest extends TestCase
 
         $this->get(route('settings.calendar.index'))->assertRedirect(route('login'));
         $this->post(route('settings.calendar.store'), [])->assertRedirect(route('login'));
-        $this->put(route('settings.calendar.update', $event), [])->assertRedirect(route('login'));
-        $this->delete(route('settings.calendar.destroy', $event))->assertRedirect(route('login'));
+        $this->put(route('settings.calendar.update', ['event' => $event]), [])->assertRedirect(route('login'));
+        $this->delete(route('settings.calendar.destroy', ['event' => $event]))->assertRedirect(route('login'));
     }
 
     public function test_index_renders(): void
@@ -60,7 +60,7 @@ class CalendarEventTest extends TestCase
         $event = CalendarEvent::factory()->create(['no_posting' => false]);
 
         $this->actingAs(User::factory()->create())
-            ->put(route('settings.calendar.update', $event), [
+            ->put(route('settings.calendar.update', ['event' => $event]), [
                 'date' => '2026-12-24',
                 'name' => 'Nochebuena',
                 'description' => null,
@@ -79,7 +79,7 @@ class CalendarEventTest extends TestCase
         $event = CalendarEvent::factory()->create();
 
         $this->actingAs(User::factory()->create())
-            ->delete(route('settings.calendar.destroy', $event))
+            ->delete(route('settings.calendar.destroy', ['event' => $event]))
             ->assertRedirect(route('settings.calendar.index'));
 
         $this->assertDatabaseMissing('calendar_events', ['id' => $event->id]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Jobs\GenerateMonthlyPlan;
+use App\Models\Brand;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
 use App\Models\Post;
@@ -19,7 +20,7 @@ use Inertia\Response;
 
 class PlanController extends Controller
 {
-    public function show(int $year, int $month): Response
+    public function show(Brand $brand, int $year, int $month): Response
     {
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
@@ -69,7 +70,7 @@ class PlanController extends Controller
         ]);
     }
 
-    public function generate(int $year, int $month): RedirectResponse
+    public function generate(Brand $brand, int $year, int $month): RedirectResponse
     {
         $pillars = ContentPillar::all();
 
@@ -88,12 +89,12 @@ class PlanController extends Controller
 
         $plan->update(['generating_at' => now(), 'last_error' => null]);
 
-        GenerateMonthlyPlan::dispatch($year, $month);
+        GenerateMonthlyPlan::dispatch(app('brand'), $year, $month);
 
         return back()->with('success', 'Generación de la grilla encolada.');
     }
 
-    public function regenerateWeek(int $year, int $month, string $from): RedirectResponse
+    public function regenerateWeek(Brand $brand, int $year, int $month, string $from): RedirectResponse
     {
         $date = CarbonImmutable::parse($from, 'America/Caracas');
 
@@ -112,12 +113,12 @@ class PlanController extends Controller
 
         $plan->update(['generating_at' => now(), 'last_error' => null]);
 
-        GenerateMonthlyPlan::dispatch($year, $month, $date->format('Y-m-d'));
+        GenerateMonthlyPlan::dispatch(app('brand'), $year, $month, $date->format('Y-m-d'));
 
         return back()->with('success', 'Regeneración de la semana encolada.');
     }
 
-    public function clearError(int $year, int $month): RedirectResponse
+    public function clearError(Brand $brand, int $year, int $month): RedirectResponse
     {
         MonthlyPlan::where('year', $year)->where('month', $month)
             ->update(['last_error' => null]);
@@ -125,7 +126,7 @@ class PlanController extends Controller
         return back();
     }
 
-    public function status(int $year, int $month): JsonResponse
+    public function status(Brand $brand, int $year, int $month): JsonResponse
     {
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
@@ -152,7 +153,7 @@ class PlanController extends Controller
         $sign = fn (string $file) => URL::temporarySignedRoute(
             'assets.show',
             now()->addMinutes(60),
-            ['post' => $post->id, 'file' => $file],
+            ['brand' => $post->brand->slug, 'post' => $post->id, 'file' => $file],
         );
 
         $frames = collect($post->frames ?? [])

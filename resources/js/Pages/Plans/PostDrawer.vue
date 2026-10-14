@@ -7,6 +7,9 @@ import TextInput from '@/Components/TextInput.vue';
 import { NetworkName, Post, PostFormat } from '@/types';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 const props = defineProps<{
     post: Post;
@@ -86,7 +89,7 @@ const canGenerateDesign = computed(
 
 const generateDesign = () => {
     router.post(
-        route('posts.render', props.post.id),
+        route('posts.render', { post: props.post.id }),
         {},
         { preserveScroll: true }
     );
@@ -94,7 +97,7 @@ const generateDesign = () => {
 
 const rerender = (freshBackground: boolean) => {
     router.post(
-        route('posts.render', props.post.id),
+        route('posts.render', { post: props.post.id }),
         { fresh_background: freshBackground },
         { preserveScroll: true }
     );
@@ -129,7 +132,7 @@ const regenerateForm = useForm({
 });
 
 const approve = () => {
-    router.post(route('posts.approve', props.post.id), {}, {
+    router.post(route('posts.approve', { post: props.post.id }), {}, {
         preserveScroll: true,
     });
 };
@@ -144,7 +147,7 @@ const submitEdit = () => {
                 .filter((t) => t.length > 0),
             photo_keywords: data.photo_keywords || null,
         }))
-        .patch(route('posts.update', props.post.id), {
+        .patch(route('posts.update', { post: props.post.id }), {
             preserveScroll: true,
             onSuccess: () => {
                 editing.value = false;
@@ -153,7 +156,7 @@ const submitEdit = () => {
 };
 
 const submitRegenerate = () => {
-    regenerateForm.post(route('posts.regenerate', props.post.id), {
+    regenerateForm.post(route('posts.regenerate', { post: props.post.id }), {
         preserveScroll: true,
         onSuccess: () => {
             showRegenerate.value = false;
@@ -357,7 +360,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                         </div>
 
                         <div v-if="post.rendered_at" class="mt-3 flex flex-wrap gap-2">
-                            <a :href="route('posts.download', post.id)">
+                            <a :href="route('posts.download', { post: post.id })">
                                 <SecondaryButton type="button">Descargar</SecondaryButton>
                             </a>
                             <SecondaryButton type="button" @click="rerender(false)">

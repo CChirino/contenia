@@ -7,6 +7,9 @@ import TextInput from '@/Components/TextInput.vue';
 import { BrandProfile } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 const props = defineProps<{
     brandProfile: BrandProfile;

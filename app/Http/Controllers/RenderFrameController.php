@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\BrandProfile;
 use App\Models\Post;
 use App\Services\Render\TemplateRegistry;
@@ -12,8 +13,15 @@ use Inertia\Response;
 
 class RenderFrameController extends Controller
 {
-    public function __invoke(Post $post, int $frame): Response
+    public function __invoke(Brand $brand, string $post, int $frame): Response
     {
+        // Sin scope de marca: un post de otra marca es 403, no 404.
+        $post = Post::withoutGlobalScopes()->findOrFail((int) $post);
+        abort_unless($post->brand_id === $brand->id, 403);
+
+        // Ruta firmada: no pasa por SetActiveBrand; la marca se fija aquí.
+        app()->instance('brand', $brand);
+
         Inertia::setRootView('render');
 
         $template = TemplateRegistry::for($post->network, $post->format);
@@ -58,6 +66,7 @@ class RenderFrameController extends Controller
         }
 
         return URL::temporarySignedRoute('assets.show', now()->addMinutes(10), [
+            'brand' => $post->brand->slug,
             'post' => $post->id,
             'file' => 'bg.png',
         ]);

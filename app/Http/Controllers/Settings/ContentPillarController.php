@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreContentPillarRequest;
 use App\Http\Requests\Settings\UpdateContentPillarRequest;
+use App\Models\Brand;
 use App\Models\ContentPillar;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -26,14 +27,14 @@ class ContentPillarController extends Controller
         return redirect()->route('settings.pillars.index');
     }
 
-    public function update(UpdateContentPillarRequest $request, ContentPillar $pillar): RedirectResponse
+    public function update(UpdateContentPillarRequest $request, Brand $brand, ContentPillar $pillar): RedirectResponse
     {
         $pillar->update($request->validated());
 
         return redirect()->route('settings.pillars.index');
     }
 
-    public function destroy(ContentPillar $pillar): RedirectResponse
+    public function destroy(Brand $brand, ContentPillar $pillar): RedirectResponse
     {
         $pillar->delete();
 

@@ -108,10 +108,19 @@ export interface Post {
     published_at: string | null;
 }
 
+export interface ActiveBrand {
+    id: number;
+    slug: string;
+    name: string;
+    palette: Record<string, string>;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         user: User;
     };
+    brand: ActiveBrand | null;
+    brands: { id: number; slug: string; name: string }[];
 };

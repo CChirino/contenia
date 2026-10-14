@@ -2,6 +2,9 @@
 import { GenerationError } from '@/types';
 import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 const props = defineProps<{
     year: number;

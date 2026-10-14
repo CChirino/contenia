@@ -8,6 +8,7 @@ use App\Http\Requests\RegeneratePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Jobs\RegeneratePost;
 use App\Jobs\RenderPost;
+use App\Models\Brand;
 use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ use ZipArchive;
 
 class PostController extends Controller
 {
-    public function update(UpdatePostRequest $request, Post $post): RedirectResponse
+    public function update(UpdatePostRequest $request, Brand $brand, Post $post): RedirectResponse
     {
         abort_unless(
             in_array($post->status, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true),
@@ -44,7 +45,7 @@ class PostController extends Controller
         return back();
     }
 
-    public function approve(Post $post): RedirectResponse
+    public function approve(Brand $brand, Post $post): RedirectResponse
     {
         abort_unless(
             $post->status->canTransitionTo(PostStatus::Approved),
@@ -70,7 +71,7 @@ class PostController extends Controller
         return back();
     }
 
-    public function render(Request $request, Post $post): RedirectResponse
+    public function render(Request $request, Brand $brand, Post $post): RedirectResponse
     {
         abort_unless(
             in_array($post->status, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true),
@@ -85,7 +86,7 @@ class PostController extends Controller
         return back()->with('success', 'Render del diseño encolado.');
     }
 
-    public function download(Post $post): BinaryFileResponse|StreamedResponse
+    public function download(Brand $brand, Post $post): BinaryFileResponse|StreamedResponse
     {
         // Video: el MP4 es la descarga principal.
         $final = "assets/{$post->id}/final.mp4";
@@ -121,7 +122,7 @@ class PostController extends Controller
         return response()->download($zipPath, "post-{$post->id}-frames.zip")->deleteFileAfterSend();
     }
 
-    public function regenerate(RegeneratePostRequest $request, Post $post): RedirectResponse
+    public function regenerate(RegeneratePostRequest $request, Brand $brand, Post $post): RedirectResponse
     {
         abort_unless(
             $post->status === PostStatus::Drafted,

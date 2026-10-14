@@ -22,9 +22,9 @@ class PlanControllerTest extends TestCase
 
     public function test_guest_is_redirected_to_login(): void
     {
-        $this->get('/plans/2026/10')->assertRedirect(route('login'));
-        $this->post('/plans/2026/10/generate')->assertRedirect(route('login'));
-        $this->get('/plans/2026/10/status')->assertRedirect(route('login'));
+        $this->get('/b/sabere/plans/2026/10')->assertRedirect(route('login'));
+        $this->post('/b/sabere/plans/2026/10/generate')->assertRedirect(route('login'));
+        $this->get('/b/sabere/plans/2026/10/status')->assertRedirect(route('login'));
     }
 
     public function test_show_renders_plan_page(): void
@@ -33,7 +33,7 @@ class PlanControllerTest extends TestCase
         Post::factory()->count(2)->create(['monthly_plan_id' => $plan->id]);
 
         $this->actingAs(User::factory()->create())
-            ->get('/plans/2026/10')
+            ->get('/b/sabere/plans/2026/10')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Plans/Show')
@@ -48,7 +48,7 @@ class PlanControllerTest extends TestCase
         $this->seedPillars();
 
         $this->actingAs(User::factory()->create())
-            ->post('/plans/2026/10/generate')
+            ->post('/b/sabere/plans/2026/10/generate')
             ->assertRedirect();
 
         Queue::assertPushed(GenerateMonthlyPlan::class);
@@ -64,7 +64,7 @@ class PlanControllerTest extends TestCase
         ContentPillar::factory()->create(['weight' => 60]);
 
         $this->actingAs(User::factory()->create())
-            ->postJson('/plans/2026/10/generate')
+            ->postJson('/b/sabere/plans/2026/10/generate')
             ->assertStatus(422)
             ->assertJsonValidationErrors('generate');
 
@@ -76,7 +76,7 @@ class PlanControllerTest extends TestCase
         Queue::fake();
 
         $this->actingAs(User::factory()->create())
-            ->postJson('/plans/2026/10/generate')
+            ->postJson('/b/sabere/plans/2026/10/generate')
             ->assertStatus(422);
 
         Queue::assertNotPushed(GenerateMonthlyPlan::class);
@@ -94,7 +94,7 @@ class PlanControllerTest extends TestCase
         ]);
 
         $this->actingAs(User::factory()->create())
-            ->postJson('/plans/2026/10/generate')
+            ->postJson('/b/sabere/plans/2026/10/generate')
             ->assertStatus(409);
 
         Queue::assertNotPushed(GenerateMonthlyPlan::class);
@@ -111,7 +111,7 @@ class PlanControllerTest extends TestCase
         Post::factory()->count(3)->create(['monthly_plan_id' => $plan->id]);
 
         $response = $this->actingAs(User::factory()->create())
-            ->getJson('/plans/2026/10/status')
+            ->getJson('/b/sabere/plans/2026/10/status')
             ->assertOk()
             ->assertJson([
                 'posts_count' => 3,
@@ -131,7 +131,7 @@ class PlanControllerTest extends TestCase
         ]);
 
         $this->actingAs(User::factory()->create())
-            ->getJson('/plans/2026/10/status')
+            ->getJson('/b/sabere/plans/2026/10/status')
             ->assertJson(['pending' => true]);
     }
 
@@ -141,7 +141,7 @@ class PlanControllerTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get('/dashboard')
-            ->assertRedirect("/plans/{$expected->year}/{$expected->month}");
+            ->assertRedirect("/b/sabere/plans/{$expected->year}/{$expected->month}");
     }
 
     public function test_clear_error_resets_last_error(): void
@@ -153,7 +153,7 @@ class PlanControllerTest extends TestCase
         ]);
 
         $this->actingAs(User::factory()->create())
-            ->delete('/plans/2026/10/error')
+            ->delete('/b/sabere/plans/2026/10/error')
             ->assertRedirect();
 
         $this->assertNull($plan->fresh()->last_error);
@@ -161,7 +161,7 @@ class PlanControllerTest extends TestCase
 
     public function test_clear_error_requires_auth(): void
     {
-        $this->delete('/plans/2026/10/error')->assertRedirect('/login');
+        $this->delete('/b/sabere/plans/2026/10/error')->assertRedirect('/login');
     }
 
     public function test_regenerate_week_dispatches_job_with_week_from(): void
@@ -169,7 +169,7 @@ class PlanControllerTest extends TestCase
         Queue::fake();
 
         $this->actingAs(User::factory()->create())
-            ->post('/plans/2026/10/weeks/2026-10-05/regenerate')
+            ->post('/b/sabere/plans/2026/10/weeks/2026-10-05/regenerate')
             ->assertRedirect();
 
         Queue::assertPushed(GenerateMonthlyPlan::class, fn ($job) => $job->weekFrom === '2026-10-05');
@@ -185,14 +185,14 @@ class PlanControllerTest extends TestCase
         ]);
 
         $this->actingAs(User::factory()->create())
-            ->post('/plans/2026/10/weeks/2026-10-05/regenerate')
+            ->post('/b/sabere/plans/2026/10/weeks/2026-10-05/regenerate')
             ->assertStatus(409);
     }
 
     public function test_regenerate_week_rejects_date_outside_month(): void
     {
         $this->actingAs(User::factory()->create())
-            ->postJson('/plans/2026/10/weeks/2026-11-02/regenerate')
+            ->postJson('/b/sabere/plans/2026/10/weeks/2026-11-02/regenerate')
             ->assertStatus(422);
     }
 }

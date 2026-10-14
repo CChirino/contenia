@@ -9,6 +9,9 @@ import TextInput from '@/Components/TextInput.vue';
 import { CalendarEvent } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useBrandRoute } from '@/composables/useBrandRoute';
+
+const route = useBrandRoute();
 
 const props = defineProps<{
     events: CalendarEvent[];
@@ -54,14 +57,14 @@ const submitCreate = () => {
 };
 
 const submitEdit = (event: CalendarEvent) => {
-    editForm.put(route('settings.calendar.update', event.id), {
+    editForm.put(route('settings.calendar.update', { event: event.id }), {
         onSuccess: () => cancelEdit(),
     });
 };
 
 const destroy = (event: CalendarEvent) => {
     if (confirm(`¿Eliminar el evento «${event.name}»?`)) {
-        router.delete(route('settings.calendar.destroy', event.id));
+        router.delete(route('settings.calendar.destroy', { event: event.id }));
     }
 };
 </script>
