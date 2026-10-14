@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBrand;
 use Database\Factories\BrandProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,11 +10,12 @@ use Illuminate\Database\Eloquent\Model;
 class BrandProfile extends Model
 {
     /** @use HasFactory<BrandProfileFactory> */
-    use HasFactory;
+    use BelongsToBrand, HasFactory;
 
     protected $table = 'brand_profile';
 
     protected $fillable = [
+        'brand_id',
         'tone_of_voice',
         'audience',
         'base_hashtags',
@@ -31,11 +33,11 @@ class BrandProfile extends Model
     }
 
     /**
-     * Perfil de marca singleton: devuelve la única fila, creándola si no existe.
+     * Perfil de la marca activa, creado si no existe.
      */
     public static function current(): self
     {
-        return static::firstOrCreate([], [
+        return Brand::current()->profile()->firstOrCreate([], [
             'tone_of_voice' => '',
             'audience' => '',
             'base_hashtags' => [],

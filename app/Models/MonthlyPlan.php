@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBrand;
 use Database\Factories\MonthlyPlanFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class MonthlyPlan extends Model
 {
     /** @use HasFactory<MonthlyPlanFactory> */
-    use HasFactory;
+    use BelongsToBrand, HasFactory;
 
     protected $fillable = [
+        'brand_id',
         'year',
         'month',
         'status',

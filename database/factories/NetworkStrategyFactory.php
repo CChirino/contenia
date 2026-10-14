@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\Network;
+use App\Models\Brand;
 use App\Models\NetworkStrategy;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,6 +20,7 @@ class NetworkStrategyFactory extends Factory
     public function definition(): array
     {
         return [
+            'brand_id' => fn () => app()->bound('brand') ? app('brand')->id : Brand::factory(),
             'network' => fake()->unique()->randomElement(Network::cases()),
             'posts_per_week' => fake()->numberBetween(1, 7),
             'preferred_formats' => ['image'],

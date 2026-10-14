@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Brand;
 use App\Models\BrandProfile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,6 +19,7 @@ class BrandProfileFactory extends Factory
     public function definition(): array
     {
         return [
+            'brand_id' => fn () => app()->bound('brand') ? app('brand')->id : Brand::factory(),
             'tone_of_voice' => fake()->sentence(),
             'audience' => fake()->sentence(),
             'base_hashtags' => ['#sabere', '#educacion'],

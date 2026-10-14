@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Models\Brand;
 use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
@@ -13,10 +14,37 @@ use Illuminate\Database\Seeder;
 class DefaultsSeeder extends Seeder
 {
     /**
-     * Valores iniciales de marca, estrategias, pilares y calendario (spec §4).
+     * Valores iniciales por marca: perfil, estrategias y pilares. Los feriados
+     * son globales (brand_id null) y no se duplican por marca.
+     */
+    public static function forBrand(Brand $brand): void
+    {
+        app()->instance('brand', $brand);
+
+        $brand->profile()->firstOrCreate([], [
+            'tone_of_voice' => '',
+            'audience' => '',
+            'base_hashtags' => [],
+            'cta' => '',
+            'url' => '',
+            'palette' => [],
+        ]);
+
+        foreach (Network::cases() as $network) {
+            NetworkStrategy::firstOrCreate(
+                ['network' => $network->value],
+                ['posts_per_week' => 0, 'preferred_formats' => [], 'focus' => '']
+            );
+        }
+    }
+
+    /**
+     * Contenido semilla de Saberé (perfil completo, estrategias y pilares).
      */
     public function run(): void
     {
+        app()->instance('brand', Brand::findOrFail(1));
+
         BrandProfile::current()->update([
             'tone_of_voice' => 'Cercano, profesional y optimista. Hablamos de tú a tú con la comunidad educativa, sin tecnicismos innecesarios, con orgullo por la educación venezolana.',
             'audience' => 'Docentes, directivos y personal administrativo de colegios privados en Venezuela; también representantes interesados en la gestión escolar.',

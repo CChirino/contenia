@@ -6,6 +6,7 @@ use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Enums\PostIcon;
 use App\Enums\PostStatus;
+use App\Models\Brand;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
 use App\Models\Post;
@@ -26,10 +27,15 @@ class PostFactory extends Factory
         $network = fake()->randomElement(Network::cases());
 
         return [
-            'monthly_plan_id' => MonthlyPlan::factory(),
+            'brand_id' => fn () => app()->bound('brand') ? app('brand')->id : Brand::factory(),
+            'monthly_plan_id' => fn (array $attributes) => MonthlyPlan::factory([
+                'brand_id' => $attributes['brand_id'],
+            ]),
+            'content_pillar_id' => fn (array $attributes) => ContentPillar::factory([
+                'brand_id' => $attributes['brand_id'],
+            ]),
             'scheduled_at' => fake()->dateTimeBetween('now', '+1 month'),
             'network' => $network,
-            'content_pillar_id' => ContentPillar::factory(),
             'format' => fake()->randomElement(PostFormat::allowedFor($network)),
             'hook' => fake()->sentence(),
             'copy' => fake()->paragraph(),

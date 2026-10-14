@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Brand;
 use App\Models\LlmLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,6 +19,7 @@ class LlmLogFactory extends Factory
     public function definition(): array
     {
         return [
+            'brand_id' => fn () => app()->bound('brand') ? app('brand')->id : Brand::factory(),
             'purpose' => fake()->word(),
             'prompt' => fake()->paragraph(),
             'response' => fake()->paragraph(),
