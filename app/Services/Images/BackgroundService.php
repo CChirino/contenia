@@ -17,7 +17,7 @@ class BackgroundService
      */
     public function for(Post $post, bool $fresh = false): string
     {
-        $relative = "assets/{$post->id}/bg.png";
+        $relative = $post->assetPath('bg.png');
         $absolute = Storage::disk('local')->path($relative);
 
         if (! $fresh && is_file($absolute)) {

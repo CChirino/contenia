@@ -70,6 +70,20 @@ class Post extends Model
         return $this->belongsTo(MonthlyPlan::class);
     }
 
+    /**
+     * Directorio de assets del post en el disco local:
+     * storage/app/brands/{brand_id}/posts/{post_id}
+     */
+    public function assetDir(): string
+    {
+        return "brands/{$this->brand_id}/posts/{$this->id}";
+    }
+
+    public function assetPath(string $file): string
+    {
+        return $this->assetDir().'/'.$file;
+    }
+
     public function contentPillar(): BelongsTo
     {
         return $this->belongsTo(ContentPillar::class);

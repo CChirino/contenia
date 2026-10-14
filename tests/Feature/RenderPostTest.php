@@ -56,7 +56,7 @@ class RenderPostTest extends TestCase
         $post->refresh();
         $this->assertSame(PostStatus::Rendered, $post->status);
         $this->assertSame(['frame-01.png'], $post->frames);
-        $this->assertSame("assets/{$post->id}/frame-01.png", $post->asset_path);
+        $this->assertSame($post->assetPath('frame-01.png'), $post->asset_path);
         $this->assertNotNull($post->rendered_at);
         $this->assertNull($post->render_error);
         $this->assertSame('fake', $post->background_source);
@@ -229,7 +229,7 @@ class RenderPostTest extends TestCase
     public function test_assets_show_serves_signed_file(): void
     {
         $post = $this->makePost(PostStatus::Rendered);
-        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png-bytes');
+        Storage::disk('local')->put($post->assetPath('frame-01.png'), 'png-bytes');
 
         $url = URL::temporarySignedRoute('assets.show', now()->addMinute(), [
             'post' => $post->id,
@@ -243,7 +243,7 @@ class RenderPostTest extends TestCase
     {
         $post = $this->makePost(PostStatus::Rendered);
         $post->update(['frames' => ['frame-01.png']]);
-        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png-bytes');
+        Storage::disk('local')->put($post->assetPath('frame-01.png'), 'png-bytes');
 
         $this->actingAs($this->user())
             ->get(route('posts.download', ['post' => $post]))
@@ -255,8 +255,8 @@ class RenderPostTest extends TestCase
     {
         $post = $this->makePost(PostStatus::Rendered);
         $post->update(['frames' => ['frame-01.png', 'frame-02.png']]);
-        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'a');
-        Storage::disk('local')->put("assets/{$post->id}/frame-02.png", 'b');
+        Storage::disk('local')->put($post->assetPath('frame-01.png'), 'a');
+        Storage::disk('local')->put($post->assetPath('frame-02.png'), 'b');
 
         $response = $this->actingAs($this->user())
             ->get(route('posts.download', ['post' => $post]))
@@ -291,7 +291,7 @@ class RenderPostTest extends TestCase
 
         $post->refresh();
         $this->assertSame(PostStatus::Rendered, $post->status);
-        $this->assertSame("assets/{$post->id}/final.mp4", $post->asset_path);
+        $this->assertSame($post->assetPath('final.mp4'), $post->asset_path);
         $this->assertCount(1, $assembler->calls);
         $this->assertCount(count($post->frames), $assembler->calls[0]['frames']);
         $this->assertSame([1080, 1920], [$assembler->calls[0]['width'], $assembler->calls[0]['height']]);
@@ -312,15 +312,15 @@ class RenderPostTest extends TestCase
         );
 
         $this->assertCount(0, $assembler->calls);
-        $this->assertSame("assets/{$post->id}/frame-01.png", $post->fresh()->asset_path);
+        $this->assertSame($post->assetPath('frame-01.png'), $post->fresh()->asset_path);
     }
 
     public function test_download_video_returns_mp4(): void
     {
         $post = $this->makePost(PostStatus::Rendered, PostFormat::Video);
         $post->update(['network' => Network::TikTok]);
-        Storage::disk('local')->put("assets/{$post->id}/final.mp4", 'mp4-bytes');
-        Storage::disk('local')->put("assets/{$post->id}/frame-01.png", 'png');
+        Storage::disk('local')->put($post->assetPath('final.mp4'), 'mp4-bytes');
+        Storage::disk('local')->put($post->assetPath('frame-01.png'), 'png');
 
         $response = $this->actingAs($this->user())
             ->get(route('posts.download', ['post' => $post]))

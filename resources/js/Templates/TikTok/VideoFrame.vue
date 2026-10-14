@@ -11,6 +11,8 @@ const props = defineProps<{
     photoHeight: number;
     icon?: string | null;
     logoUrl: string;
+    wordmark: string;
+    palette: Record<string, string>;
     brand: { url?: string | null; cta?: string | null };
 }>();
 
@@ -25,19 +27,21 @@ const slide = computed(() => slideAt(props.post, props.frame - 1));
         :photo-height="photoHeight"
         :icon="icon"
         :logo-url="logoUrl"
+        :wordmark="wordmark"
+        :palette="palette"
         :brand-url="brand.url"
         :pillar="post.content_pillar?.name"
         :safe-top="220"
         :safe-bottom="320"
     >
         <div class="flex flex-col items-center text-center">
-            <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />
-            <h1 class="text-[72px] font-bold leading-tight text-sabere-light">{{ slide.title }}</h1>
-            <p class="mt-8 text-[40px] leading-snug text-sabere-light/85">{{ slide.body }}</p>
+            <div class="mb-8 h-1.5 w-16 bg-[var(--brand-accent)]" />
+            <h1 class="text-[72px] font-bold leading-tight text-[color:var(--brand-light)]">{{ slide.title }}</h1>
+            <p class="mt-8 text-[40px] leading-snug text-[color:color-mix(in_srgb,var(--brand-light)_85%,transparent)]">{{ slide.body }}</p>
         </div>
 
         <template #footer-extra>
-            <span class="text-[28px] text-sabere-light/60">{{ frame }}/{{ framesTotal }}</span>
+            <span class="text-[28px] text-[color:color-mix(in_srgb,var(--brand-light)_60%,transparent)]">{{ frame }}/{{ framesTotal }}</span>
         </template>
     </BrandFrame>
 </template>

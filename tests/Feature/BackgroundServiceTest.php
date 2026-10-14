@@ -43,7 +43,7 @@ class BackgroundServiceTest extends TestCase
         $path = app(BackgroundService::class)->for($post);
 
         $this->assertFileExists($path);
-        $this->assertStringEndsWith("assets/{$post->id}/bg.png", $path);
+        $this->assertStringEndsWith($post->assetPath('bg.png'), $path);
         $this->assertSame('fake', $post->fresh()->background_source);
     }
 
@@ -83,7 +83,7 @@ class BackgroundServiceTest extends TestCase
         $path = app(BackgroundService::class)->for($post);
 
         $this->assertFileExists($path);
-        $info = getimagesizefromstring(Storage::disk('local')->get("assets/{$post->id}/bg.png"));
+        $info = getimagesizefromstring(Storage::disk('local')->get($post->assetPath('bg.png')));
         $this->assertSame(1200, $info[0]); // plantilla linkedin/image = 1200x660 (photoHeight)
         $this->assertSame(660, $info[1]);
         $this->assertSame('geometric', $post->fresh()->background_source);

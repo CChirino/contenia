@@ -157,7 +157,7 @@ class PlanController extends Controller
         );
 
         $frames = collect($post->frames ?? [])
-            ->filter(fn ($file) => Storage::disk('local')->exists("assets/{$post->id}/{$file}"))
+            ->filter(fn ($file) => Storage::disk('local')->exists($post->assetPath($file)))
             ->map($sign)
             ->values()
             ->all();

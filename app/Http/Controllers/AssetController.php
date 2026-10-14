@@ -18,7 +18,7 @@ class AssetController extends Controller
         abort_unless($post->brand_id === $brand->id, 403);
         abort_unless(preg_match(self::ALLOWED_PATTERN, $file), 404);
 
-        $path = "assets/{$post->id}/{$file}";
+        $path = $post->assetPath($file);
 
         abort_unless(Storage::disk('local')->exists($path), 404);
 

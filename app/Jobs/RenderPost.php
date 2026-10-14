@@ -53,14 +53,14 @@ class RenderPost implements ShouldQueue
 
             $frames = $renderer->render($post);
 
-            $assetPath = "assets/{$post->id}/frame-01.png";
+            $assetPath = $post->assetPath('frame-01.png');
 
             // Bloque B: reel/video ensambla final.mp4 a partir de los frames.
             if (in_array($post->format, [PostFormat::Reel, PostFormat::Video], true)) {
-                $outDir = Storage::disk('local')->path("assets/{$post->id}");
+                $outDir = Storage::disk('local')->path($post->assetDir());
                 $framePaths = array_map(fn ($f) => "{$outDir}/{$f}", $frames);
                 $assembler->assemble($framePaths, "{$outDir}/final.mp4", $template->width, $template->height);
-                $assetPath = "assets/{$post->id}/final.mp4";
+                $assetPath = $post->assetPath('final.mp4');
             }
 
             $post->forceFill([

@@ -59,14 +59,14 @@ class RenderPostRealTest extends TestCase
             $post->refresh();
             $this->assertSame(PostStatus::Rendered, $post->status, $post->render_error ?? '');
 
-            $path = Storage::disk('local')->path("assets/{$post->id}/frame-01.png");
+            $path = Storage::disk('local')->path($post->assetPath('frame-01.png'));
             $this->assertFileExists($path);
 
             $size = getimagesize($path);
             $this->assertSame(1200, $size[0]);
             $this->assertSame(1200, $size[1]);
         } finally {
-            Storage::disk('local')->deleteDirectory("assets/{$post->id}");
+            Storage::disk('local')->deleteDirectory($post->assetDir());
             $post->delete();
 
             config(['database.connections.mysql.database' => $originalDb]);

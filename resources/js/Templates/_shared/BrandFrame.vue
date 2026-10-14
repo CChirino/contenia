@@ -11,6 +11,10 @@ const props = withDefaults(
         /** Alto del bloque de foto en px (según plantilla) */
         photoHeight: number;
         logoUrl: string;
+        /** Texto del wordmark junto al logo (p. ej. «Saberé.») */
+        wordmark?: string;
+        /** Colores de marca: dark, light, accent, secondary */
+        palette?: Record<string, string>;
         brandUrl?: string | null;
         pillar?: string | null;
         icon?: string | null;
@@ -21,6 +25,13 @@ const props = withDefaults(
     }>(),
     {
         photoUrl: null,
+        wordmark: 'Saberé.',
+        palette: () => ({
+            dark: '#1A2A42',
+            light: '#F8F5F0',
+            accent: '#27C2A5',
+            secondary: '#7854D2',
+        }),
         brandUrl: null,
         pillar: null,
         icon: 'lightbulb',
@@ -45,8 +56,12 @@ const iconSize = computed(() => (props.compact ? 68 : 96));
 const paths = computed(() => iconPaths(props.icon));
 
 const containerStyle = computed(() => ({
-    width: `${props.width}px`,
-    height: `${props.height}px`,
+    'width': `${props.width}px`,
+    'height': `${props.height}px`,
+    '--brand-dark': props.palette.dark ?? '#1A2A42',
+    '--brand-light': props.palette.light ?? '#F8F5F0',
+    '--brand-accent': props.palette.accent ?? '#27C2A5',
+    '--brand-secondary': props.palette.secondary ?? '#7854D2',
 }));
 
 const columnStyle = computed(() => ({
@@ -59,7 +74,7 @@ const circleStyle = computed(() => ({
     right: '64px',
     width: `${circleSize.value}px`,
     height: `${circleSize.value}px`,
-    background: '#7854D2',
+    background: 'var(--brand-secondary)',
 }));
 
 onMounted(async () => {
@@ -91,20 +106,20 @@ onMounted(async () => {
         <div
             v-else
             class="absolute inset-x-0 top-0"
-            :style="{ height: `${photoH}px`, background: 'linear-gradient(135deg, #27C2A5, #7854D2)' }"
+            :style="{ height: `${photoH}px`, background: 'linear-gradient(135deg, var(--brand-accent), var(--brand-secondary))' }"
         />
 
-        <!-- Costura teal + panel de marca -->
+        <!-- Costura de acento + panel de marca -->
         <div
             class="absolute inset-x-0"
-            :style="{ top: `${photoH}px`, height: '8px', background: '#27C2A5' }"
+            :style="{ top: `${photoH}px`, height: '8px', background: 'var(--brand-accent)' }"
         />
         <div
             class="absolute inset-x-0 bottom-0"
-            :style="{ top: `${photoH}px`, background: '#1A2A42' }"
+            :style="{ top: `${photoH}px`, background: 'var(--brand-dark)' }"
         />
 
-        <!-- Círculo púrpura con icono, mordiendo la foto -->
+        <!-- Círculo secundario con icono, mordiendo la foto -->
         <div
             class="absolute flex items-center justify-center rounded-full"
             :style="circleStyle"
@@ -126,10 +141,10 @@ onMounted(async () => {
         <div class="relative flex h-full flex-col px-16" :style="columnStyle">
             <div
                 class="flex w-fit items-center gap-4 rounded-full px-6 py-4"
-                style="background: rgba(26, 42, 66, 0.75)"
+                :style="{ background: 'color-mix(in srgb, var(--brand-dark) 75%, transparent)' }"
             >
-                <img :src="logoUrl" alt="Saberé" class="h-[72px] w-[72px]">
-                <span class="text-[40px] font-semibold text-sabere-light">Saberé.</span>
+                <img :src="logoUrl" :alt="wordmark" class="h-[72px] w-[72px]">
+                <span class="text-[40px] font-semibold text-[color:var(--brand-light)]">{{ wordmark }}</span>
             </div>
 
             <div class="relative flex flex-1 flex-col justify-end">
@@ -138,12 +153,16 @@ onMounted(async () => {
 
             <div class="relative z-10 mt-8 flex items-center justify-between">
                 <span class="flex items-center gap-6">
-                    <span v-if="brandUrl" class="text-[28px] text-sabere-light/70">{{ brandUrl }}</span>
+                    <span
+                        v-if="brandUrl"
+                        class="text-[28px]"
+                        :style="{ color: 'color-mix(in srgb, var(--brand-light) 70%, transparent)' }"
+                    >{{ brandUrl }}</span>
                     <slot name="footer-extra" />
                 </span>
                 <span
                     v-if="pillar"
-                    class="rounded-full bg-sabere-purple px-5 py-2 text-[24px] font-medium text-white"
+                    class="rounded-full bg-[var(--brand-secondary)] px-5 py-2 text-[24px] font-medium text-white"
                 >{{ pillar }}</span>
             </div>
         </div>

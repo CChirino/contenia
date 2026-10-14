@@ -30,7 +30,7 @@ class RenderFrameController extends Controller
         abort_if($frame < 1 || $frame > $framesTotal, 404);
 
         $post->loadMissing('contentPillar');
-        $brand = BrandProfile::current();
+        $profile = BrandProfile::current();
 
         return Inertia::render('Render/Frame', [
             'template' => [
@@ -51,17 +51,19 @@ class RenderFrameController extends Controller
             ],
             'backgroundUrl' => $this->backgroundUrl($post, $frame, $template->usesAiBackground),
             'icon' => $post->icon?->value ?? 'lightbulb',
-            'logoUrl' => route('brand.logo'),
+            'logoUrl' => route('brands.logo', ['brand' => $brand->slug]),
+            'wordmark' => $brand->name.'.',
+            'palette' => $brand->palette,
             'brand' => [
-                'url' => $brand->url,
-                'cta' => $brand->cta,
+                'url' => $profile->url,
+                'cta' => $profile->cta,
             ],
         ]);
     }
 
     private function backgroundUrl(Post $post, int $frame, bool $usesAi): ?string
     {
-        if (! $usesAi || ! Storage::disk('local')->exists("assets/{$post->id}/bg.png")) {
+        if (! $usesAi || ! Storage::disk('local')->exists($post->assetPath('bg.png'))) {
             return null;
         }
 

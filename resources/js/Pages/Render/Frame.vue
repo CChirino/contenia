@@ -9,6 +9,8 @@ const props = defineProps<{
     backgroundUrl?: string | null;
     icon?: string | null;
     logoUrl: string;
+    wordmark: string;
+    palette: Record<string, string>;
     brand: { url?: string | null; cta?: string | null };
 }>();
 
@@ -34,6 +36,8 @@ const component = computed(() => components[props.template.component]);
         :photo-height="template.photo_height"
         :icon="icon"
         :logo-url="logoUrl"
+        :wordmark="wordmark"
+        :palette="palette"
         :brand="brand"
     />
 </template>

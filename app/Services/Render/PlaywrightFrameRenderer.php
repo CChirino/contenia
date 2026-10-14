@@ -13,7 +13,7 @@ class PlaywrightFrameRenderer implements FrameRenderer
     {
         $template = TemplateRegistry::for($post->network, $post->format);
         $frames = TemplateRegistry::frameCount($post);
-        $outDir = Storage::disk('local')->path("assets/{$post->id}");
+        $outDir = Storage::disk('local')->path($post->assetDir());
 
         // La firma cubre la URL completa (incluido el frame), así que se
         // genera una URL firmada por frame y se pasan vía --urls-file.
@@ -54,7 +54,7 @@ class PlaywrightFrameRenderer implements FrameRenderer
         for ($i = 1; $i <= $frames; $i++) {
             $name = sprintf('frame-%02d.png', $i);
 
-            if (! Storage::disk('local')->exists("assets/{$post->id}/{$name}")) {
+            if (! Storage::disk('local')->exists($post->assetPath($name))) {
                 throw new RenderException("El render no produjo {$name}.");
             }
 

@@ -11,6 +11,8 @@ const props = defineProps<{
     photoHeight: number;
     icon?: string | null;
     logoUrl: string;
+    wordmark: string;
+    palette: Record<string, string>;
     brand: { url?: string | null; cta?: string | null };
 }>();
 
@@ -25,11 +27,13 @@ const slide = computed(() => slideAt(props.post, 0));
         :photo-height="photoHeight"
         :icon="icon"
         :logo-url="logoUrl"
+        :wordmark="wordmark"
+        :palette="palette"
         :brand-url="brand.url"
         :pillar="post.content_pillar?.name"
     >
-        <div class="mb-8 h-1.5 w-16 bg-sabere-accent" />
-        <h1 class="text-[64px] font-bold leading-tight text-sabere-light">“{{ slide.title }}”</h1>
-        <p class="mt-8 text-[38px] leading-snug text-sabere-light/85">{{ slide.body }}</p>
+        <div class="mb-8 h-1.5 w-16 bg-[var(--brand-accent)]" />
+        <h1 class="text-[64px] font-bold leading-tight text-[color:var(--brand-light)]">“{{ slide.title }}”</h1>
+        <p class="mt-8 text-[38px] leading-snug text-[color:color-mix(in_srgb,var(--brand-light)_85%,transparent)]">{{ slide.body }}</p>
     </BrandFrame>
 </template>

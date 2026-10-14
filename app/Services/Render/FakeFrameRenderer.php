@@ -27,7 +27,7 @@ class FakeFrameRenderer implements FrameRenderer
 
         for ($i = 1; $i <= $frames; $i++) {
             $name = sprintf('frame-%02d.png', $i);
-            Storage::disk('local')->put("assets/{$post->id}/{$name}", $this->tinyPng());
+            Storage::disk('local')->put($post->assetPath($name), $this->tinyPng());
             $names[] = $name;
         }
 

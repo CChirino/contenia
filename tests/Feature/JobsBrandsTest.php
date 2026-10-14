@@ -65,4 +65,81 @@ class JobsBrandsTest extends TestCase
                 ->where('brand_id', 1)->where('year', 2026)->where('month', 10)->first()
         );
     }
+
+    /**
+     * RenderPost fija la marca del post y escribe los assets bajo
+     * brands/{brand_id}/posts/{id} de la marca del post.
+     */
+    public function test_render_post_writes_assets_under_its_own_brand(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $this->app->instance(\App\Services\Render\FrameRenderer::class, new \App\Services\Render\FakeFrameRenderer);
+
+        $brandB = Brand::factory()->create();
+        app()->instance('brand', $brandB);
+        $post = \App\Models\Post::factory()->create([
+            'brand_id' => $brandB->id,
+            'network' => \App\Enums\Network::LinkedIn,
+            'format' => \App\Enums\PostFormat::Image,
+            'status' => \App\Enums\PostStatus::Approved,
+        ]);
+
+        // Contexto vuelve a Saberé; el job debe usar la marca del post.
+        app()->instance('brand', Brand::firstOrFail());
+
+        (new \App\Jobs\RenderPost($post))->handle(
+            app(\App\Services\Render\FrameRenderer::class),
+            app(\App\Services\Images\BackgroundService::class),
+            app(\App\Services\Render\VideoAssembler::class),
+        );
+
+        \Illuminate\Support\Facades\Storage::disk('local')
+            ->assertExists("brands/{$brandB->id}/posts/{$post->id}/frame-01.png");
+        $this->assertSame(
+            "brands/{$brandB->id}/posts/{$post->id}/frame-01.png",
+            $post->fresh()->asset_path
+        );
+    }
+
+    /**
+     * RegeneratePost usa la marca del post para construir el prompt (perfil,
+     * pilares y estrategias de SU marca).
+     */
+    public function test_regenerate_post_uses_its_own_brand_context(): void
+    {
+        $brandB = Brand::factory()->create();
+        DefaultsSeeder::forBrand($brandB);
+        ContentPillar::factory()->create([
+            'brand_id' => $brandB->id,
+            'name' => 'Pilar B',
+            'weight' => 100,
+        ]);
+
+        app()->instance('brand', $brandB);
+        $post = \App\Models\Post::factory()->create([
+            'brand_id' => $brandB->id,
+            'status' => \App\Enums\PostStatus::Drafted,
+        ]);
+
+        // Contexto vuelve a Saberé; el job debe usar la marca del post.
+        app()->instance('brand', Brand::firstOrFail());
+
+        $fake = (new FakeLlmClient)->withResponse([
+            'hook' => 'Hook regenerado B',
+            'copy' => 'Copy regenerado B',
+            'hashtags' => ['#B'],
+            'design_payload' => ['slides' => [['title' => 'T', 'body' => 'B']]],
+            'background_prompt' => 'an office',
+        ]);
+        $this->app->instance(LlmClient::class, $fake);
+
+        (new \App\Jobs\RegeneratePost($post))->handle(
+            app(LlmClient::class),
+            app(\App\Services\Planning\PromptBuilder::class),
+        );
+
+        $post->refresh();
+        $this->assertSame('Hook regenerado B', $post->hook);
+        $this->assertSame($brandB->id, $post->brand_id);
+    }
 }

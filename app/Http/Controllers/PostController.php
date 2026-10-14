@@ -89,7 +89,7 @@ class PostController extends Controller
     public function download(Brand $brand, Post $post): BinaryFileResponse|StreamedResponse
     {
         // Video: el MP4 es la descarga principal.
-        $final = "assets/{$post->id}/final.mp4";
+        $final = $post->assetPath('final.mp4');
 
         if (in_array($post->format, [PostFormat::Reel, PostFormat::Video], true)
             && Storage::disk('local')->exists($final)) {
@@ -97,14 +97,14 @@ class PostController extends Controller
         }
 
         $frames = collect($post->frames ?? [])
-            ->filter(fn ($file) => Storage::disk('local')->exists("assets/{$post->id}/{$file}"))
+            ->filter(fn ($file) => Storage::disk('local')->exists($post->assetPath($file)))
             ->values();
 
         abort_if($frames->isEmpty(), 404, 'El post no tiene frames renderizados.');
 
         if ($frames->count() === 1) {
             return Storage::disk('local')->download(
-                "assets/{$post->id}/{$frames->first()}",
+                $post->assetPath($frames->first()),
                 "post-{$post->id}.png",
             );
         }
@@ -114,7 +114,7 @@ class PostController extends Controller
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         foreach ($frames as $file) {
-            $zip->addFile(Storage::disk('local')->path("assets/{$post->id}/{$file}"), $file);
+            $zip->addFile(Storage::disk('local')->path($post->assetPath($file)), $file);
         }
 
         $zip->close();
