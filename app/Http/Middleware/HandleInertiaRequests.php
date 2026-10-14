@@ -38,7 +38,10 @@ class HandleInertiaRequests extends Middleware
             // Closures: se evalúan al construir la respuesta, cuando el
             // middleware `brand` ya dejó la marca activa en el contenedor.
             'brand' => fn () => app()->bound('brand')
-                ? app('brand')->only('id', 'slug', 'name', 'palette')
+                ? [
+                    ...app('brand')->only('id', 'slug', 'name', 'palette'),
+                    'logo_url' => route('brands.logo', ['brand' => app('brand')->slug]),
+                ]
                 : null,
             'brands' => fn () => $this->assignedBrands($request),
         ];
@@ -62,6 +65,9 @@ class HandleInertiaRequests extends Middleware
             ? Brand::orderBy('name')->get(['id', 'slug', 'name'])
             : $user->brands()->orderBy('name')->get(['brands.id', 'slug', 'name']);
 
-        return $brands->map->only('id', 'slug', 'name')->all();
+        return $brands->map(fn (Brand $brand) => [
+            ...$brand->only('id', 'slug', 'name'),
+            'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+        ])->all();
     }
 }

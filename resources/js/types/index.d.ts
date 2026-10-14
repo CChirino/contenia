@@ -3,6 +3,7 @@ export interface User {
     name: string;
     email: string;
     email_verified_at?: string;
+    role?: 'admin' | 'operator';
 }
 
 export interface BrandProfile {
@@ -113,6 +114,14 @@ export interface ActiveBrand {
     slug: string;
     name: string;
     palette: Record<string, string>;
+    logo_url: string;
+}
+
+export interface BrandSummary {
+    id: number;
+    slug: string;
+    name: string;
+    logo_url: string;
 }
 
 export type PageProps<
@@ -122,5 +131,5 @@ export type PageProps<
         user: User;
     };
     brand: ActiveBrand | null;
-    brands: { id: number; slug: string; name: string }[];
+    brands: BrandSummary[];
 };

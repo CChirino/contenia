@@ -33,6 +33,26 @@ Route::get('/brand/logo.svg', function () {
     return response()->file(resource_path('brand/logo.svg'), ['Content-Type' => 'image/svg+xml']);
 })->name('brand.logo');
 
+// Logo por marca: público y solo lectura (Chromium lo usa en el render).
+Route::get('/b/{brand:slug}/logo', \App\Http\Controllers\BrandLogoController::class)
+    ->name('brands.logo');
+
+// Administración de marcas y usuarios: solo admin.
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/brands', [\App\Http\Controllers\Admin\BrandController::class, 'index'])->name('brands.index');
+    Route::get('/brands/create', [\App\Http\Controllers\Admin\BrandController::class, 'create'])->name('brands.create');
+    Route::post('/brands', [\App\Http\Controllers\Admin\BrandController::class, 'store'])->name('brands.store');
+    Route::get('/brands/{brand}/edit', [\App\Http\Controllers\Admin\BrandController::class, 'edit'])->name('brands.edit');
+    Route::put('/brands/{brand}', [\App\Http\Controllers\Admin\BrandController::class, 'update'])->name('brands.update');
+    Route::post('/brands/{brand}/toggle', [\App\Http\Controllers\Admin\BrandController::class, 'toggle'])->name('brands.toggle');
+
+    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+});
+
 Route::get('/render/{brand:slug}/{post}/{frame}', RenderFrameController::class)
     ->middleware('signed')->name('render.frame');
 Route::get('/assets/{brand:slug}/{post}/{file}', AssetController::class)

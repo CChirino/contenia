@@ -4,12 +4,27 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { useBrandRoute } from '@/composables/useBrandRoute';
+import { computed } from 'vue';
 
 const route = useBrandRoute();
+const page = usePage();
 
 const showingNavigationDropdown = ref(false);
+
+const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
+const activeBrand = computed(() => page.props.brand);
+const assignedBrands = computed(() => page.props.brands ?? []);
+
+const brandPlanUrl = (slug: string) => {
+    const now = new Date();
+    return route('plans.show', {
+        brand: slug,
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+    });
+};
 </script>
 
 <template>
@@ -33,6 +48,55 @@ const showingNavigationDropdown = ref(false);
                             <div
                                 class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex"
                             >
+                                <!-- Selector de marca -->
+                                <div v-if="activeBrand" class="relative flex items-stretch">
+                                    <Dropdown align="left" width="48">
+                                        <template #trigger>
+                                            <button
+                                                type="button"
+                                                class="inline-flex h-full items-center gap-2 border-b-2 border-transparent px-1 pt-1 text-sm font-medium leading-5 text-gray-700 transition duration-150 ease-in-out hover:border-gray-300 focus:outline-none"
+                                            >
+                                                <img
+                                                    :src="activeBrand.logo_url"
+                                                    :alt="activeBrand.name"
+                                                    class="h-5 w-5 object-contain"
+                                                />
+                                                {{ activeBrand.name }}
+                                                <svg
+                                                    class="-me-0.5 ms-1 h-4 w-4"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 20 20"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        fill-rule="evenodd"
+                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                        clip-rule="evenodd"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </template>
+
+                                        <template #content>
+                                            <DropdownLink
+                                                v-for="b in assignedBrands"
+                                                :key="b.id"
+                                                :href="brandPlanUrl(b.slug)"
+                                                as="a"
+                                            >
+                                                <span class="flex items-center gap-2">
+                                                    <img
+                                                        :src="b.logo_url"
+                                                        :alt="b.name"
+                                                        class="h-4 w-4 object-contain"
+                                                    />
+                                                    {{ b.name }}
+                                                </span>
+                                            </DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                </div>
+
                                 <NavLink
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard') || route().current('plans.*')"
@@ -80,6 +144,45 @@ const showingNavigationDropdown = ref(false);
                                             </DropdownLink>
                                             <DropdownLink :href="route('settings.calendar.index')">
                                                 Calendario
+                                            </DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                </div>
+
+                                <div v-if="isAdmin" class="relative flex items-stretch">
+                                    <Dropdown align="left" width="48">
+                                        <template #trigger>
+                                            <button
+                                                type="button"
+                                                class="inline-flex h-full items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
+                                                :class="
+                                                    route().current('brands.*') || route().current('users.*')
+                                                        ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
+                                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700'
+                                                "
+                                            >
+                                                Administración
+                                                <svg
+                                                    class="-me-0.5 ms-2 h-4 w-4"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 20 20"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        fill-rule="evenodd"
+                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                        clip-rule="evenodd"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </template>
+
+                                        <template #content>
+                                            <DropdownLink :href="route('brands.index')">
+                                                Marcas
+                                            </DropdownLink>
+                                            <DropdownLink :href="route('users.index')">
+                                                Usuarios
                                             </DropdownLink>
                                         </template>
                                     </Dropdown>
