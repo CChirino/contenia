@@ -6,8 +6,10 @@ Stack: Laravel 12 + Inertia + Vue 3 + TypeScript + Vite + Tailwind + MySQL (Lara
 
 Diseño completo y fases: `docs/superpowers/specs/2026-10-01-sabere-marketing-agent-design.md`.
 - **Fase 1 (implementada)**: base + grilla mensual (brand profile, pilares, estrategias por red, eventos de calendario, generación con LLM, calendario con aprobar/editar/regenerar).
-- **Fase 2 (pendiente)**: render de diseños (plantillas, fondos IA, Playwright + ffmpeg).
+- **Fase 2 (implementada)**: render de diseños (plantillas, fondos IA, Playwright + ffmpeg).
 - **Fase 3 (pendiente)**: publicación vía APIs oficiales (OAuth, publishers, scheduler).
+
+**Multi-marca (Fase 1 multimarca, implementada)**: una base de datos, `brand_id` en el dominio, marca activa por contenedor. Saberé es la marca `id=1`. Spec: `docs/superpowers/specs/2026-10-13-plataforma-multimarca-design.md`.
 
 ## Comandos
 
@@ -73,7 +75,7 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - `IMAGE_DRIVER=pollinations` usa la API vigente `gen.pollinations.ai/image/{prompt}` (`POLLINATIONS_API_KEY`, `POLLINATIONS_MODEL`, `POLLINATIONS_BASE_URL`). La clave debe ser `sk_...` de enter.pollinations.ai; la API legacy `image.pollinations.ai` está obsoleta (ignora el token y añade marca de agua).
 - Modelos sugeridos: `z-image-turbo` (default, buena adherencia a paleta y a "sin texto"), `flux` (alternativa barata).
 - La respuesta es JPEG con dimensiones aproximadas — `PollinationsGenerator` la normaliza a PNG exacto (cover). `geometric` es el fallback sin dependencias externas; `fake` va en `phpunit.xml`.
-- `BackgroundService::for($post)` genera `storage/app/assets/{id}/bg.png` (seed = post id, prompt = `background_prompt ?? hook` + `images.style_suffix`) y marca `posts.background_source`.
+- `BackgroundService::for($post)` genera `storage/app/brands/{brand_id}/posts/{post_id}/bg.png` (seed = post id, prompt = `background_prompt ?? hook` + `images.style_suffix`) y marca `posts.background_source`. La ruta la centraliza `Post::assetDir()` / `Post::assetPath($file)` — no construyas `assets/{id}` a mano.
 - Prueba rápida del driver: `./vendor/bin/sail artisan images:test [ancho] [alto] --prompt="..."` → guarda `storage/app/test-bg.png`.
 
 ## Video (reel/TikTok)
@@ -86,9 +88,24 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 ## Flujo: generar la grilla de un mes
 
 1. En **Configuración → Pilares de contenido**, la suma de pesos debe ser 100 (el indicador lo muestra; el endpoint devuelve 422 si no).
-2. En `/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** / **Completar mes** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`). El job recorre las semanas lunes–domingo recortadas al mes con una llamada LLM por semana, **solo en las semanas que no tienen ningún post** (no borra nada). El botón ↻ de cada fila regenera solo esa semana (reemplaza sus `drafted`, conserva aprobados). Si una semana falla conserva las demás y anota el fallo en `last_error` (JSON `[{from,to,message}]`; solo relanza si fallan todas).
+2. En `/b/{marca}/plans/{año}/{mes}` (o "Grilla" en el menú) pulsa **Generar grilla** / **Completar mes** — encola el job `GenerateMonthlyPlan` (`generating_at` marca el estado y la UI hace polling a `plans.status`). El job recorre las semanas lunes–domingo recortadas al mes con una llamada LLM por semana, **solo en las semanas que no tienen ningún post** (no borra nada). El botón ↻ de cada fila regenera solo esa semana (reemplaza sus `drafted`, conserva aprobados). Si una semana falla conserva las demás y anota el fallo en `last_error` (JSON `[{from,to,message}]`; solo relanza si fallan todas).
 3. El servicio `queue` de Sail procesa el job (si "Generando..." no avanza, comprueba `./vendor/bin/sail ps` — sin worker el job queda esperando en la tabla `jobs`). Tras cambiar código de los jobs, `./vendor/bin/sail restart queue` — un worker residente mantiene el código viejo cargado.
 4. Los posts quedan en `drafted`; desde el drawer de cada post se puede **Aprobar**, **Editar** o **Regenerar** (job `RegeneratePost`, también encolado — corre el worker de nuevo).
+
+## Marcas
+
+- Tabla `brands`: Saberé = `id=1`, slug `sabere`. Planes en `plans` (Básico/Pro/Interno). `brand_user` asigna operadores; `users.role` = `admin|operator`.
+- Toda la app cuelga de `/b/{brand:slug}/...` (plans, posts, settings). `/plans/{a}/{m}` antiguo → 301 a la marca del usuario (`last_brand_id` o primera asignada).
+- **Marca activa**: `SetActiveBrand` (alias `brand`) resuelve el slug, autoriza `BrandPolicy::view` (admin o asignado), hace `app()->instance('brand', $brand)` y guarda `last_brand_id`. `BrandScope` filtra las consultas del dominio cuando hay marca en el contenedor; `CalendarEvent` usa scope propio (null=o=activa). Va **antes** de `SubstituteBindings` (`prependToPriorityList` en `bootstrap/app.php`) para que el route-model-binding ya filtre → post de otra marca = 404.
+- **Jobs**: ningún job puede depender de `app('brand')` de sesión — cada `handle()` empieza con `app()->instance('brand', $model->brand)` (`GenerateMonthlyPlan`, `RegeneratePost`, `RenderPost`). El worker `queue` es residente: tras tocar código de jobs, `sail restart queue`.
+- **Comandos**: `plan:generate`, `posts:enrich-photos` y `render:post` aceptan `--brand=slug` (en `render:post` se deduce del post si falta).
+- **Admin**: `/brands` (crear/editar/pausar, sin borrado; logo SVG/PNG ≤1 MB) y `/users` (operadores, roles, asignación) bajo middleware `admin`. El selector de marca del nav lista las asignadas (todas para admin).
+- **Logo por marca**: `GET /b/{brand}/logo` (pública, solo lectura — Chromium la usa en el render) sirve `logo_path` o el SVG del repo.
+- **Paleta por marca**: `brands.palette` llega a las plantillas de render vía variables CSS `--brand-dark/light/accent/secondary` que `BrandFrame` fija en el contenedor (más `wordmark` = `brand.name.`). La UI de la app NO usa la paleta de marca: sigue con Tailwind `sabere-*`.
+- **Calendario**: feriados globales (`brand_id=null`) compartidos por todas las marcas — solo lectura para operadores, CRUD para admin; los eventos de la marca llevan `brand_id` activo (el servidor lo decide, ignora el del cliente).
+- **Crear una marca**: UI `/brands/create` (admin) o `DefaultsSeeder::forBrand($brand)` — siembra perfil vacío + estrategias por red; nunca duplica feriados globales.
+- **Assets por marca**: `storage/app/brands/{brand_id}/posts/{post_id}/` (frames, bg.png, final.mp4). Migración del layout plano viejo: `sail artisan brands:migrate-assets` (idempotente; reescribe `posts.asset_path`).
+- **Tests**: helpers `actingAsAdminFor(?Brand)` / `actingAsOperatorFor(?Brand)` en `TestCase` (setUp bindea Saberé; libera con `app()->forgetInstance('brand')`).
 
 ## Notas
 
