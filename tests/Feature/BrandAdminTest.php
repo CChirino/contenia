@@ -168,18 +168,40 @@ class BrandAdminTest extends TestCase
     public function test_brand_logo_route_serves_uploaded_logo_and_fallback(): void
     {
         Storage::fake('local');
-        $brand = Brand::factory()->create(['logo_path' => null]);
 
-        // Sin logo propio → SVG del repo.
-        $this->get("/b/{$brand->slug}/logo")
+        // Saberé sin logo propio → SVG del repo.
+        $sabere = Brand::firstOrFail();
+        $this->get("/b/{$sabere->slug}/logo")
             ->assertOk()
             ->assertHeader('Content-Type', 'image/svg+xml');
+
+        // Otra marca sin logo → SVG genérico con inicial y acento de marca.
+        $brand = Brand::factory()->create([
+            'name' => 'Zapatería',
+            'logo_path' => null,
+            'palette' => [
+                'dark' => '#2B1D3A',
+                'light' => '#FFF8F0',
+                'accent' => '#F2A541',
+                'secondary' => '#3E8E7E',
+            ],
+        ]);
+
+        $response = $this->get("/b/{$brand->slug}/logo");
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'image/svg+xml')
+            ->assertHeader('Cache-Control', 'max-age=3600, public');
+
+        $svg = $response->getContent();
+        $this->assertStringContainsString('Z', $svg);
+        $this->assertStringContainsString('#F2A541', $svg);
+        $this->assertStringContainsString('#2B1D3A', $svg);
+        $this->assertStringNotContainsString('Saberé', $svg);
 
         // Con logo propio → archivo de la marca.
         Storage::disk('local')->put("brands/{$brand->id}/logo.png", 'png-bytes');
         $brand->update(['logo_path' => "brands/{$brand->id}/logo.png"]);
 
-        $response = $this->get("/b/{$brand->slug}/logo");
-        $response->assertOk();
+        $this->get("/b/{$brand->slug}/logo")->assertOk();
     }
 }
