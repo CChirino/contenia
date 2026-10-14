@@ -20,6 +20,7 @@ class StoreCalendarEventRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'recurring' => ['boolean'],
             'no_posting' => ['boolean'],
+            'global' => ['boolean'],
         ];
     }
 }

@@ -17,18 +17,29 @@ class CalendarEventController extends Controller
     {
         return Inertia::render('Settings/Calendar', [
             'events' => CalendarEvent::orderBy('date')->get(),
+            'isAdmin' => request()->user()->isAdmin(),
         ]);
     }
 
     public function store(StoreCalendarEventRequest $request): RedirectResponse
     {
-        CalendarEvent::create($request->validated());
+        // El cliente no decide brand_id: admin + global=true → feriado global;
+        // cualquier otro caso → evento de la marca activa.
+        $isGlobal = $request->user()->isAdmin() && $request->boolean('global');
+
+        CalendarEvent::create([
+            ...$request->safe()->except('global'),
+            'brand_id' => $isGlobal ? null : Brand::current()->id,
+        ]);
 
         return redirect()->route('settings.calendar.index');
     }
 
     public function update(UpdateCalendarEventRequest $request, Brand $brand, CalendarEvent $event): RedirectResponse
     {
+        // Los feriados globales solo los edita un admin.
+        abort_if($event->brand_id === null && ! $request->user()->isAdmin(), 403);
+
         $event->update($request->validated());
 
         return redirect()->route('settings.calendar.index');
@@ -36,6 +47,8 @@ class CalendarEventController extends Controller
 
     public function destroy(Brand $brand, CalendarEvent $event): RedirectResponse
     {
+        abort_if($event->brand_id === null && ! request()->user()->isAdmin(), 403);
+
         $event->delete();
 
         return redirect()->route('settings.calendar.index');

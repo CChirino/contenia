@@ -35,6 +35,7 @@ export interface ContentPillar {
 
 export interface CalendarEvent {
     id: number;
+    brand_id: number | null;
     date: string;
     name: string;
     description: string | null;
