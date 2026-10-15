@@ -4,8 +4,12 @@ namespace App\Jobs;
 
 use App\Enums\PostFormat;
 use App\Enums\PostStatus;
+use App\Enums\QuotaAction;
+use App\Exceptions\QuotaExceededException;
+use App\Models\BrandUsage;
 use App\Models\Post;
 use App\Services\Images\BackgroundService;
+use App\Services\Quota\QuotaGuard;
 use App\Services\Render\FrameRenderer;
 use App\Services\Render\TemplateRegistry;
 use App\Services\Render\VideoAssembler;
@@ -14,6 +18,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -38,17 +43,43 @@ class RenderPost implements ShouldQueue
         // El job no depende de sesión: fija la marca del post.
         app()->instance('brand', $post->brand);
 
+        // La cuota computa contra el mes del contenido del post.
+        $year = $post->monthlyPlan->year;
+        $month = $post->monthlyPlan->month;
+        app()->instance('usage_period', [$year, $month]);
+
         $originalStatus = $post->status;
 
         if (! $this->force && ! in_array($originalStatus, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true)) {
             return;
         }
 
+        // Fondo nuevo: re-chequeo de cuota (concurrencia). Si el cupo se
+        // agotó tras el dispatch se aborta sin renderizar.
+        $quota = app(QuotaGuard::class);
+        if ($this->freshBackground) {
+            try {
+                $quota->check($post->brand, QuotaAction::ImageRefreshes, $year, $month);
+            } catch (QuotaExceededException $e) {
+                $post->forceFill([
+                    'render_requested_at' => null,
+                    'render_error' => collect($e->errors()['quota'] ?? [])->first(),
+                ])->save();
+
+                if (! $this->force) {
+                    return;
+                }
+            }
+        }
+
         try {
             $template = TemplateRegistry::for($post->network, $post->format);
+            $aiBackgroundUsed = false;
 
             if ($template->usesAiBackground) {
                 $backgrounds->for($post, $this->freshBackground);
+                $aiBackgroundUsed = $this->freshBackground
+                    && $post->background_source === config('images.driver');
             }
 
             $frames = $renderer->render($post);
@@ -84,7 +115,18 @@ class RenderPost implements ShouldQueue
                     : PostStatus::ClientApproved;
             }
 
-            $post->save();
+            DB::transaction(function () use ($post, $aiBackgroundUsed, $quota, $year, $month) {
+                $post->save();
+
+                // Solo un fondo nuevo generado por IA consume la cuota y
+                // cuenta como llamada de imagen (Pixabay/geométrico no).
+                if ($aiBackgroundUsed) {
+                    $quota->record($post->brand, QuotaAction::ImageRefreshes, $year, $month);
+                    BrandUsage::withoutGlobalScopes()
+                        ->whereKey($post->brand->usageFor($year, $month)->id)
+                        ->increment('image_calls');
+                }
+            });
         } catch (Throwable $e) {
             $post->forceFill([
                 'render_error' => $e->getMessage(),

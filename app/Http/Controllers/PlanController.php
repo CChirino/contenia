@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\QuotaAction;
 use App\Jobs\GenerateMonthlyPlan;
 use App\Models\Brand;
 use App\Models\ContentPillar;
@@ -11,6 +12,7 @@ use App\Models\MonthlyPlan;
 use App\Models\Post;
 use App\Models\ReviewItem;
 use App\Models\ReviewRequest;
+use App\Services\Quota\QuotaGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -104,6 +106,7 @@ class PlanController extends Controller
                 'generated_at' => $plan->generated_at?->toIso8601String(),
                 'generating_at' => $plan->generating_at?->toIso8601String(),
                 'last_error' => $plan->last_error,
+                'quota_notice' => $plan->quota_notice,
                 'posts_count' => $posts->count(),
             ] : null,
             'posts' => $posts,
@@ -111,6 +114,11 @@ class PlanController extends Controller
             'allowedFormats' => $allowedFormats,
             'weeks' => $weeks,
             'reviews' => $reviews,
+            'quota' => app(QuotaGuard::class)->summary($brand, $year, $month),
+            'allowed_networks' => collect(Network::cases())
+                ->filter(fn (Network $n) => app(QuotaGuard::class)->allowsNetwork($brand, $n))
+                ->map->value
+                ->values(),
         ]);
     }
 
@@ -130,6 +138,11 @@ class PlanController extends Controller
         );
 
         abort_if($plan->generating_at !== null, 409, 'Ya hay una generación en curso para este mes.');
+
+        // Cupo agotado de entrada → 422; si queda, el job recorta y avisa.
+        app(QuotaGuard::class)->check(
+            $brand, QuotaAction::PostsGenerated, $year, $month
+        );
 
         $plan->update(['generating_at' => now(), 'last_error' => null]);
 
@@ -154,6 +167,10 @@ class PlanController extends Controller
         );
 
         abort_if($plan->generating_at !== null, 409, 'Ya hay una generación en curso para este mes.');
+
+        app(QuotaGuard::class)->check(
+            $brand, QuotaAction::PostsGenerated, $year, $month
+        );
 
         $plan->update(['generating_at' => now(), 'last_error' => null]);
 

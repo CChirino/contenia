@@ -7,6 +7,7 @@ use App\Enums\PostFormat;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateNetworkStrategiesRequest;
 use App\Models\NetworkStrategy;
+use App\Services\Quota\QuotaGuard;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,9 +29,18 @@ class NetworkStrategyController extends Controller
 
     public function update(UpdateNetworkStrategiesRequest $request): RedirectResponse
     {
+        $quota = app(QuotaGuard::class);
+
         foreach ($request->validated()['strategies'] as $data) {
-            NetworkStrategy::whereKey($data['id'])->update([
-                'posts_per_week' => $data['posts_per_week'],
+            $strategy = NetworkStrategy::findOrFail($data['id']);
+
+            // Una red fuera del plan de la marca no puede tener cadencia.
+            $postsPerWeek = $quota->allowsNetwork(app('brand'), $strategy->network)
+                ? $data['posts_per_week']
+                : 0;
+
+            $strategy->update([
+                'posts_per_week' => $postsPerWeek,
                 'preferred_formats' => $data['preferred_formats'],
                 'focus' => $data['focus'],
             ]);

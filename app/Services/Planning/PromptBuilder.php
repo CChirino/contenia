@@ -10,6 +10,7 @@ use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
 use App\Models\NetworkStrategy;
 use App\Models\Post;
+use App\Services\Quota\QuotaGuard;
 use Carbon\CarbonImmutable;
 
 class PromptBuilder
@@ -19,13 +20,14 @@ class PromptBuilder
      * (rango $from..$to ya recortado al mes).
      *
      * @param  array<int, array{hook: string, pillar: string, network: string}>  $alreadyPlanned
+     * @param  array<string, int>|null  $maxPerNetwork  Tope de posts por red (cuota); null = sin tope.
      * @return array{system: string, user: string}
      */
-    public function forWeek(int $year, int $month, CarbonImmutable $from, CarbonImmutable $to, array $alreadyPlanned): array
+    public function forWeek(int $year, int $month, CarbonImmutable $from, CarbonImmutable $to, array $alreadyPlanned, ?array $maxPerNetwork = null): array
     {
         return [
             'system' => $this->systemPrompt(),
-            'user' => $this->weekUserPrompt($year, $month, $from, $to, $alreadyPlanned),
+            'user' => $this->weekUserPrompt($year, $month, $from, $to, $alreadyPlanned, $maxPerNetwork),
         ];
     }
 
@@ -68,8 +70,9 @@ class PromptBuilder
 
     /**
      * @param  array<int, array{hook: string, pillar: string, network: string}>  $alreadyPlanned
+     * @param  array<string, int>|null  $maxPerNetwork
      */
-    protected function weekUserPrompt(int $year, int $month, CarbonImmutable $from, CarbonImmutable $to, array $alreadyPlanned): string
+    protected function weekUserPrompt(int $year, int $month, CarbonImmutable $from, CarbonImmutable $to, array $alreadyPlanned, ?array $maxPerNetwork = null): string
     {
         $weekdays = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
@@ -91,8 +94,11 @@ class PromptBuilder
             $days[] = $label;
         }
 
+        $quota = app(QuotaGuard::class);
+
         $strategies = NetworkStrategy::all()
-            ->map(function (NetworkStrategy $s) use ($daysInRange) {
+            ->filter(fn (NetworkStrategy $s) => $quota->allowsNetwork(app('brand'), $s->network))
+            ->map(function (NetworkStrategy $s) use ($daysInRange, $maxPerNetwork) {
                 $formats = implode(', ', $s->preferred_formats);
                 $schedule = match ($s->network) {
                     Network::LinkedIn => '08:00 de lunes a viernes',
@@ -103,6 +109,9 @@ class PromptBuilder
                 $thisWeek = (int) round($s->posts_per_week * $daysInRange / 7);
                 if ($s->posts_per_week > 0 && $daysInRange >= 3) {
                     $thisWeek = max(1, $thisWeek);
+                }
+                if ($maxPerNetwork !== null) {
+                    $thisWeek = min($thisWeek, $maxPerNetwork[$s->network->value] ?? 0);
                 }
 
                 return "- {$s->network->value}: {$thisWeek} posts para esta semana (cadencia habitual {$s->posts_per_week}/semana). "

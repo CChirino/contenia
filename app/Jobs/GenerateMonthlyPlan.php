@@ -3,14 +3,17 @@
 namespace App\Jobs;
 
 use App\Enums\PostStatus;
+use App\Enums\QuotaAction;
 use App\Models\Brand;
 use App\Models\MonthlyPlan;
+use App\Models\NetworkStrategy;
 use App\Models\Post;
 use App\Services\Llm\LlmClient;
 use App\Services\Llm\LlmException;
 use App\Services\Planning\PlanSchema;
 use App\Services\Planning\PlanValidator;
 use App\Services\Planning\PromptBuilder;
+use App\Services\Quota\QuotaGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -55,6 +58,16 @@ class GenerateMonthlyPlan implements ShouldQueue
         // El job no depende de sesión: fija la marca para que el scope,
         // el perfil, pilares, estrategias y eventos queden filtrados.
         app()->instance('brand', $this->brand);
+        // La cuota y los tokens computan contra el mes del contenido.
+        app()->instance('usage_period', [$this->year, $this->month]);
+
+        $quota = app(QuotaGuard::class);
+
+        // Generar el mes entero con el cupo agotado es un 422 explícito;
+        // en regeneración semanal se recorta/salta en el bucle.
+        if (! $this->weekFrom) {
+            $quota->check($this->brand, QuotaAction::PostsGenerated, $this->year, $this->month);
+        }
 
         $plan = MonthlyPlan::firstOrCreate(
             ['year' => $this->year, 'month' => $this->month],
@@ -72,6 +85,7 @@ class GenerateMonthlyPlan implements ShouldQueue
             $errors = [];
             $attempted = 0;
             $lastException = null;
+            $quotaNotices = [];
 
             foreach ($weeks as [$from, $to]) {
                 $hasPosts = $plan->posts()
@@ -83,13 +97,25 @@ class GenerateMonthlyPlan implements ShouldQueue
                     continue;
                 }
 
+                // Cupo del mes de contenido: si está agotado se salta la
+                // semana (sin fallar) y se anota en el aviso de la grilla.
+                $remaining = $quota->remaining($this->brand, QuotaAction::PostsGenerated, $this->year, $this->month);
+                if ($remaining === 0) {
+                    $quotaNotices[] = "Semana del {$from->format('d/m')}: cupo de posts agotado.";
+
+                    continue;
+                }
+
                 $attempted++;
 
                 try {
                     $alreadyPlanned = $this->alreadyPlanned($plan, $from, $to);
+                    $maxPerNetwork = $remaining === null
+                        ? null
+                        : $this->maxPerNetwork($remaining, $from, $to);
 
                     ['system' => $system, 'user' => $user] = $prompts->forWeek(
-                        $this->year, $this->month, $from, $to, $alreadyPlanned
+                        $this->year, $this->month, $from, $to, $alreadyPlanned, $maxPerNetwork
                     );
 
                     $result = $llm->complete($system, $user, PlanSchema::monthly(), 'monthly_plan');
@@ -104,7 +130,18 @@ class GenerateMonthlyPlan implements ShouldQueue
                         throw new LlmException('La respuesta del modelo no contiene una lista de posts válida.');
                     }
 
-                    ['valid' => $valid] = $validator->validate($posts, $this->year, $this->month);
+                    // El validador descarta lo que exceda el cupo restante
+                    // (recorte definitivo, no solo el tope del prompt).
+                    ['valid' => $valid, 'rejected' => $rejected] = $validator->validate(
+                        $posts, $this->year, $this->month, $remaining
+                    );
+
+                    $overQuota = collect($rejected)
+                        ->filter(fn (array $r) => str_contains($r['reason'], 'excede el cupo'))
+                        ->count();
+                    if ($overQuota > 0) {
+                        $quotaNotices[] = "Semana del {$from->format('d/m')}: {$overQuota} post(s) descartados por cupo del mes.";
+                    }
 
                     if ($valid === []) {
                         $errors[] = [
@@ -116,7 +153,7 @@ class GenerateMonthlyPlan implements ShouldQueue
                         continue;
                     }
 
-                    DB::transaction(function () use ($plan, $from, $to, $valid, &$alreadyPlanned) {
+                    DB::transaction(function () use ($plan, $from, $to, $valid, &$alreadyPlanned, $quota) {
                         if ($this->weekFrom) {
                             $plan->posts()
                                 ->where('status', PostStatus::Drafted)
@@ -149,6 +186,12 @@ class GenerateMonthlyPlan implements ShouldQueue
                                 'network' => $post->network->value,
                             ];
                         }
+
+                        // En la misma transacción: un fallo no consume cupo.
+                        $quota->record(
+                            $this->brand, QuotaAction::PostsGenerated,
+                            $this->year, $this->month, count($valid)
+                        );
                     });
                 } catch (LlmException $e) {
                     $errors[] = [
@@ -169,7 +212,9 @@ class GenerateMonthlyPlan implements ShouldQueue
             if (count($errors) === $attempted) {
                 $plan->update(['last_error' => $errors]);
 
-                throw $lastException;
+                if ($lastException !== null) {
+                    throw $lastException;
+                }
             }
 
             $plan->update([
@@ -177,8 +222,63 @@ class GenerateMonthlyPlan implements ShouldQueue
                 'last_error' => $errors === [] ? null : $errors,
             ]);
         } finally {
-            $plan->forceFill(['generating_at' => null])->save();
+            // Aviso persistente cuando la cuota recortó la grilla.
+            $plan->forceFill([
+                'quota_notice' => $quotaNotices === [] ? null : implode(' ', $quotaNotices),
+                'generating_at' => null,
+            ])->save();
         }
+    }
+
+    /**
+     * Reparte el cupo restante entre las redes con cadencia >0 de forma
+     * proporcional a su posts_per_week (restos al mayor decimal).
+     *
+     * @return array<string, int>
+     */
+    protected function maxPerNetwork(int $remaining, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $quota = app(QuotaGuard::class);
+        $daysInRange = (int) $from->diffInDays($to->addDay());
+
+        $requested = NetworkStrategy::all()
+            ->filter(fn (NetworkStrategy $s) => $s->posts_per_week > 0
+                && $quota->allowsNetwork($this->brand, $s->network))
+            ->mapWithKeys(function (NetworkStrategy $s) use ($daysInRange) {
+                $count = (int) round($s->posts_per_week * $daysInRange / 7);
+                if ($daysInRange >= 3) {
+                    $count = max(1, $count);
+                }
+
+                return [$s->network->value => $count];
+            });
+
+        $total = $requested->sum();
+        if ($total === 0 || $total <= $remaining) {
+            return $requested->all();
+        }
+
+        // Cuotas proporcionales con reparto de restos por mayor fracción.
+        $caps = [];
+        $fracs = [];
+        $leftover = $remaining;
+        foreach ($requested as $network => $count) {
+            $exact = $remaining * $count / $total;
+            $caps[$network] = (int) floor($exact);
+            $fracs[$network] = $exact - $caps[$network];
+            $leftover -= $caps[$network];
+        }
+
+        arsort($fracs);
+        foreach (array_keys($fracs) as $network) {
+            if ($leftover <= 0) {
+                break;
+            }
+            $caps[$network]++;
+            $leftover--;
+        }
+
+        return $caps;
     }
 
     /**

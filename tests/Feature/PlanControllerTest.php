@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Jobs\GenerateMonthlyPlan;
+use App\Models\Brand;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
+use App\Models\Plan;
 use App\Models\Post;
 use App\Models\ReviewRequest;
 use App\Models\User;
+use Database\Seeders\DefaultsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -231,5 +234,48 @@ class PlanControllerTest extends TestCase
                 ->where('posts.0.review.decision', 'rejected')
                 ->where('posts.0.review.comment', 'Cambiar el gancho')
             );
+    }
+
+    public function test_show_includes_quota_summary_and_allowed_networks(): void
+    {
+        MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+
+        $this->actingAs(User::factory()->create())
+            ->get('/b/sabere/plans/2026/10')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('quota.actions', 3)
+                ->where('quota.unlimited', true)
+                ->has('allowed_networks', 3)
+            );
+    }
+
+    public function test_allowed_networks_refleja_el_plan_de_la_marca(): void
+    {
+        $brand = Brand::factory()->create([
+            'plan_id' => Plan::factory()->create(['networks' => ['linkedin']]),
+        ]);
+        DefaultsSeeder::forBrand($brand);
+
+        $this->actingAsAdminFor($brand);
+        $this->get("/b/{$brand->slug}/plans/2026/10")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('allowed_networks', ['linkedin'])
+            );
+    }
+
+    public function test_generate_devuelve_422_con_cupo_agotado(): void
+    {
+        $brand = Brand::factory()->create([
+            'plan_id' => Plan::factory()->create(['posts_per_month' => 1]),
+        ]);
+        DefaultsSeeder::forBrand($brand);
+        ContentPillar::factory()->create(['brand_id' => $brand->id, 'weight' => 100]);
+        $brand->usageFor(2026, 10)->update(['posts_generated' => 1]);
+
+        $this->actingAsAdminFor($brand);
+        $this->post("/b/{$brand->slug}/plans/2026/10/generate")
+            ->assertSessionHasErrors('quota');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BrandStatus;
+use App\Models\Scopes\BrandScope;
 use Database\Factories\BrandFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -103,7 +104,10 @@ class Brand extends Model
 
     public function usage(): HasMany
     {
-        return $this->hasMany(BrandUsage::class);
+        // La marca ya viene dada por la relación: el scope global no debe
+        // volver a filtrar por la marca activa del contenedor.
+        return $this->hasMany(BrandUsage::class)
+            ->withoutGlobalScope(BrandScope::class);
     }
 
     /**

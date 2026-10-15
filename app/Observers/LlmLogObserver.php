@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Brand;
+use App\Models\BrandUsage;
 use App\Models\LlmLog;
 
 /**
@@ -23,9 +24,15 @@ class LlmLogObserver
             ? app('usage_period')
             : [$log->created_at->year, $log->created_at->month];
 
-        $brand->usageFor($year, $month)->incrementEach([
-            'llm_tokens_in' => (int) $log->input_tokens,
-            'llm_tokens_out' => (int) $log->output_tokens,
-        ]);
+        $usage = $brand->usageFor($year, $month);
+
+        // Incremento atómico limitado a la fila (increment() sobre el modelo
+        // delegaría al query builder sin la clave primaria).
+        BrandUsage::withoutGlobalScopes()
+            ->whereKey($usage->id)
+            ->increment('llm_tokens_in', (int) $log->input_tokens, [
+                'llm_tokens_out' => (int) $log->output_tokens,
+                'updated_at' => now(),
+            ]);
     }
 }

@@ -7,6 +7,7 @@ use App\Enums\PostFormat;
 use App\Enums\PostIcon;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
+use App\Services\Quota\QuotaGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -19,8 +20,10 @@ class PlanValidator
      * @param  array<int, array<string, mixed>>  $posts
      * @return array{valid: array<int, array<string, mixed>>, rejected: array<int, array{index: int, post: array<string, mixed>, reason: string}>}
      */
-    public function validate(array $posts, int $year, int $month): array
+    public function validate(array $posts, int $year, int $month, ?int $maxPosts = null): array
     {
+        $quota = app(QuotaGuard::class);
+
         $pillars = ContentPillar::all()
             ->keyBy(fn (ContentPillar $p) => mb_strtolower($p->name));
 
@@ -35,6 +38,16 @@ class PlanValidator
 
         foreach ($posts as $index => $post) {
             $reasons = $this->validatePost(is_array($post) ? $post : [], $year, $month, $pillars, $noPosting);
+
+            // Red no permitida por el plan de la marca: se descarta igual.
+            if ($reasons === [] && ! $quota->allowsNetwork(app('brand'), Network::from($post['network']))) {
+                $reasons[] = "red no incluida en el plan: {$post['network']}";
+            }
+
+            // Cuota: se conservan los primeros $maxPosts válidos.
+            if ($reasons === [] && $maxPosts !== null && count($valid) >= $maxPosts) {
+                $reasons[] = "excede el cupo restante de {$maxPosts} posts";
+            }
 
             if ($reasons === []) {
                 // El icono y las keywords de foto no descartan el post: se

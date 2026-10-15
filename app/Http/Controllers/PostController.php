@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Enums\PostFormat;
 use App\Enums\PostStatus;
+use App\Enums\QuotaAction;
 use App\Http\Requests\RegeneratePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Jobs\RegeneratePost;
 use App\Jobs\RenderPost;
 use App\Models\Brand;
 use App\Models\Post;
+use App\Services\Quota\QuotaGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +87,14 @@ class PostController extends Controller
             'Solo se puede renderizar un post en borrador, aprobado o renderizado.'
         );
 
+        // Un fondo nuevo IA consume cupo del mes de contenido del post.
+        if ($request->boolean('fresh_background')) {
+            app(QuotaGuard::class)->check(
+                $post->brand, QuotaAction::ImageRefreshes,
+                $post->monthlyPlan->year, $post->monthlyPlan->month
+            );
+        }
+
         $post->update(['render_requested_at' => now()]);
 
         RenderPost::dispatch($post, $request->boolean('fresh_background'));
@@ -134,6 +144,12 @@ class PostController extends Controller
             $post->status === PostStatus::Drafted,
             422,
             'Solo se puede regenerar un post en estado borrador.'
+        );
+
+        // Cupo de regeneraciones del mes de contenido del post.
+        app(QuotaGuard::class)->check(
+            $post->brand, QuotaAction::Regenerations,
+            $post->monthlyPlan->year, $post->monthlyPlan->month
         );
 
         RegeneratePost::dispatch($post, $request->validated('comment'));
