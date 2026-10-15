@@ -107,6 +107,16 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - **Assets por marca**: `storage/app/brands/{brand_id}/posts/{post_id}/` (frames, bg.png, final.mp4). Migración del layout plano viejo: `sail artisan brands:migrate-assets` (idempotente; reescribe `posts.asset_path`).
 - **Tests**: helpers `actingAsAdminFor(?Brand)` / `actingAsOperatorFor(?Brand)` en `TestCase` (setUp bindea Saberé; libera con `app()->forgetInstance('brand')`).
 
+## Revisión del cliente (Fase 2 multimarca)
+
+- Solo aplica a marcas con `requires_client_approval` (Saberé = false: `RenderPost` y `approve` con render fresco saltan `rendered → client_approved` directo). Grafo: `rendered → client_approved | drafted | approved`; `client_approved → scheduled | approved` (editar un post aprobado por el cliente lo devuelve a revisión tras re-render). Ya no existe `rendered → scheduled`.
+- Tablas: `brand_contacts` (aprobadores de la marca, gestionados en `/brands/{id}/edit`), `review_requests` (rango, `token_hash` sha256, `expires_at` +14 d, `sent_to`, `submitted_at`, `revoked_at`, `general_comment`), `review_items` (decisión `pending|approved|rejected` por post, `week_from`), `review_week_comments`.
+- Operador: `POST /b/{brand}/plans/{a}/{m}/reviews` (mes o `week_from`); excluye posts ya en una revisión abierta. `reviews.revoke` y `reviews.rotate` (nuevo token + reenvío). El token en claro solo viaja en `flash.review_url` una vez; en BD solo el hash. Cada solicitud encola `ReviewRequestMail` (Markdown) a los contactos.
+- Portal público sin auth: `/review/{token}` + POSTs (`items/{post}`, `weeks/{w}/approve|comment`, `approve-all`, `submit`). `ResolveReviewToken` (alias `review.token`, **antes** de `SubstituteBindings`) resuelve el token vía `findByToken` (sin scope, fija `app('brand')`), 404 si no existe, `Review/Unavailable` si revocado/vencido, POST → 409 tras envío.
+- `submit` aplica en transacción: aprobados → `client_approved`, rechazados → `drafted` (conserva assets/`rendered_at`), los que ya no están `rendered` se omiten; fija `submitted_at` + `general_comment` y dispara `event(new ReviewSubmitted)` (sin listeners — la memoria IA es fase posterior).
+- Media del portal: `URL::temporarySignedRoute('assets.show', $review->expires_at, …)` — las URLs firmadas caducan con la revisión.
+- Correo: `MAIL_FROM_*` global; en local `MAIL_MAILER=log` → el correo sale en `storage/logs/laravel.log` (lo procesa el worker `queue`).
+
 ## Notas
 
 - Locale `es`, timezone `America/Caracas`, faker `es_VE`.
