@@ -13,7 +13,11 @@ const route = useBrandRoute();
 const props = defineProps<{
     strategies: NetworkStrategy[];
     allowedFormats: Record<string, string[]>;
+    allowed_networks: string[];
+    plan_name: string;
 }>();
+
+const isAllowed = (network: string) => props.allowed_networks.includes(network);
 
 const networkLabels: Record<string, string> = {
     instagram: 'Instagram',
@@ -60,12 +64,22 @@ const submit = () => {
                         v-for="(strategy, index) in form.strategies"
                         :key="strategy.id"
                         class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
+                        :class="{ 'opacity-60': !isAllowed(strategy.network) }"
                     >
-                        <h3 class="text-lg font-medium text-gray-900">
+                        <h3 class="flex items-center gap-3 text-lg font-medium text-gray-900">
                             {{ networkLabels[strategy.network] ?? strategy.network }}
+                            <span
+                                v-if="!isAllowed(strategy.network)"
+                                class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-normal text-gray-500"
+                            >
+                                No incluida en el plan {{ plan_name }}
+                            </span>
                         </h3>
 
-                        <div class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3">
+                        <div
+                            class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-3"
+                            :class="{ 'pointer-events-none': !isAllowed(strategy.network) }"
+                        >
                             <div>
                                 <InputLabel
                                     :for="`posts_per_week_${strategy.id}`"
@@ -77,6 +91,7 @@ const submit = () => {
                                     type="number"
                                     min="0"
                                     max="14"
+                                    :disabled="!isAllowed(strategy.network)"
                                     class="mt-1 block w-full"
                                 />
                                 <InputError

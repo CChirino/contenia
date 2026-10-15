@@ -4,8 +4,8 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { NetworkName, Post, PostFormat } from '@/types';
-import { router, useForm } from '@inertiajs/vue3';
+import { NetworkName, Post, PostFormat, QuotaSummary } from '@/types';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useBrandRoute } from '@/composables/useBrandRoute';
 
@@ -14,6 +14,7 @@ const route = useBrandRoute();
 const props = defineProps<{
     post: Post;
     allowedFormats: Record<NetworkName, string[]>;
+    quota?: QuotaSummary | null;
 }>();
 
 const emit = defineEmits<{ close: [] }>();
@@ -60,6 +61,21 @@ const frameUrls = computed(() => props.post.asset_urls?.frames ?? []);
 const currentFrame = ref(0);
 
 const rendering = computed(() => props.post.render_requested_at !== null);
+
+// Cuotas: null = ilimitado. El error `quota` (422) viene del servidor.
+const quotaRemaining = (action: string) => {
+    const a = props.quota?.actions.find((x) => x.action === action);
+    if (!a || a.limit === null) return null;
+    return Math.max(0, a.limit - a.used);
+};
+
+const regenExhausted = computed(() => quotaRemaining('regenerations') === 0);
+const imagesExhausted = computed(() => quotaRemaining('image_refreshes') === 0);
+
+const page = usePage();
+const quotaError = computed(
+    () => (page.props.errors as Record<string, string> | undefined)?.quota
+);
 
 const iconOptions = [
     'fingerprint', 'checklist', 'calendar', 'chart', 'book', 'bell',
@@ -378,12 +394,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                             <SecondaryButton type="button" @click="rerender(false)">
                                 Regenerar diseño
                             </SecondaryButton>
-                            <SecondaryButton type="button" @click="rerender(true)">
+                            <SecondaryButton
+                                type="button"
+                                :disabled="imagesExhausted"
+                                :title="imagesExhausted ? 'Cupo de fondos nuevos del mes agotado' : undefined"
+                                @click="rerender(true)"
+                            >
                                 Nuevo fondo
                             </SecondaryButton>
                             <SecondaryButton type="button" @click="copyContent">
                                 {{ copied ? '¡Copiado!' : 'Copiar copy + hashtags' }}
                             </SecondaryButton>
+                            <p v-if="quotaError" class="w-full text-sm text-red-600">{{ quotaError }}</p>
                         </div>
                     </div>
 
@@ -484,8 +506,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                             />
                             <InputError :message="regenerateForm.errors.comment" class="mt-1" />
                         </div>
+                        <p v-if="quotaError" class="text-sm text-red-600">{{ quotaError }}</p>
                         <div class="flex gap-2">
-                            <PrimaryButton :disabled="regenerateForm.processing">Regenerar</PrimaryButton>
+                            <PrimaryButton
+                                :disabled="regenerateForm.processing || regenExhausted"
+                                :title="regenExhausted ? 'Cupo de regeneraciones del mes agotado' : undefined"
+                            >
+                                Regenerar
+                            </PrimaryButton>
                             <SecondaryButton type="button" @click="showRegenerate = false">Cancelar</SecondaryButton>
                         </div>
                     </form>

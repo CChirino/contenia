@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import GenerationErrors from '@/Pages/Plans/GenerationErrors.vue';
 import PostDrawer from '@/Pages/Plans/PostDrawer.vue';
-import { ContentPillar, MonthlyPlan, NetworkName, Post } from '@/types';
+import { ContentPillar, MonthlyPlan, NetworkName, Post, QuotaSummary } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBrandRoute } from '@/composables/useBrandRoute';
@@ -37,6 +37,8 @@ const props = defineProps<{
     allowedFormats: Record<NetworkName, string[]>;
     weeks: Week[];
     reviews: Review[];
+    quota: QuotaSummary;
+    allowed_networks: NetworkName[];
 }>();
 
 const monthNames = [
@@ -83,6 +85,33 @@ const page = usePage();
 const generateError = computed(() => (page.props.errors as Record<string, string>).generate);
 
 const pending = computed(() => props.plan?.generating_at != null);
+
+// Cuotas del plan: null = ilimitado (plan Interno).
+const actionLabels: Record<string, string> = {
+    posts_generated: 'posts',
+    regenerations: 'regen',
+    image_refreshes: 'fondos',
+};
+
+const usageActions = computed(() =>
+    (props.quota?.actions ?? []).filter((a) => a.limit !== null)
+);
+
+const pct = (a: { used: number; limit: number | null }) =>
+    a.limit === null || a.limit === 0 ? 0 : Math.min(100, Math.round((a.used / a.limit) * 100));
+
+const barClass = (a: { used: number; limit: number | null }) =>
+    pct(a) >= 100 ? 'bg-red-500' : pct(a) >= 80 ? 'bg-amber-400' : 'bg-sabere-accent';
+
+const remaining = (action: string) => {
+    const a = props.quota?.actions.find((x) => x.action === action);
+    if (!a || a.limit === null) return null;
+    return Math.max(0, a.limit - a.used);
+};
+
+const postsExhausted = computed(() => remaining('posts_generated') === 0);
+const regenExhausted = computed(() => remaining('regenerations') === 0);
+const imagesExhausted = computed(() => remaining('image_refreshes') === 0);
 
 const hasEmptyWeeks = computed(() => props.weeks.some((w) => w.posts_count === 0));
 
@@ -383,7 +412,8 @@ onBeforeUnmount(() => {
                         <button
                             v-if="pending || !plan || plan.posts_count === 0 || hasEmptyWeeks"
                             type="button"
-                            :disabled="pending"
+                            :disabled="pending || postsExhausted"
+                            :title="postsExhausted ? 'Cupo de posts del mes agotado' : undefined"
                             class="rounded-md bg-sabere-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                             @click="generate"
                         >
@@ -392,6 +422,32 @@ onBeforeUnmount(() => {
                             <span v-else>Completar mes</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- Barra de uso del plan (oculta en planes ilimitados) -->
+                <div
+                    v-if="!quota.unlimited && usageActions.length"
+                    class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-xs text-gray-600"
+                >
+                    <span class="font-medium text-gray-800">Plan {{ quota.plan }}</span>
+                    <span v-for="a in usageActions" :key="a.action" class="flex items-center gap-1.5">
+                        <span>
+                            {{ actionLabels[a.action] ?? a.action }}
+                            <b>{{ a.used }}/{{ a.limit }}</b>
+                        </span>
+                        <span class="h-1 w-16 overflow-hidden rounded-full bg-gray-100">
+                            <span class="block h-full" :class="barClass(a)" :style="{ width: pct(a) + '%' }" />
+                        </span>
+                    </span>
+                </div>
+
+                <!-- Aviso de recorte por cuota -->
+                <div
+                    v-if="plan?.quota_notice"
+                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                >
+                    {{ plan.quota_notice }}
+                    <span class="font-medium">Pide una extensión al administrador.</span>
                 </div>
 
                 <!-- Bandas de estado de revisiones del cliente -->
@@ -488,8 +544,10 @@ onBeforeUnmount(() => {
                             <button
                                 v-if="weeks[weekIndex]"
                                 type="button"
-                                :disabled="pending"
-                                :title="`Regenerar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to}`"
+                                :disabled="pending || postsExhausted"
+                                :title="postsExhausted
+                                    ? 'Cupo de posts del mes agotado'
+                                    : `Regenerar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to}`"
                                 class="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-sabere-dark disabled:opacity-40"
                                 @click="regenerateWeek(weeks[weekIndex])"
                             >
@@ -599,6 +657,7 @@ onBeforeUnmount(() => {
             v-if="selectedPost"
             :post="selectedPost"
             :allowed-formats="allowedFormats"
+            :quota="quota"
             @close="selectedPostId = null"
         />
     </AuthenticatedLayout>

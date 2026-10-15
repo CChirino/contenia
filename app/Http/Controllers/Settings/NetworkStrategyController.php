@@ -21,9 +21,17 @@ class NetworkStrategyController extends Controller
                 $network->value => collect(PostFormat::allowedFor($network))->map->value,
             ]);
 
+        $brand = app('brand');
+        $quota = app(QuotaGuard::class);
+
         return Inertia::render('Settings/Networks', [
             'strategies' => NetworkStrategy::orderBy('id')->get(),
             'allowedFormats' => $allowedFormats,
+            'allowed_networks' => collect(Network::cases())
+                ->filter(fn (Network $n) => $quota->allowsNetwork($brand, $n))
+                ->map->value
+                ->values(),
+            'plan_name' => $brand->plan?->name ?? 'Sin plan',
         ]);
     }
 

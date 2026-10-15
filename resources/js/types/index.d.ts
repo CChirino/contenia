@@ -68,7 +68,21 @@ export interface MonthlyPlan {
     generated_at: string | null;
     generating_at: string | null;
     last_error: GenerationError[] | null;
+    quota_notice: string | null;
     posts_count: number;
+}
+
+export interface QuotaActionSummary {
+    action: 'posts_generated' | 'regenerations' | 'image_refreshes';
+    used: number;
+    limit: number | null;
+    extra: number;
+}
+
+export interface QuotaSummary {
+    unlimited: boolean;
+    plan: string;
+    actions: QuotaActionSummary[];
 }
 
 export interface Post {
