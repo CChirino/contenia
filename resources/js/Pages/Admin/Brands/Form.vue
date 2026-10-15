@@ -107,7 +107,7 @@ const removeContact = (contact: Contact) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Administración · {{ brand ? `Editar ${brand.name}` : 'Nueva marca' }}
             </h2>
         </template>
@@ -115,13 +115,13 @@ const removeContact = (contact: Contact) => {
         <div class="py-12">
             <div class="mx-auto max-w-3xl sm:px-6 lg:px-8">
                 <form
-                    class="space-y-6 overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg"
+                    class="space-y-6 overflow-hidden bg-surface p-6 shadow-sm sm:rounded-lg"
                     @submit.prevent="submit"
                 >
                     <div>
                         <InputLabel for="name" value="Nombre" />
                         <TextInput id="name" v-model="form.name" class="mt-1 block w-full" required />
-                        <p v-if="brand" class="mt-1 text-sm text-gray-500">Slug: {{ brand.slug }}</p>
+                        <p v-if="brand" class="mt-1 text-sm text-muted">Slug: {{ brand.slug }}</p>
                         <InputError :message="form.errors.name" class="mt-2" />
                     </div>
 
@@ -136,7 +136,7 @@ const removeContact = (contact: Contact) => {
                         <select
                             id="plan_id"
                             v-model="form.plan_id"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                         >
                             <option v-for="plan in plans" :key="plan.id" :value="plan.id">
                                 {{ plan.name }}<template v-if="plan.price_label"> · {{ plan.price_label }}</template>
@@ -146,7 +146,7 @@ const removeContact = (contact: Contact) => {
                     </div>
 
                     <fieldset>
-                        <legend class="text-sm font-medium text-gray-700">Paleta</legend>
+                        <legend class="text-sm font-medium text-fg-2">Paleta</legend>
                         <div class="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
                             <div v-for="field in paletteFields" :key="field.key">
                                 <InputLabel :for="`palette-${field.key}`" :value="field.label" />
@@ -155,7 +155,7 @@ const removeContact = (contact: Contact) => {
                                         :id="`palette-${field.key}`"
                                         v-model="form.palette[field.key]"
                                         type="color"
-                                        class="h-9 w-12 cursor-pointer rounded border border-gray-300"
+                                        class="h-9 w-12 cursor-pointer rounded border border-line-strong"
                                     />
                                     <TextInput
                                         v-model="form.palette[field.key]"
@@ -175,7 +175,7 @@ const removeContact = (contact: Contact) => {
                                 id="logo"
                                 type="file"
                                 accept=".svg,.png"
-                                class="text-sm text-gray-600"
+                                class="text-sm text-fg-2"
                                 @change="onLogo"
                             />
                         </div>
@@ -184,11 +184,11 @@ const removeContact = (contact: Contact) => {
 
                     <label class="flex items-center gap-2">
                         <Checkbox v-model:checked="form.requires_client_approval" />
-                        <span class="text-sm text-gray-700">Requiere aprobación del cliente</span>
+                        <span class="text-sm text-fg-2">Requiere aprobación del cliente</span>
                     </label>
 
                     <div class="flex items-center justify-end gap-4">
-                        <Link :href="route('brands.index')" class="text-sm text-gray-600 hover:text-gray-900">
+                        <Link :href="route('brands.index')" class="text-sm text-fg-2 hover:text-fg">
                             Cancelar
                         </Link>
                         <PrimaryButton :disabled="form.processing">
@@ -199,33 +199,33 @@ const removeContact = (contact: Contact) => {
 
                 <div
                     v-if="brand"
-                    class="mt-6 overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg"
+                    class="mt-6 overflow-hidden bg-surface p-6 shadow-sm sm:rounded-lg"
                 >
-                    <h3 class="text-base font-semibold text-gray-800">Contactos aprobadores</h3>
-                    <p class="mt-1 text-sm text-gray-500">
+                    <h3 class="text-base font-semibold text-fg">Contactos aprobadores</h3>
+                    <p class="mt-1 text-sm text-muted">
                         Reciben por correo los enlaces de revisión del contenido de esta marca.
                     </p>
 
                     <div
                         v-if="brand.requires_client_approval && contacts.length === 0"
-                        class="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                        class="mt-3 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
                     >
                         Esta marca requiere aprobación del cliente pero no tiene contactos:
                         los enlaces de revisión no llegarán a nadie por correo.
                     </div>
 
-                    <ul v-if="contacts.length" class="mt-4 divide-y divide-gray-100">
+                    <ul v-if="contacts.length" class="mt-4 divide-y divide-line">
                         <li
                             v-for="contact in contacts"
                             :key="contact.id"
                             class="flex items-center gap-4 py-2 text-sm"
                         >
-                            <span class="w-40 font-medium text-gray-800">{{ contact.name }}</span>
-                            <span class="text-gray-600">{{ contact.email }}</span>
-                            <span class="text-gray-500">{{ contact.whatsapp ?? '' }}</span>
+                            <span class="w-40 font-medium text-fg">{{ contact.name }}</span>
+                            <span class="text-fg-2">{{ contact.email }}</span>
+                            <span class="text-muted">{{ contact.whatsapp ?? '' }}</span>
                             <button
                                 type="button"
-                                class="ms-auto text-xs text-red-600 hover:underline"
+                                class="ms-auto text-xs text-red-600 dark:text-red-400 hover:underline"
                                 @click="removeContact(contact)"
                             >
                                 Eliminar

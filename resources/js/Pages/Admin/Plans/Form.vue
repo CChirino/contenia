@@ -56,14 +56,14 @@ const limits = [
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 {{ plan ? `Editar plan «${plan.name}»` : 'Nuevo plan' }}
             </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-3xl sm:px-6 lg:px-8">
-                <form @submit.prevent="submit" class="space-y-6 bg-white p-6 shadow sm:rounded-lg">
+                <form @submit.prevent="submit" class="space-y-6 bg-surface p-6 shadow sm:rounded-lg">
                     <div>
                         <InputLabel for="name" value="Nombre" />
                         <TextInput id="name" v-model="form.name" class="mt-1 block w-full" required />
@@ -84,7 +84,7 @@ const limits = [
                             <InputError :message="form.errors[limit.key]" class="mt-2" />
                         </div>
                     </div>
-                    <p class="-mt-3 text-xs text-gray-500">Vacío = ilimitado.</p>
+                    <p class="-mt-3 text-xs text-muted">Vacío = ilimitado.</p>
 
                     <div>
                         <InputLabel value="Redes incluidas" />
@@ -92,13 +92,13 @@ const limits = [
                             <label
                                 v-for="network in networks"
                                 :key="network"
-                                class="flex items-center gap-2 text-sm text-gray-700"
+                                class="flex items-center gap-2 text-sm text-fg-2"
                             >
                                 <input
                                     type="checkbox"
                                     v-model="form.networks"
                                     :value="network"
-                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                    class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                                 />
                                 {{ networkLabels[network] ?? network }}
                             </label>

@@ -92,13 +92,13 @@ const submitExtend = () => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
+                <h2 class="text-xl font-semibold leading-tight text-fg">
                     Administración · Cartera
                 </h2>
                 <input
                     type="month"
                     :value="period"
-                    class="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    class="rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                     @change="changeMonth"
                 />
             </div>
@@ -106,34 +106,34 @@ const submitExtend = () => {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                <div class="overflow-hidden bg-surface shadow-sm sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-line">
+                        <thead class="bg-surface-2">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Marca</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Plan</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Posts</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Regen</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fondos</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Costo IA</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tokens</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Imgs IA</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Últ. revisión</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Últ. publicado</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Marca</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Plan</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Posts</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Regen</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Fondos</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Costo IA</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Tokens</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Imgs IA</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Últ. revisión</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted">Últ. publicado</th>
                                 <th class="px-4 py-3"></th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
+                        <tbody class="divide-y divide-line bg-surface">
                             <tr v-for="row in rows" :key="row.id">
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
                                         <img :src="row.logo_url" :alt="row.name" class="h-7 w-7 object-contain" />
-                                        <span class="text-sm font-medium text-gray-900">{{ row.name }}</span>
+                                        <span class="text-sm font-medium text-fg">{{ row.name }}</span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">
+                                <td class="px-4 py-3 text-sm text-fg-2">
                                     {{ row.plan?.name ?? '—' }}
-                                    <span v-if="row.plan?.price_label" class="text-xs text-gray-400">
+                                    <span v-if="row.plan?.price_label" class="text-xs text-muted">
                                         · {{ row.plan.price_label }}
                                     </span>
                                 </td>
@@ -144,27 +144,27 @@ const submitExtend = () => {
                                     :class="(() => {
                                         const a = usage(row, action);
                                         return a && a.limit !== null && a.used >= a.limit
-                                            ? 'font-medium text-red-600'
-                                            : 'text-gray-600';
+                                            ? 'font-medium text-red-600 dark:text-red-400'
+                                            : 'text-fg-2';
                                     })()"
                                 >
                                     {{ usageLabel(usage(row, action)) }}
                                 </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">${{ row.cost_usd.toFixed(2) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">{{ row.tokens.toLocaleString() }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">{{ row.image_calls }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(row.last_review_at) }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(row.last_published_at) }}</td>
+                                <td class="px-4 py-3 text-sm text-fg-2">${{ row.cost_usd.toFixed(2) }}</td>
+                                <td class="px-4 py-3 text-sm text-fg-2">{{ row.tokens.toLocaleString() }}</td>
+                                <td class="px-4 py-3 text-sm text-fg-2">{{ row.image_calls }}</td>
+                                <td class="px-4 py-3 text-sm text-fg-2">{{ formatDate(row.last_review_at) }}</td>
+                                <td class="px-4 py-3 text-sm text-fg-2">{{ formatDate(row.last_published_at) }}</td>
                                 <td class="px-4 py-3 text-right text-sm">
                                     <a
                                         :href="`/b/${row.slug}/plans/${period.slice(0, 4)}/${Number(period.slice(5))}`"
-                                        class="text-indigo-600 hover:text-indigo-900"
+                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
                                     >
                                         Grilla
                                     </a>
                                     <Link
                                         :href="route('brands.edit', { brand: row.id })"
-                                        class="ms-3 text-indigo-600 hover:text-indigo-900"
+                                        class="ms-3 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
                                     >
                                         Editar
                                     </Link>
@@ -185,10 +185,10 @@ const submitExtend = () => {
 
         <Modal :show="extending !== null" @close="extending = null">
             <form v-if="extending" @submit.prevent="submitExtend" class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900">
+                <h3 class="text-lg font-semibold text-fg">
                     Extender cuota · {{ extending.name }}
                 </h3>
-                <p class="mt-1 text-sm text-gray-500">
+                <p class="mt-1 text-sm text-muted">
                     Mes {{ period }} — los valores reemplazan los extras actuales.
                 </p>
 

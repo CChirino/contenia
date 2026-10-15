@@ -27,9 +27,9 @@ const message = computed(() => messages[props.reason] ?? messages.not_found);
     <Head title="Revisión no disponible" />
     <ReviewLayout>
         <div class="flex min-h-screen items-center justify-center p-6">
-            <div class="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-sm">
-                <h1 class="text-xl font-semibold text-gray-900">{{ message.title }}</h1>
-                <p class="mt-2 text-sm text-gray-600">{{ message.body }}</p>
+            <div class="w-full max-w-md rounded-xl bg-surface p-8 text-center shadow-sm">
+                <h1 class="text-xl font-semibold text-fg">{{ message.title }}</h1>
+                <p class="mt-2 text-sm text-fg-2">{{ message.body }}</p>
             </div>
         </div>
     </ReviewLayout>

@@ -7,7 +7,7 @@ defineProps<{
 
 <template>
     <div
-        class="min-h-screen bg-gray-100 font-sans text-gray-900"
+        class="min-h-screen bg-surface-2 font-sans text-fg"
         :style="{ '--accent': accent ?? '#27C2A5' }"
     >
         <slot />

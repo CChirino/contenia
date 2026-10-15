@@ -104,9 +104,9 @@ const networkLabels: Record<string, string> = {
 };
 
 const decisionBadge: Record<string, string> = {
-    approved: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700',
-    pending: 'bg-gray-100 text-gray-500',
+    approved: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200',
+    rejected: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200',
+    pending: 'bg-surface-3 text-muted',
 };
 
 const decisionLabel: Record<string, string> = {
@@ -134,12 +134,12 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
     <ReviewLayout :accent="accent">
         <div class="mx-auto max-w-3xl px-4 pb-40 pt-8">
             <!-- Cabecera -->
-            <header class="rounded-xl bg-white p-5 shadow-sm">
+            <header class="rounded-xl bg-surface p-5 shadow-sm">
                 <div class="flex items-center gap-3">
                     <img :src="brand.logo_url" :alt="brand.name" class="h-10 w-10 object-contain" />
                     <div>
                         <h1 class="text-lg font-semibold">{{ brand.name }}</h1>
-                        <p class="text-sm text-gray-500">
+                        <p class="text-sm text-muted">
                             {{ formatDate(review.from_date) }} – {{ formatDate(review.to_date) }}
                         </p>
                     </div>
@@ -147,11 +147,11 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
 
                 <template v-if="!submitted">
                     <div class="mt-4">
-                        <div class="flex items-center justify-between text-xs text-gray-500">
+                        <div class="flex items-center justify-between text-xs text-muted">
                             <span>{{ decided }} de {{ allPosts.length }} decididos</span>
                             <span>Vence el {{ formatDate(review.expires_at) }}</span>
                         </div>
-                        <div class="mt-1 h-2 overflow-hidden rounded-full bg-gray-200">
+                        <div class="mt-1 h-2 overflow-hidden rounded-full bg-surface-3">
                             <div
                                 class="h-full rounded-full transition-all"
                                 :style="{ width: progress + '%', backgroundColor: accent }"
@@ -171,15 +171,15 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
 
             <div
                 v-if="submitted"
-                class="mt-6 rounded-xl border border-green-200 bg-green-50 p-5"
+                class="mt-6 rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/30 p-5"
             >
-                <h2 class="font-semibold text-green-800">Gracias, revisión enviada</h2>
-                <p class="mt-1 text-sm text-green-700">
+                <h2 class="font-semibold text-green-800 dark:text-green-200">Gracias, revisión enviada</h2>
+                <p class="mt-1 text-sm text-green-700 dark:text-green-300">
                     {{ review.summary.approved }} aprobados ·
                     {{ review.summary.rejected }} rechazados ·
                     {{ review.summary.pending }} pendientes
                 </p>
-                <p v-if="review.general_comment" class="mt-2 text-sm italic text-green-800">
+                <p v-if="review.general_comment" class="mt-2 text-sm italic text-green-800 dark:text-green-200">
                     «{{ review.general_comment }}»
                 </p>
             </div>
@@ -187,13 +187,13 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
             <!-- Semanas -->
             <section v-for="week in weeks" :key="week.week_from" class="mt-8">
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">
                         Semana {{ formatDate(week.week_from) }} – {{ formatDate(week.week_to) }}
                     </h2>
                     <button
                         v-if="!submitted"
                         type="button"
-                        class="rounded-md border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        class="rounded-md border border-line-strong bg-surface px-3 py-1 text-xs font-medium text-fg-2 hover:bg-surface-2"
                         @click="approveWeek(week)"
                     >
                         Aprobar semana
@@ -204,10 +204,10 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                     <article
                         v-for="post in week.posts"
                         :key="post.id"
-                        class="overflow-hidden rounded-xl bg-white shadow-sm"
+                        class="overflow-hidden rounded-xl bg-surface shadow-sm"
                     >
                         <!-- Media -->
-                        <div class="relative bg-gray-900">
+                        <div class="relative bg-black">
                             <video
                                 v-if="post.media.type === 'video' && post.media.urls[0]"
                                 :src="post.media.urls[0]"
@@ -226,12 +226,12 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                                 <template v-if="post.media.type === 'carousel' && post.media.urls.length > 1">
                                     <button
                                         type="button"
-                                        class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/85 px-3 py-1.5 text-lg shadow"
+                                        class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-surface/85 px-3 py-1.5 text-lg shadow"
                                         @click="moveCarousel(post, -1)"
                                     >‹</button>
                                     <button
                                         type="button"
-                                        class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/85 px-3 py-1.5 text-lg shadow"
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-surface/85 px-3 py-1.5 text-lg shadow"
                                         @click="moveCarousel(post, 1)"
                                     >›</button>
                                     <span class="absolute bottom-2 right-3 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
@@ -243,10 +243,10 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
 
                         <div class="p-4">
                             <div class="flex items-center gap-2 text-xs">
-                                <span class="rounded bg-gray-800 px-2 py-0.5 font-semibold text-white">
+                                <span class="rounded bg-sabere-dark dark:bg-surface-3 px-2 py-0.5 font-semibold text-white">
                                     {{ networkLabels[post.network] ?? post.network }}
                                 </span>
-                                <span class="text-gray-500">
+                                <span class="text-muted">
                                     {{ formatDate(post.scheduled_date) }} {{ post.scheduled_time }}
                                 </span>
                                 <span
@@ -257,15 +257,15 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                                 </span>
                             </div>
 
-                            <p class="mt-3 text-sm font-medium text-gray-900">{{ post.hook }}</p>
-                            <p class="mt-1 whitespace-pre-line text-sm text-gray-700">{{ post.copy }}</p>
-                            <p v-if="post.hashtags?.length" class="mt-1 text-sm text-gray-400">
+                            <p class="mt-3 text-sm font-medium text-fg">{{ post.hook }}</p>
+                            <p class="mt-1 whitespace-pre-line text-sm text-fg-2">{{ post.copy }}</p>
+                            <p v-if="post.hashtags?.length" class="mt-1 text-sm text-muted">
                                 {{ post.hashtags.join(' ') }}
                             </p>
 
                             <p
                                 v-if="post.decision === 'rejected' && post.comment"
-                                class="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700"
+                                class="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200"
                             >
                                 <strong>Tu comentario:</strong> {{ post.comment }}
                             </p>
@@ -277,7 +277,7 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                                         rows="3"
                                         required
                                         placeholder="¿Qué debe cambiar? (obligatorio)"
-                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-red-400 focus:ring-red-400"
+                                        class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm focus:border-red-400 focus:ring-red-400"
                                     />
                                     <div class="flex gap-2">
                                         <button
@@ -290,7 +290,7 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                                         </button>
                                         <button
                                             type="button"
-                                            class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600"
+                                            class="rounded-md border border-line-strong px-4 py-2 text-sm text-fg-2"
                                             @click="rejecting = null"
                                         >
                                             Cancelar
@@ -308,7 +308,7 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                                     </button>
                                     <button
                                         type="button"
-                                        class="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:flex-none"
+                                        class="flex-1 rounded-lg border border-line-strong px-4 py-2.5 text-sm font-medium text-fg-2 hover:bg-surface-2 sm:flex-none"
                                         @click="startReject(post)"
                                     >
                                         Rechazar
@@ -324,14 +324,14 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                         :value="weekDraft(week)"
                         rows="2"
                         placeholder="Comentario para esta semana (opcional)"
-                        class="block w-full rounded-md border-gray-300 bg-white text-sm shadow-sm focus:border-gray-400 focus:ring-gray-400"
+                        class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm placeholder:text-muted focus:border-sabere-accent focus:ring-sabere-accent"
                         @input="weekDrafts[week.week_from] = ($event.target as HTMLTextAreaElement).value"
                         @blur="saveWeekComment(week)"
                     />
                 </div>
             </section>
 
-            <p v-if="submitted && !weeks.length" class="mt-8 text-center text-sm text-gray-500">
+            <p v-if="submitted && !weeks.length" class="mt-8 text-center text-sm text-muted">
                 Esta revisión no incluía publicaciones.
             </p>
         </div>
@@ -339,14 +339,14 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
         <!-- Pie fijo de envío -->
         <footer
             v-if="!submitted"
-            class="fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white/95 p-4 backdrop-blur"
+            class="fixed inset-x-0 bottom-0 border-t border-line bg-surface/95 p-4 backdrop-blur"
         >
             <div class="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row sm:items-end">
                 <textarea
                     v-model="generalComment"
                     rows="1"
                     placeholder="Comentario general para el equipo (opcional)"
-                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-400 focus:ring-gray-400 sm:max-w-md"
+                    class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm placeholder:text-muted focus:border-sabere-accent focus:ring-sabere-accent sm:max-w-md"
                 />
                 <button
                     type="button"

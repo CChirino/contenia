@@ -41,7 +41,7 @@ const submit = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Administración · {{ editUser ? `Editar ${editUser.name}` : 'Nuevo operador' }}
             </h2>
         </template>
@@ -49,7 +49,7 @@ const submit = () => {
         <div class="py-12">
             <div class="mx-auto max-w-3xl sm:px-6 lg:px-8">
                 <form
-                    class="space-y-6 overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg"
+                    class="space-y-6 overflow-hidden bg-surface p-6 shadow-sm sm:rounded-lg"
                     @submit.prevent="submit"
                 >
                     <div>
@@ -84,7 +84,7 @@ const submit = () => {
                         <select
                             id="role"
                             v-model="form.role"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                         >
                             <option v-for="role in roles" :key="role" :value="role">
                                 {{ role === 'admin' ? 'Admin' : 'Operador' }}
@@ -94,18 +94,18 @@ const submit = () => {
                     </div>
 
                     <fieldset>
-                        <legend class="text-sm font-medium text-gray-700">Marcas asignadas</legend>
+                        <legend class="text-sm font-medium text-fg-2">Marcas asignadas</legend>
                         <div class="mt-2 space-y-2">
                             <label v-for="brand in brands" :key="brand.id" class="flex items-center gap-2">
                                 <Checkbox v-model:checked="form.brand_ids" :value="brand.id" />
-                                <span class="text-sm text-gray-700">{{ brand.name }}</span>
+                                <span class="text-sm text-fg-2">{{ brand.name }}</span>
                             </label>
                         </div>
                         <InputError :message="form.errors.brand_ids" class="mt-2" />
                     </fieldset>
 
                     <div class="flex items-center justify-end gap-4">
-                        <Link :href="route('users.index')" class="text-sm text-gray-600 hover:text-gray-900">
+                        <Link :href="route('users.index')" class="text-sm text-fg-2 hover:text-fg">
                             Cancelar
                         </Link>
                         <PrimaryButton :disabled="form.processing">
