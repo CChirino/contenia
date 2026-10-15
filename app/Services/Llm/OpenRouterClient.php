@@ -87,13 +87,18 @@ class OpenRouterClient implements LlmClient
             );
         }
 
+        $usedModel = $response->json('model') ?? $model;
+        $in = (int) $response->json('usage.prompt_tokens', 0);
+        $out = (int) $response->json('usage.completion_tokens', 0);
+
         LlmLog::create([
             'purpose' => $purpose,
             'prompt' => $system."\n\n".$user,
             'response' => $response->body(),
-            'input_tokens' => (int) $response->json('usage.prompt_tokens', 0),
-            'output_tokens' => (int) $response->json('usage.completion_tokens', 0),
-            'model' => $response->json('model') ?? $model,
+            'input_tokens' => $in,
+            'output_tokens' => $out,
+            'cost_usd' => LlmPricing::cost($usedModel, $in, $out),
+            'model' => $usedModel,
             'duration_ms' => $durationMs,
         ]);
 

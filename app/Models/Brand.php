@@ -100,4 +100,17 @@ class Brand extends Model
     {
         return $this->hasMany(ReviewRequest::class);
     }
+
+    public function usage(): HasMany
+    {
+        return $this->hasMany(BrandUsage::class);
+    }
+
+    /**
+     * Fila de consumo del mes de contenido (se crea si no existe).
+     */
+    public function usageFor(int $year, int $month): BrandUsage
+    {
+        return $this->usage()->firstOrCreate(['year' => $year, 'month' => $month]);
+    }
 }

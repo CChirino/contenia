@@ -45,6 +45,7 @@ class FakeLlmClient implements LlmClient
             'response' => json_encode($result),
             'input_tokens' => 0,
             'output_tokens' => 0,
+            'cost_usd' => 0,
             'model' => 'fake',
             'duration_ms' => 0,
         ]);

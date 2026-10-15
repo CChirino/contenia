@@ -63,12 +63,16 @@ class AnthropicClient implements LlmClient
             );
         }
 
+        $in = (int) $response->json('usage.input_tokens', 0);
+        $out = (int) $response->json('usage.output_tokens', 0);
+
         LlmLog::create([
             'purpose' => $purpose,
             'prompt' => $system."\n\n".$user,
             'response' => $response->body(),
-            'input_tokens' => (int) $response->json('usage.input_tokens', 0),
-            'output_tokens' => (int) $response->json('usage.output_tokens', 0),
+            'input_tokens' => $in,
+            'output_tokens' => $out,
+            'cost_usd' => LlmPricing::cost($model, $in, $out),
             'model' => $model,
             'duration_ms' => $durationMs,
         ]);

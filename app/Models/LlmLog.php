@@ -19,6 +19,7 @@ class LlmLog extends Model
         'response',
         'input_tokens',
         'output_tokens',
+        'cost_usd',
         'model',
         'duration_ms',
     ];
