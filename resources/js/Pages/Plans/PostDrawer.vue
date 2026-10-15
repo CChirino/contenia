@@ -193,23 +193,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 <template>
     <div class="fixed inset-0 z-50">
         <div
-            class="absolute inset-0 bg-gray-900/50"
+            class="absolute inset-0 bg-black/50"
             @click="emit('close')"
         />
         <div class="absolute inset-y-0 right-0 flex w-full sm:max-w-lg">
-            <div class="flex h-full w-full flex-col overflow-y-auto bg-white shadow-xl">
-                <div class="flex items-center justify-between border-b px-6 py-4">
+            <div class="flex h-full w-full flex-col overflow-y-auto bg-surface shadow-xl">
+                <div class="flex items-center justify-between border-b border-line px-6 py-4">
                     <div class="flex items-center gap-2">
                         <span class="rounded bg-sabere-dark px-2 py-0.5 text-xs font-semibold text-white">
                             {{ networkLabels[post.network] }}
                         </span>
-                        <span class="text-sm text-gray-600">
+                        <span class="text-sm text-fg-2">
                             {{ scheduledLocal }}
                         </span>
                     </div>
                     <button
                         type="button"
-                        class="rounded-md p-1 text-gray-400 hover:text-gray-600"
+                        class="rounded-md p-1 text-muted hover:text-fg-2"
                         @click="emit('close')"
                     >
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                 </div>
 
                 <div class="flex-1 space-y-5 px-6 py-4">
-                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-2">
                         <span><strong>Pilar:</strong> {{ post.content_pillar?.name ?? '—' }}</span>
                         <span><strong>Formato:</strong> {{ formatLabels[post.format] ?? post.format }}</span>
                         <span><strong>Estado:</strong> {{ statusLabels[post.status] ?? post.status }}</span>
@@ -227,47 +227,47 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
                     <div
                         v-if="post.regeneration_error"
-                        class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                        class="rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-300"
                     >
                         {{ post.regeneration_error }}
                     </div>
 
                     <div
                         v-if="post.error"
-                        class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                        class="rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-300"
                     >
                         {{ post.error }}
                     </div>
 
                     <div
                         v-if="post.review?.comment"
-                        class="rounded-md border border-amber-200 bg-amber-50 p-3"
+                        class="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3"
                     >
-                        <h4 class="text-xs font-semibold uppercase text-amber-700">
+                        <h4 class="text-xs font-semibold uppercase text-amber-700 dark:text-amber-300">
                             Comentario del cliente
                             <template v-if="post.review.decision === 'rejected'">(rechazado)</template>
                         </h4>
-                        <p class="mt-1 text-sm text-amber-800">{{ post.review.comment }}</p>
+                        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">{{ post.review.comment }}</p>
                     </div>
 
                     <div>
-                        <h4 class="text-xs font-semibold uppercase text-gray-500">Hook</h4>
-                        <p class="mt-1 text-sm font-medium text-gray-900">{{ post.hook }}</p>
+                        <h4 class="text-xs font-semibold uppercase text-muted">Hook</h4>
+                        <p class="mt-1 text-sm font-medium text-fg">{{ post.hook }}</p>
                     </div>
 
                     <div>
-                        <h4 class="text-xs font-semibold uppercase text-gray-500">Copy</h4>
-                        <p class="mt-1 whitespace-pre-line text-sm text-gray-700">{{ post.copy }}</p>
+                        <h4 class="text-xs font-semibold uppercase text-muted">Copy</h4>
+                        <p class="mt-1 whitespace-pre-line text-sm text-fg-2">{{ post.copy }}</p>
                     </div>
 
                     <div>
-                        <h4 class="text-xs font-semibold uppercase text-gray-500">Hashtags</h4>
+                        <h4 class="text-xs font-semibold uppercase text-muted">Hashtags</h4>
                         <p class="mt-1 text-sm text-sabere-purple">{{ post.hashtags.join(' ') }}</p>
                     </div>
 
                     <div v-if="post.design_payload?.slides?.length">
-                        <h4 class="text-xs font-semibold uppercase text-gray-500">Slides</h4>
-                        <ol class="mt-1 list-decimal space-y-1 ps-5 text-sm text-gray-700">
+                        <h4 class="text-xs font-semibold uppercase text-muted">Slides</h4>
+                        <ol class="mt-1 list-decimal space-y-1 ps-5 text-sm text-fg-2">
                             <li v-for="(slide, i) in post.design_payload.slides" :key="i">
                                 <strong>{{ slide.title }}</strong> — {{ slide.body }}
                             </li>
@@ -275,11 +275,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     </div>
 
                     <div v-if="post.background_prompt || post.photo_keywords || post.icon">
-                        <h4 class="text-xs font-semibold uppercase text-gray-500">Fondo (prompt)</h4>
-                        <p v-if="post.background_prompt" class="mt-1 text-sm text-gray-700">
+                        <h4 class="text-xs font-semibold uppercase text-muted">Fondo (prompt)</h4>
+                        <p v-if="post.background_prompt" class="mt-1 text-sm text-fg-2">
                             {{ post.background_prompt }}
                         </p>
-                        <p v-if="post.photo_keywords || post.icon" class="mt-1 text-sm text-gray-500">
+                        <p v-if="post.photo_keywords || post.icon" class="mt-1 text-sm text-muted">
                             <template v-if="post.photo_keywords">Foto: {{ post.photo_keywords }}</template>
                             <template v-if="post.photo_keywords && post.icon"> · </template>
                             <template v-if="post.icon">Icono: {{ post.icon }}</template>
@@ -288,23 +288,23 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
                     <div>
                         <div class="flex items-center justify-between">
-                            <h4 class="text-xs font-semibold uppercase text-gray-500">Diseño</h4>
+                            <h4 class="text-xs font-semibold uppercase text-muted">Diseño</h4>
                             <a
                                 v-if="post.background_source && backgroundBadge.url"
                                 :href="backgroundBadge.url"
                                 target="_blank"
                                 rel="noopener"
-                                class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-200 hover:underline"
+                                class="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] text-fg-2 hover:bg-line hover:underline"
                             >{{ backgroundBadge.label }}</a>
                             <span
                                 v-else-if="post.background_source"
-                                class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600"
+                                class="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] text-fg-2"
                             >{{ backgroundBadge.label }}</span>
                         </div>
 
                         <div
                             v-if="rendering"
-                            class="mt-2 flex h-32 items-center justify-center gap-2 rounded-md bg-gray-100 text-sm text-gray-500"
+                            class="mt-2 flex h-32 items-center justify-center gap-2 rounded-md bg-surface-3 text-sm text-muted"
                         >
                             <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -315,9 +315,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
                         <div
                             v-else-if="post.render_error"
-                            class="mt-2 rounded-md border border-red-200 bg-red-50 p-3"
+                            class="mt-2 rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 p-3"
                         >
-                            <p class="text-sm text-red-700">{{ post.render_error }}</p>
+                            <p class="text-sm text-red-700 dark:text-red-300">{{ post.render_error }}</p>
                             <SecondaryButton type="button" class="mt-2" @click="rerender(false)">
                                 Reintentar
                             </SecondaryButton>
@@ -330,22 +330,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                     <img
                                         :src="frameUrls[currentFrame]"
                                         alt=""
-                                        class="w-full rounded-md border border-gray-200"
+                                        class="w-full rounded-md border border-line"
                                     >
                                     <button
                                         v-if="frameUrls.length > 1"
                                         type="button"
-                                        class="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 px-2 py-1 text-lg shadow hover:bg-white"
+                                        class="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-surface/80 px-2 py-1 text-lg shadow hover:bg-surface"
                                         @click="currentFrame = (currentFrame - 1 + frameUrls.length) % frameUrls.length"
                                     >‹</button>
                                     <button
                                         v-if="frameUrls.length > 1"
                                         type="button"
-                                        class="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 px-2 py-1 text-lg shadow hover:bg-white"
+                                        class="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-surface/80 px-2 py-1 text-lg shadow hover:bg-surface"
                                         @click="currentFrame = (currentFrame + 1) % frameUrls.length"
                                     >›</button>
                                 </div>
-                                <p class="mt-1 text-center text-xs text-gray-500">
+                                <p class="mt-1 text-center text-xs text-muted">
                                     {{ currentFrame + 1 }}/{{ frameUrls.length }}
                                 </p>
                             </div>
@@ -358,7 +358,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                     :poster="frameUrls[0]"
                                     controls
                                     playsinline
-                                    class="w-full rounded-md border border-gray-200"
+                                    class="w-full rounded-md border border-line"
                                 />
                                 <div v-else class="grid grid-cols-3 gap-1">
                                     <img
@@ -366,7 +366,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                         :key="i"
                                         :src="url"
                                         alt=""
-                                        class="rounded border border-gray-200"
+                                        class="rounded border border-line"
                                     >
                                 </div>
                             </div>
@@ -376,13 +376,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 v-else
                                 :src="post.asset_urls?.final ?? frameUrls[0]"
                                 alt=""
-                                class="mt-2 w-full rounded-md border border-gray-200"
+                                class="mt-2 w-full rounded-md border border-line"
                             >
                         </div>
 
                         <div
                             v-else
-                            class="mt-2 flex h-32 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-400"
+                            class="mt-2 flex h-32 items-center justify-center rounded-md bg-surface-3 text-sm text-muted"
                         >
                             {{ canGenerateDesign ? 'Sin diseño todavía' : 'Sin diseño renderizado' }}
                         </div>
@@ -405,19 +405,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                             <SecondaryButton type="button" @click="copyContent">
                                 {{ copied ? '¡Copiado!' : 'Copiar copy + hashtags' }}
                             </SecondaryButton>
-                            <p v-if="quotaError" class="w-full text-sm text-red-600">{{ quotaError }}</p>
+                            <p v-if="quotaError" class="w-full text-sm text-red-600 dark:text-red-400">{{ quotaError }}</p>
                         </div>
                     </div>
 
                     <!-- Edición inline -->
-                    <form v-if="editing" @submit.prevent="submitEdit" class="space-y-4 rounded-md border border-gray-200 p-4">
+                    <form v-if="editing" @submit.prevent="submitEdit" class="space-y-4 rounded-md border border-line p-4">
                         <div>
                             <InputLabel for="edit_copy" value="Copy" />
                             <textarea
                                 id="edit_copy"
                                 v-model="editForm.copy"
                                 rows="5"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                             />
                             <InputError :message="editForm.errors.copy" class="mt-1" />
                         </div>
@@ -447,7 +447,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 <select
                                     id="edit_format"
                                     v-model="editForm.format"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                                 >
                                     <option
                                         v-for="f in allowedFormats[post.network]"
@@ -478,7 +478,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 <select
                                     id="edit_icon"
                                     v-model="editForm.icon"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                                 >
                                     <option :value="null">—</option>
                                     <option v-for="i in iconOptions" :key="i" :value="i">{{ i }}</option>
@@ -493,7 +493,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     </form>
 
                     <!-- Regenerar -->
-                    <form v-if="showRegenerate" @submit.prevent="submitRegenerate" class="space-y-3 rounded-md border border-gray-200 p-4">
+                    <form v-if="showRegenerate" @submit.prevent="submitRegenerate" class="space-y-3 rounded-md border border-line p-4">
                         <div>
                             <InputLabel for="regen_comment" value="Comentario (opcional)" />
                             <textarea
@@ -502,11 +502,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 rows="3"
                                 maxlength="500"
                                 placeholder="Ej.: hazlo más breve, cambia el enfoque…"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                             />
                             <InputError :message="regenerateForm.errors.comment" class="mt-1" />
                         </div>
-                        <p v-if="quotaError" class="text-sm text-red-600">{{ quotaError }}</p>
+                        <p v-if="quotaError" class="text-sm text-red-600 dark:text-red-400">{{ quotaError }}</p>
                         <div class="flex gap-2">
                             <PrimaryButton
                                 :disabled="regenerateForm.processing || regenExhausted"
@@ -519,7 +519,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     </form>
                 </div>
 
-                <div class="flex gap-2 border-t px-6 py-4">
+                <div class="flex gap-2 border-t border-line px-6 py-4">
                     <PrimaryButton
                         v-if="post.status === 'drafted'"
                         type="button"

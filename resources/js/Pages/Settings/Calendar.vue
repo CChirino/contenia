@@ -79,22 +79,22 @@ const destroy = (event: CalendarEvent) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Configuración · Calendario
             </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
-                <div class="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <h3 class="mb-1 text-lg font-medium text-gray-900">Feriados (globales)</h3>
-                    <p class="mb-4 text-sm text-gray-500">
+                <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
+                    <h3 class="mb-1 text-lg font-medium text-fg">Feriados (globales)</h3>
+                    <p class="mb-4 text-sm text-muted">
                         Compartidos por todas las marcas.<template v-if="!isAdmin"> Solo lectura.</template>
                     </p>
 
                     <table class="w-full text-left text-sm">
                         <thead>
-                            <tr class="border-b text-gray-500">
+                            <tr class="border-b border-line text-muted">
                                 <th class="py-2 pe-4 w-36">Fecha</th>
                                 <th class="py-2 pe-4">Nombre</th>
                                 <th class="py-2 pe-4">Descripción</th>
@@ -107,7 +107,7 @@ const destroy = (event: CalendarEvent) => {
                             <tr
                                 v-for="event in globalEvents"
                                 :key="event.id"
-                                class="border-b last:border-0"
+                                class="border-b border-line last:border-0"
                             >
                                 <template v-if="isAdmin && editingId === event.id">
                                     <td class="py-2 pe-4">
@@ -126,14 +126,14 @@ const destroy = (event: CalendarEvent) => {
                                         <input
                                             type="checkbox"
                                             v-model="editForm.recurring"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                                         />
                                     </td>
                                     <td class="py-2 pe-4">
                                         <input
                                             type="checkbox"
                                             v-model="editForm.no_posting"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                                         />
                                     </td>
                                     <td class="py-2">
@@ -152,10 +152,10 @@ const destroy = (event: CalendarEvent) => {
                                 </template>
                                 <template v-else>
                                     <td class="py-2 pe-4">{{ event.date }}</td>
-                                    <td class="py-2 pe-4 font-medium text-gray-900">
+                                    <td class="py-2 pe-4 font-medium text-fg">
                                         {{ event.name }}
                                     </td>
-                                    <td class="py-2 pe-4 text-gray-600">
+                                    <td class="py-2 pe-4 text-fg-2">
                                         {{ event.description }}
                                     </td>
                                     <td class="py-2 pe-4">{{ event.recurring ? 'Sí' : 'No' }}</td>
@@ -176,12 +176,12 @@ const destroy = (event: CalendarEvent) => {
                     </table>
                 </div>
 
-                <div class="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <h3 class="mb-4 text-lg font-medium text-gray-900">Eventos de la marca</h3>
+                <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
+                    <h3 class="mb-4 text-lg font-medium text-fg">Eventos de la marca</h3>
 
                     <table class="w-full text-left text-sm">
                         <thead>
-                            <tr class="border-b text-gray-500">
+                            <tr class="border-b border-line text-muted">
                                 <th class="py-2 pe-4 w-36">Fecha</th>
                                 <th class="py-2 pe-4">Nombre</th>
                                 <th class="py-2 pe-4">Descripción</th>
@@ -194,7 +194,7 @@ const destroy = (event: CalendarEvent) => {
                             <tr
                                 v-for="event in brandEvents"
                                 :key="event.id"
-                                class="border-b last:border-0"
+                                class="border-b border-line last:border-0"
                             >
                                 <template v-if="editingId === event.id">
                                     <td class="py-2 pe-4">
@@ -213,14 +213,14 @@ const destroy = (event: CalendarEvent) => {
                                         <input
                                             type="checkbox"
                                             v-model="editForm.recurring"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                                         />
                                     </td>
                                     <td class="py-2 pe-4">
                                         <input
                                             type="checkbox"
                                             v-model="editForm.no_posting"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                                         />
                                     </td>
                                     <td class="py-2">
@@ -239,10 +239,10 @@ const destroy = (event: CalendarEvent) => {
                                 </template>
                                 <template v-else>
                                     <td class="py-2 pe-4">{{ event.date }}</td>
-                                    <td class="py-2 pe-4 font-medium text-gray-900">
+                                    <td class="py-2 pe-4 font-medium text-fg">
                                         {{ event.name }}
                                     </td>
-                                    <td class="py-2 pe-4 text-gray-600">
+                                    <td class="py-2 pe-4 text-fg-2">
                                         {{ event.description }}
                                     </td>
                                     <td class="py-2 pe-4">{{ event.recurring ? 'Sí' : 'No' }}</td>
@@ -263,8 +263,8 @@ const destroy = (event: CalendarEvent) => {
                     </table>
                 </div>
 
-                <div class="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <h3 class="text-lg font-medium text-gray-900">Nuevo evento</h3>
+                <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
+                    <h3 class="text-lg font-medium text-fg">Nuevo evento</h3>
                     <form
                         @submit.prevent="submitCreate"
                         class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
@@ -299,27 +299,27 @@ const destroy = (event: CalendarEvent) => {
                             />
                             <InputError :message="createForm.errors.description" class="mt-1" />
                         </div>
-                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <label class="flex items-center gap-2 text-sm text-fg-2">
                             <input
                                 type="checkbox"
                                 v-model="createForm.recurring"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                             />
                             Recurrente cada año
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <label class="flex items-center gap-2 text-sm text-fg-2">
                             <input
                                 type="checkbox"
                                 v-model="createForm.no_posting"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                             />
                             Sin publicación
                         </label>
-                        <label v-if="isAdmin" class="flex items-center gap-2 text-sm text-gray-700">
+                        <label v-if="isAdmin" class="flex items-center gap-2 text-sm text-fg-2">
                             <input
                                 type="checkbox"
                                 v-model="createForm.global"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                             />
                             Feriado global (todas las marcas)
                         </label>

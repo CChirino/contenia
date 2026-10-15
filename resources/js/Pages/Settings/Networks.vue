@@ -52,7 +52,7 @@ const submit = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Configuración · Estrategias por red
             </h2>
         </template>
@@ -63,14 +63,14 @@ const submit = () => {
                     <div
                         v-for="(strategy, index) in form.strategies"
                         :key="strategy.id"
-                        class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
+                        class="bg-surface p-4 shadow sm:rounded-lg sm:p-8"
                         :class="{ 'opacity-60': !isAllowed(strategy.network) }"
                     >
-                        <h3 class="flex items-center gap-3 text-lg font-medium text-gray-900">
+                        <h3 class="flex items-center gap-3 text-lg font-medium text-fg">
                             {{ networkLabels[strategy.network] ?? strategy.network }}
                             <span
                                 v-if="!isAllowed(strategy.network)"
-                                class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-normal text-gray-500"
+                                class="rounded-full bg-surface-3 px-2.5 py-0.5 text-xs font-normal text-muted"
                             >
                                 No incluida en el plan {{ plan_name }}
                             </span>
@@ -106,13 +106,13 @@ const submit = () => {
                                     <label
                                         v-for="format in allowedFormats[strategy.network]"
                                         :key="format"
-                                        class="flex items-center gap-2 text-sm text-gray-700"
+                                        class="flex items-center gap-2 text-sm text-fg-2"
                                     >
                                         <input
                                             type="checkbox"
                                             v-model="strategy.preferred_formats"
                                             :value="format"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
                                         />
                                         {{ formatLabels[format] ?? format }}
                                     </label>
@@ -129,7 +129,7 @@ const submit = () => {
                                     :id="`focus_${strategy.id}`"
                                     v-model="strategy.focus"
                                     rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                                 />
                                 <InputError
                                     :message="form.errors[`strategies.${index}.focus`]"
@@ -143,7 +143,7 @@ const submit = () => {
                         <PrimaryButton :disabled="form.processing">
                             Guardar
                         </PrimaryButton>
-                        <span v-if="form.recentlySuccessful" class="text-sm text-gray-600">
+                        <span v-if="form.recentlySuccessful" class="text-sm text-fg-2">
                             Guardado.
                         </span>
                     </div>

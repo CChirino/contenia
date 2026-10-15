@@ -59,7 +59,7 @@ const networkChipClass: Record<NetworkName, string> = {
 };
 
 const statusDotClass: Record<string, string> = {
-    drafted: 'bg-gray-400',
+    drafted: 'bg-muted',
     approved: 'bg-blue-500',
     rendered: 'bg-teal-500',
     client_approved: 'bg-green-500',
@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Grilla de contenido
             </h2>
         </template>
@@ -356,17 +356,17 @@ onBeforeUnmount(() => {
                     <div class="flex items-center gap-2">
                         <button
                             type="button"
-                            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
+                            class="rounded-md border border-line-strong px-3 py-1.5 text-sm hover:bg-surface-2"
                             @click="navigate(prevMonth)"
                         >
                             &larr;
                         </button>
-                        <h3 class="w-44 text-center text-lg font-medium capitalize text-gray-900">
+                        <h3 class="w-44 text-center text-lg font-medium capitalize text-fg">
                             {{ monthNames[month - 1] }} {{ year }}
                         </h3>
                         <button
                             type="button"
-                            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
+                            class="rounded-md border border-line-strong px-3 py-1.5 text-sm hover:bg-surface-2"
                             @click="navigate(nextMonth)"
                         >
                             &rarr;
@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
                             class="rounded-full px-3 py-1 text-xs font-medium"
                             :class="networkFilter === null
                                 ? 'bg-sabere-dark text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                                : 'bg-surface-3 text-fg-2 hover:bg-line'"
                             @click="networkFilter = null"
                         >
                             Todas
@@ -391,7 +391,7 @@ onBeforeUnmount(() => {
                             class="rounded-full px-3 py-1 text-xs font-medium"
                             :class="networkFilter === network
                                 ? `${networkChipClass[network]} text-white`
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                                : 'bg-surface-3 text-fg-2 hover:bg-line'"
                             @click="networkFilter = network"
                         >
                             {{ label }}
@@ -427,15 +427,15 @@ onBeforeUnmount(() => {
                 <!-- Barra de uso del plan (oculta en planes ilimitados) -->
                 <div
                     v-if="!quota.unlimited && usageActions.length"
-                    class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-xs text-gray-600"
+                    class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-md border border-line bg-surface px-4 py-2.5 text-xs text-fg-2"
                 >
-                    <span class="font-medium text-gray-800">Plan {{ quota.plan }}</span>
+                    <span class="font-medium text-fg">Plan {{ quota.plan }}</span>
                     <span v-for="a in usageActions" :key="a.action" class="flex items-center gap-1.5">
                         <span>
                             {{ actionLabels[a.action] ?? a.action }}
                             <b>{{ a.used }}/{{ a.limit }}</b>
                         </span>
-                        <span class="h-1 w-16 overflow-hidden rounded-full bg-gray-100">
+                        <span class="h-1 w-16 overflow-hidden rounded-full bg-surface-3">
                             <span class="block h-full" :class="barClass(a)" :style="{ width: pct(a) + '%' }" />
                         </span>
                     </span>
@@ -444,7 +444,7 @@ onBeforeUnmount(() => {
                 <!-- Aviso de recorte por cuota -->
                 <div
                     v-if="plan?.quota_notice"
-                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
                 >
                     {{ plan.quota_notice }}
                     <span class="font-medium">Pide una extensión al administrador.</span>
@@ -456,32 +456,32 @@ onBeforeUnmount(() => {
                     :key="review.id"
                     class="mb-3 rounded-md border p-3 text-sm"
                     :class="review.status === 'open'
-                        ? 'border-teal-200 bg-teal-50 text-teal-800'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'"
+                        ? 'border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-700 dark:bg-teal-900/30 dark:text-teal-200'
+                        : 'border-line bg-surface-2 text-fg-2'"
                 >
                     <div class="flex flex-wrap items-center gap-3">
                         <span>{{ reviewStatusText(review) }}</span>
-                        <span class="text-xs text-gray-500">
+                        <span class="text-xs text-muted">
                             ({{ formatDate(review.from_date) }} – {{ formatDate(review.to_date) }})
                         </span>
                         <div v-if="review.status === 'open'" class="ms-auto flex gap-2">
                             <button
                                 type="button"
-                                class="rounded border border-teal-300 px-2 py-0.5 text-xs hover:bg-teal-100"
+                                class="rounded border border-teal-300 dark:border-teal-600 px-2 py-0.5 text-xs hover:bg-teal-100 dark:hover:bg-teal-900/40"
                                 @click="rotateReview(review)"
                             >
                                 Nuevo enlace
                             </button>
                             <button
                                 type="button"
-                                class="rounded border border-red-200 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                                class="rounded border border-red-200 px-2 py-0.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
                                 @click="revokeReview(review)"
                             >
                                 Revocar
                             </button>
                         </div>
                     </div>
-                    <p v-if="review.general_comment" class="mt-1 text-xs italic text-gray-600">
+                    <p v-if="review.general_comment" class="mt-1 text-xs italic text-fg-2">
                         «{{ review.general_comment }}»
                     </p>
                 </div>
@@ -495,12 +495,12 @@ onBeforeUnmount(() => {
 
                 <div
                     v-if="generateError"
-                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
                 >
                     {{ generateError }}
                     <Link
                         :href="route('settings.pillars.index')"
-                        class="font-medium underline hover:text-amber-900"
+                        class="font-medium underline hover:text-amber-900 dark:hover:text-amber-200"
                     >
                         Revisar pilares de contenido
                     </Link>
@@ -508,24 +508,24 @@ onBeforeUnmount(() => {
 
                 <div
                     v-if="pending"
-                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                    class="mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
                 >
                     Generando la grilla… esta página se actualizará automáticamente.
                 </div>
 
                 <!-- Grilla mensual -->
-                <div class="grid grid-cols-[2.5rem_repeat(7,minmax(0,1fr))] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200">
-                    <div class="bg-gray-50" />
+                <div class="grid grid-cols-[2.5rem_repeat(7,minmax(0,1fr))] gap-px overflow-hidden rounded-lg border border-line bg-line">
+                    <div class="bg-surface-2" />
                     <div
                         v-for="weekday in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']"
                         :key="weekday"
-                        class="bg-gray-50 px-2 py-1 text-center text-xs font-medium text-gray-500"
+                        class="bg-surface-2 px-2 py-1 text-center text-xs font-medium text-muted"
                     >
                         {{ weekday }}
                     </div>
 
                     <template v-for="(row, weekIndex) in rows" :key="weekIndex">
-                        <div class="flex flex-col items-center justify-center gap-0.5 bg-gray-50">
+                        <div class="flex flex-col items-center justify-center gap-0.5 bg-surface-2">
                             <button
                                 v-if="weeks[weekIndex] && requiresApproval"
                                 type="button"
@@ -533,7 +533,7 @@ onBeforeUnmount(() => {
                                 :title="weekEligible(weeks[weekIndex])
                                     ? `Enviar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to} a aprobación`
                                     : 'Sin diseños listos para revisar esta semana'"
-                                class="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-sabere-accent disabled:opacity-40"
+                                class="rounded p-1 text-muted hover:bg-surface-3 hover:text-sabere-accent disabled:opacity-40"
                                 @click="sendToReview(weeks[weekIndex])"
                             >
                                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -548,7 +548,7 @@ onBeforeUnmount(() => {
                                 :title="postsExhausted
                                     ? 'Cupo de posts del mes agotado'
                                     : `Regenerar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to}`"
-                                class="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-sabere-dark disabled:opacity-40"
+                                class="rounded p-1 text-muted hover:bg-surface-3 hover:text-sabere-dark dark:hover:text-sabere-accent disabled:opacity-40"
                                 @click="regenerateWeek(weeks[weekIndex])"
                             >
                                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -559,21 +559,21 @@ onBeforeUnmount(() => {
                         <div
                             v-for="(cell, i) in row"
                             :key="i"
-                            class="min-h-28 bg-white p-1"
-                            :class="{ 'bg-gray-50': cell === null }"
+                            class="min-h-28 bg-surface p-1"
+                            :class="{ 'bg-surface-2': cell === null }"
                         >
                             <template v-if="cell">
-                                <div class="px-1 text-xs font-medium text-gray-500">
+                                <div class="px-1 text-xs font-medium text-muted">
                                     {{ cell.day }}
                                 </div>
                                 <button
                                     v-for="post in postsByDate[cell.date] ?? []"
                                     :key="post.id"
                                     type="button"
-                                    class="mt-1 block w-full rounded border bg-sabere-light p-1 text-left hover:border-sabere-accent"
+                                    class="mt-1 block w-full rounded border bg-sabere-light dark:bg-surface-3 p-1 text-left hover:border-sabere-accent"
                                     :class="post.status === 'drafted' && post.review?.decision === 'rejected'
-                                        ? 'border-red-300'
-                                        : 'border-gray-100'"
+                                        ? 'border-red-300 dark:border-red-700'
+                                        : 'border-line'"
                                     @click="selectedPostId = post.id"
                                 >
                                     <div class="flex items-center gap-1">
@@ -595,12 +595,12 @@ onBeforeUnmount(() => {
                                             :title="statusLabels[post.status]"
                                         />
                                     </div>
-                                    <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-gray-700">
+                                    <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-fg-2">
                                         {{ post.hook }}
                                     </p>
                                     <p
                                         v-if="post.status === 'drafted' && post.review?.decision === 'rejected'"
-                                        class="mt-0.5 text-[10px] font-medium text-red-600"
+                                        class="mt-0.5 text-[10px] font-medium text-red-600 dark:text-red-400"
                                     >
                                         Rechazado por el cliente
                                     </p>
@@ -609,7 +609,7 @@ onBeforeUnmount(() => {
                         </div>
                         <div
                             v-if="weeks[weekIndex] && weekComments[weeks[weekIndex].from]"
-                            class="col-span-8 bg-amber-50 px-3 py-1.5 text-xs italic text-amber-800"
+                            class="col-span-8 bg-amber-50 px-3 py-1.5 text-xs italic text-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
                         >
                             Comentario del cliente (semana del {{ formatDate(weeks[weekIndex].from) }}):
                             «{{ weekComments[weeks[weekIndex].from] }}»
@@ -625,19 +625,19 @@ onBeforeUnmount(() => {
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             @click.self="reviewUrl = null"
         >
-            <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-                <h3 class="text-lg font-semibold text-gray-900">Enlace de revisión</h3>
-                <p class="mt-2 break-all rounded bg-gray-50 p-3 font-mono text-xs text-gray-700">
+            <div class="w-full max-w-lg rounded-lg bg-surface p-6 shadow-xl">
+                <h3 class="text-lg font-semibold text-fg">Enlace de revisión</h3>
+                <p class="mt-2 break-all rounded bg-surface-2 p-3 font-mono text-xs text-fg-2">
                     {{ reviewUrl }}
                 </p>
-                <p class="mt-2 text-sm text-gray-500">
+                <p class="mt-2 text-sm text-muted">
                     El cliente también lo recibió por correo. Este enlace no se vuelve
                     a mostrar; puedes generar uno nuevo.
                 </p>
                 <div class="mt-4 flex justify-end gap-3">
                     <button
                         type="button"
-                        class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                        class="rounded-md border border-line-strong px-4 py-2 text-sm text-fg-2 hover:bg-surface-2"
                         @click="reviewUrl = null"
                     >
                         Cerrar

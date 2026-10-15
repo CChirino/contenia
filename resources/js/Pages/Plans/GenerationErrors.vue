@@ -33,7 +33,7 @@ const dismiss = () => {
 </script>
 
 <template>
-    <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+    <div class="mb-4 rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 p-4 text-sm text-red-700 dark:text-red-300">
         <div class="flex items-start justify-between gap-4">
             <div>
                 <p class="font-semibold">
@@ -45,14 +45,14 @@ const dismiss = () => {
                         {{ truncate(error.message) }}
                     </li>
                 </ul>
-                <p class="mt-2 text-xs text-red-600">
+                <p class="mt-2 text-xs text-red-600 dark:text-red-400">
                     Las semanas restantes se generaron correctamente. Puedes volver a
                     intentar con 'Regenerar mes' (regenera solo los posts en borrador).
                 </p>
             </div>
             <button
                 type="button"
-                class="shrink-0 rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                class="shrink-0 rounded-md border border-red-300 dark:border-red-700 px-3 py-1 text-xs font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
                 @click="dismiss"
             >
                 Descartar

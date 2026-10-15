@@ -49,14 +49,14 @@ const submit = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Configuración · Perfil de marca
             </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
-                <div class="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
                     <form @submit.prevent="submit" class="space-y-6">
                         <div>
                             <InputLabel for="tone_of_voice" value="Tono de voz" />
@@ -64,7 +64,7 @@ const submit = () => {
                                 id="tone_of_voice"
                                 v-model="form.tone_of_voice"
                                 rows="3"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                             />
                             <InputError :message="form.errors.tone_of_voice" class="mt-2" />
                         </div>
@@ -75,7 +75,7 @@ const submit = () => {
                                 id="audience"
                                 v-model="form.audience"
                                 rows="3"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
                             />
                             <InputError :message="form.errors.audience" class="mt-2" />
                         </div>
@@ -118,14 +118,14 @@ const submit = () => {
                             <InputLabel value="Paleta de colores" />
                             <div class="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
                                 <div v-for="(color, key) in form.palette" :key="key">
-                                    <label class="block text-sm text-gray-600">
+                                    <label class="block text-sm text-fg-2">
                                         {{ paletteLabels[key] ?? key }}
                                     </label>
                                     <div class="mt-1 flex items-center gap-2">
                                         <input
                                             type="color"
                                             v-model="form.palette[key]"
-                                            class="h-9 w-9 rounded border border-gray-300"
+                                            class="h-9 w-9 rounded border border-line-strong"
                                         />
                                         <TextInput
                                             v-model="form.palette[key]"
@@ -142,7 +142,7 @@ const submit = () => {
                             <PrimaryButton :disabled="form.processing">
                                 Guardar
                             </PrimaryButton>
-                            <span v-if="form.recentlySuccessful" class="text-sm text-gray-600">
+                            <span v-if="form.recentlySuccessful" class="text-sm text-fg-2">
                                 Guardado.
                             </span>
                         </div>

@@ -72,19 +72,19 @@ const destroy = (pillar: ContentPillar) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            <h2 class="text-xl font-semibold leading-tight text-fg">
                 Configuración · Pilares de contenido
             </h2>
         </template>
 
         <div class="py-12">
             <div class="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
-                <div class="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
                     <div class="mb-4 flex items-center justify-between">
-                        <h3 class="text-lg font-medium text-gray-900">Pilares</h3>
+                        <h3 class="text-lg font-medium text-fg">Pilares</h3>
                         <span
                             class="text-sm"
-                            :class="totalWeight === 100 ? 'text-green-600' : 'text-amber-600'"
+                            :class="totalWeight === 100 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'"
                         >
                             Suma de pesos: {{ totalWeight }} / 100
                             <template v-if="totalWeight !== 100">
@@ -95,7 +95,7 @@ const destroy = (pillar: ContentPillar) => {
 
                     <table class="w-full text-left text-sm">
                         <thead>
-                            <tr class="border-b text-gray-500">
+                            <tr class="border-b border-line text-muted">
                                 <th class="py-2 pe-4">Nombre</th>
                                 <th class="py-2 pe-4">Descripción</th>
                                 <th class="py-2 pe-4 w-24">Peso</th>
@@ -106,7 +106,7 @@ const destroy = (pillar: ContentPillar) => {
                             <tr
                                 v-for="pillar in pillars"
                                 :key="pillar.id"
-                                class="border-b last:border-0"
+                                class="border-b border-line last:border-0"
                             >
                                 <template v-if="editingId === pillar.id">
                                     <td class="py-2 pe-4">
@@ -142,10 +142,10 @@ const destroy = (pillar: ContentPillar) => {
                                     </td>
                                 </template>
                                 <template v-else>
-                                    <td class="py-2 pe-4 font-medium text-gray-900">
+                                    <td class="py-2 pe-4 font-medium text-fg">
                                         {{ pillar.name }}
                                     </td>
-                                    <td class="py-2 pe-4 text-gray-600">
+                                    <td class="py-2 pe-4 text-fg-2">
                                         {{ pillar.description }}
                                     </td>
                                     <td class="py-2 pe-4">{{ pillar.weight }}%</td>
@@ -165,8 +165,8 @@ const destroy = (pillar: ContentPillar) => {
                     </table>
                 </div>
 
-                <div class="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <h3 class="text-lg font-medium text-gray-900">Nuevo pilar</h3>
+                <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
+                    <h3 class="text-lg font-medium text-fg">Nuevo pilar</h3>
                     <form
                         @submit.prevent="submitCreate"
                         class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4"
