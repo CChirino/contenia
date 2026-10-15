@@ -18,6 +18,7 @@ const props = defineProps<{
 const hashtagsText = ref(props.brandProfile.base_hashtags.join(', '));
 
 const form = useForm({
+    description: props.brandProfile.description,
     tone_of_voice: props.brandProfile.tone_of_voice,
     audience: props.brandProfile.audience,
     base_hashtags: props.brandProfile.base_hashtags,
@@ -59,12 +60,23 @@ const submit = () => {
                 <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
                     <form @submit.prevent="submit" class="space-y-6">
                         <div>
+                            <InputLabel for="description" value="Descripción de la marca (qué hace, para quién)" />
+                            <textarea
+                                id="description"
+                                v-model="form.description"
+                                rows="2"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
+                            />
+                            <InputError :message="form.errors.description" class="mt-2" />
+                        </div>
+
+                        <div>
                             <InputLabel for="tone_of_voice" value="Tono de voz" />
                             <textarea
                                 id="tone_of_voice"
                                 v-model="form.tone_of_voice"
                                 rows="3"
-                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                             />
                             <InputError :message="form.errors.tone_of_voice" class="mt-2" />
                         </div>
@@ -75,7 +87,7 @@ const submit = () => {
                                 id="audience"
                                 v-model="form.audience"
                                 rows="3"
-                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                             />
                             <InputError :message="form.errors.audience" class="mt-2" />
                         </div>
@@ -87,7 +99,7 @@ const submit = () => {
                                 v-model="hashtagsText"
                                 type="text"
                                 class="mt-1 block w-full"
-                                placeholder="#Sabere, #EducacionVenezuela"
+                                placeholder="#TuMarca, #TuSector"
                             />
                             <InputError :message="form.errors.base_hashtags" class="mt-2" />
                         </div>

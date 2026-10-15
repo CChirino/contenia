@@ -46,6 +46,7 @@ class DefaultsSeeder extends Seeder
         app()->instance('brand', Brand::findOrFail(1));
 
         BrandProfile::current()->update([
+            'description' => 'Plataforma de gestión escolar para colegios privados en Venezuela.',
             'tone_of_voice' => 'Cercano, profesional y optimista. Hablamos de tú a tú con la comunidad educativa, sin tecnicismos innecesarios, con orgullo por la educación venezolana.',
             'audience' => 'Docentes, directivos y personal administrativo de colegios privados en Venezuela; también representantes interesados en la gestión escolar.',
             'base_hashtags' => ['#Sabere', '#EducacionVenezuela', '#GestionEscolar', '#Docentes'],

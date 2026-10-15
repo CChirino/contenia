@@ -8,6 +8,7 @@ export interface User {
 
 export interface BrandProfile {
     id: number;
+    description: string | null;
     tone_of_voice: string;
     audience: string;
     base_hashtags: string[];

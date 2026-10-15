@@ -2,27 +2,36 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\BrandStatus;
 use App\Enums\PostIcon;
 use App\Models\Brand;
 use App\Models\Post;
 use App\Services\Llm\LlmClient;
+use App\Services\Planning\PromptBuilder;
 use Illuminate\Console\Command;
 
 class EnrichPhotosCommand extends Command
 {
-    protected $signature = 'posts:enrich-photos {year} {month} {--brand=sabere : Slug de la marca} {--force : Re-procesa todos los posts del mes aunque ya tengan keywords}';
+    protected $signature = 'posts:enrich-photos {year} {month} {--brand= : Slug de la marca (por defecto, la primera activa)} {--force : Re-procesa todos los posts del mes aunque ya tengan keywords}';
 
     protected $description = 'Rellena photo_keywords, icon y background_prompt de los posts del mes que no los tengan (lotes de 15).';
 
-    public function handle(LlmClient $llm): int
+    public function handle(LlmClient $llm, PromptBuilder $prompts): int
     {
         $year = (int) $this->argument('year');
         $month = (int) $this->argument('month');
 
-        $brand = Brand::where('slug', $this->option('brand'))->first();
+        if ($slug = $this->option('brand')) {
+            $brand = Brand::where('slug', $slug)->first();
+        } else {
+            $brand = Brand::where('status', BrandStatus::Active)->orderBy('id')->first();
+            if ($brand) {
+                $this->warn("Sin --brand: usando la primera marca activa ({$brand->slug}).");
+            }
+        }
 
         if (! $brand) {
-            $this->error("Marca no encontrada: {$this->option('brand')}");
+            $this->error('Marca no encontrada: '.($slug ?? '(ninguna activa)'));
 
             return self::FAILURE;
         }
@@ -67,8 +76,8 @@ class EnrichPhotosCommand extends Command
         ];
 
         $system = <<<PROMPT
-        Eres el community manager de Saberé, una plataforma de gestión escolar para colegios privados en Venezuela. Para cada post debes proponer los campos visuales del diseño:
-        - photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, classroom, whiteboard, backpack, books, tablet, pencils, hallway); evita abstractos (rubric, assessment, performance, strategy, biometric).
+        {$prompts->brandIntro()} Para cada post debes proponer los campos visuales del diseño:
+        - {$prompts->photoKeywordsRule()}
         - icon: elige del catálogo [{$this->catalog()}] el que mejor simbolice el tema.
         - background_prompt: EN INGLÉS, una ESCENA FOTOGRÁFICA de respaldo (sin personas, sin letreros, sin pantallas con texto), máximo 25 palabras. No menciones estilos de ilustración.
         Responde únicamente con la herramienta emit_result, devolviendo un item por cada post listado.

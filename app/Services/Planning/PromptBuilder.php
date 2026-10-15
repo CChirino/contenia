@@ -5,6 +5,7 @@ namespace App\Services\Planning;
 use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Enums\PostIcon;
+use App\Models\Brand;
 use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
@@ -44,6 +45,31 @@ class PromptBuilder
         ];
     }
 
+    /**
+     * Presentación del rol en los prompts: nombre de la marca activa y, si el
+     * perfil la tiene, su descripción (qué hace, para quién).
+     */
+    public function brandIntro(): string
+    {
+        $intro = 'Eres el community manager de '.Brand::current()->name;
+        $description = trim((string) (BrandProfile::current()->description ?? ''));
+
+        if ($description !== '') {
+            $description = rtrim($description, ". \t\n");
+            $intro .= ', '.(ctype_upper($description[0]) ? lcfirst($description) : $description);
+        }
+
+        return $intro.'.';
+    }
+
+    /**
+     * Regla de photo_keywords compartida por generación y posts:enrich-photos.
+     */
+    public function photoKeywordsRule(): string
+    {
+        return "photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena del sector de la marca (según su descripción) u oficina, p. ej. 'office laptop desk', 'notebook pencils desk', 'team meeting table'. Sin niños ni menores; adultos solo si son claros profesionales, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, whiteboard, books, tablet, hallway, storefront, workshop, kitchen); evita abstractos (rubric, assessment, performance, strategy, biometric).";
+    }
+
     protected function systemPrompt(): string
     {
         $brand = BrandProfile::current();
@@ -51,7 +77,7 @@ class PromptBuilder
         $hashtags = collect($brand->base_hashtags)->implode(' ');
 
         return <<<PROMPT
-        Eres el community manager de Saberé, una plataforma de gestión escolar para colegios privados en Venezuela. Generas contenido para sus redes sociales.
+        {$this->brandIntro()} Generas contenido para sus redes sociales.
 
         Perfil de marca:
         - Tono de voz: {$brand->tone_of_voice}
@@ -153,7 +179,7 @@ class PromptBuilder
         - No repitas el mismo tema entre redes en la misma semana.
         - No programes posts en días marcados [SIN PUBLICACIÓN] ni fuera del rango indicado.
         - design_payload.slides: 1 slide para image, 3-6 para carousel, 3-5 escenas para reel/video.
-        - photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena escolar u oficina, p. ej. 'school hallway lockers', 'teacher laptop desk', 'notebook pencils desk'. Sin niños ni menores; adultos solo si son docentes/directivos, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, classroom, whiteboard, backpack, books, tablet, pencils, hallway); evita abstractos (rubric, assessment, performance, strategy, biometric).
+        - {$this->photoKeywordsRule()}
         - icon: elige del catálogo [{$this->iconCatalog()}] el que mejor simbolice el tema.
         - background_prompt debe estar EN INGLÉS y describir una ESCENA FOTOGRÁFICA de respaldo (sin personas, sin letreros, sin pantallas con texto), máximo 25 palabras. No menciones estilos de ilustración.
         - "pillar" debe ser el nombre exacto de uno de los pilares listados.

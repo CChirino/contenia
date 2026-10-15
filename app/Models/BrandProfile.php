@@ -16,6 +16,7 @@ class BrandProfile extends Model
 
     protected $fillable = [
         'brand_id',
+        'description',
         'tone_of_voice',
         'audience',
         'base_hashtags',

@@ -15,6 +15,7 @@ class UpdateBrandProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'description' => ['nullable', 'string', 'max:600'],
             'tone_of_voice' => ['required', 'string'],
             'audience' => ['required', 'string'],
             'base_hashtags' => ['required', 'array'],

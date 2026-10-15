@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
+use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
 use App\Services\Planning\PromptBuilder;
 use Carbon\CarbonImmutable;
@@ -69,5 +71,51 @@ class PromptBuilderTest extends TestCase
 
         $this->assertStringContainsString('2026-10-07', $user);
         $this->assertStringContainsString('[SIN PUBLICACIÓN]', $user);
+    }
+
+    public function test_system_prompt_intro_uses_sabere_name_and_description(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        ['system' => $system] = (new PromptBuilder)->forWeek(
+            2026, 10,
+            CarbonImmutable::create(2026, 10, 5),
+            CarbonImmutable::create(2026, 10, 11),
+            []
+        );
+
+        $this->assertStringContainsString('community manager de Saberé, plataforma de gestión escolar', $system);
+    }
+
+    public function test_system_prompt_intro_uses_active_brand_without_description(): void
+    {
+        $brand = Brand::factory()->create(['name' => 'Demo', 'slug' => 'demo']);
+        $this->actingAsAdminFor($brand);
+
+        ['system' => $system] = (new PromptBuilder)->forWeek(
+            2026, 10,
+            CarbonImmutable::create(2026, 10, 5),
+            CarbonImmutable::create(2026, 10, 11),
+            []
+        );
+
+        $this->assertStringContainsString('community manager de Demo.', $system);
+        $this->assertStringNotContainsString('Saberé', $system);
+    }
+
+    public function test_system_prompt_intro_includes_brand_description(): void
+    {
+        $brand = Brand::factory()->create(['name' => 'Demo', 'slug' => 'demo']);
+        $this->actingAsAdminFor($brand);
+        BrandProfile::current()->update(['description' => 'Panadería artesanal en Caracas.']);
+
+        ['system' => $system] = (new PromptBuilder)->forWeek(
+            2026, 10,
+            CarbonImmutable::create(2026, 10, 5),
+            CarbonImmutable::create(2026, 10, 11),
+            []
+        );
+
+        $this->assertStringContainsString('community manager de Demo, panadería artesanal en Caracas.', $system);
     }
 }
