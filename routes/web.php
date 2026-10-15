@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\BrandContactController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\BrandLogoController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RenderFrameController;
+use App\Http\Controllers\ReviewRequestController;
 use App\Http\Controllers\Settings\BrandProfileController;
 use App\Http\Controllers\Settings\CalendarEventController;
 use App\Http\Controllers\Settings\ContentPillarController;
@@ -34,29 +39,36 @@ Route::get('/brand/logo.svg', function () {
 })->name('brand.logo');
 
 // Logo por marca: público y solo lectura (Chromium lo usa en el render).
-Route::get('/b/{brand:slug}/logo', \App\Http\Controllers\BrandLogoController::class)
+Route::get('/b/{brand:slug}/logo', BrandLogoController::class)
     ->name('brands.logo');
 
 // Administración de marcas y usuarios: solo admin.
 Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/brands', [\App\Http\Controllers\Admin\BrandController::class, 'index'])->name('brands.index');
-    Route::get('/brands/create', [\App\Http\Controllers\Admin\BrandController::class, 'create'])->name('brands.create');
-    Route::post('/brands', [\App\Http\Controllers\Admin\BrandController::class, 'store'])->name('brands.store');
-    Route::get('/brands/{brand}/edit', [\App\Http\Controllers\Admin\BrandController::class, 'edit'])->name('brands.edit');
-    Route::put('/brands/{brand}', [\App\Http\Controllers\Admin\BrandController::class, 'update'])->name('brands.update');
-    Route::post('/brands/{brand}/toggle', [\App\Http\Controllers\Admin\BrandController::class, 'toggle'])->name('brands.toggle');
+    Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
+    Route::get('/brands/create', [BrandController::class, 'create'])->name('brands.create');
+    Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
+    Route::get('/brands/{brand}/edit', [BrandController::class, 'edit'])->name('brands.edit');
+    Route::put('/brands/{brand}', [BrandController::class, 'update'])->name('brands.update');
+    Route::post('/brands/{brand}/toggle', [BrandController::class, 'toggle'])->name('brands.toggle');
+    Route::post('/brands/{brand}/contacts', [BrandContactController::class, 'store'])->name('brands.contacts.store');
+    Route::delete('/brands/{brand}/contacts/{contact}', [BrandContactController::class, 'destroy'])->name('brands.contacts.destroy');
 
-    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
-    Route::get('/users/create', [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
-    Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
-    Route::get('/users/{user}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
-    Route::put('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
 });
 
 Route::get('/render/{brand:slug}/{post}/{frame}', RenderFrameController::class)
     ->middleware('signed')->name('render.frame');
 Route::get('/assets/{brand:slug}/{post}/{file}', AssetController::class)
     ->middleware('signed')->name('assets.show');
+
+// Portal público del cliente (el token identifica la marca; el portal
+// llega en el Paso 4 — por ahora la ruta existe para generar el enlace).
+Route::get('/review/{token}', fn () => abort(404))
+    ->middleware('throttle:60,1')->name('review.show');
 
 // URL antigua sin marca: redirige a la marca del usuario (301).
 Route::get('/plans/{year}/{month}', function (int $year, int $month) use ($defaultBrand) {
@@ -88,6 +100,13 @@ Route::prefix('b/{brand:slug}')->middleware(['auth', 'brand'])->group(function (
     Route::post('/plans/{year}/{month}/weeks/{from}/regenerate', [PlanController::class, 'regenerateWeek'])
         ->where('from', '\d{4}-\d{2}-\d{2}')->name('plans.weeks.regenerate');
     Route::delete('/plans/{year}/{month}/error', [PlanController::class, 'clearError'])->name('plans.error.clear');
+
+    Route::post('/plans/{year}/{month}/reviews', [ReviewRequestController::class, 'store'])
+        ->name('reviews.store');
+    Route::post('/reviews/{review}/revoke', [ReviewRequestController::class, 'revoke'])
+        ->name('reviews.revoke');
+    Route::post('/reviews/{review}/rotate', [ReviewRequestController::class, 'rotate'])
+        ->name('reviews.rotate');
 
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::post('/posts/{post}/approve', [PostController::class, 'approve'])->name('posts.approve');

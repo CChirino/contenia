@@ -75,6 +75,7 @@ class BrandController extends Controller
             'brand' => [
                 ...$brand->only('id', 'name', 'slug', 'website_url', 'palette', 'requires_client_approval', 'plan_id'),
                 'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+                'contacts' => $brand->contacts()->orderBy('id')->get(['id', 'name', 'email', 'whatsapp']),
             ],
             'plans' => Plan::orderBy('name')->get(['id', 'name', 'price_label']),
         ]);

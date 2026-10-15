@@ -15,6 +15,19 @@ interface Week {
     posts_count: number;
 }
 
+interface Review {
+    id: number;
+    from_date: string;
+    to_date: string;
+    status: 'open' | 'submitted' | 'revoked' | 'expired';
+    created_at: string;
+    expires_at: string;
+    submitted_at: string | null;
+    general_comment: string | null;
+    summary: { approved: number; rejected: number; pending: number };
+    week_comments: { week_from: string; comment: string }[];
+}
+
 const props = defineProps<{
     year: number;
     month: number;
@@ -23,6 +36,7 @@ const props = defineProps<{
     pillars: ContentPillar[];
     allowedFormats: Record<NetworkName, string[]>;
     weeks: Week[];
+    reviews: Review[];
 }>();
 
 const monthNames = [
@@ -46,8 +60,9 @@ const statusDotClass: Record<string, string> = {
     drafted: 'bg-gray-400',
     approved: 'bg-blue-500',
     rendered: 'bg-teal-500',
+    client_approved: 'bg-green-500',
     scheduled: 'bg-purple-500',
-    published: 'bg-green-500',
+    published: 'bg-green-600',
     failed: 'bg-red-500',
 };
 
@@ -55,6 +70,7 @@ const statusLabels: Record<string, string> = {
     drafted: 'Borrador',
     approved: 'Aprobado',
     rendered: 'Renderizado',
+    client_approved: 'Aprobado por el cliente',
     scheduled: 'Programado',
     published: 'Publicado',
     failed: 'Fallido',
@@ -126,6 +142,92 @@ const navigate = (target: { year: number; month: number }) => {
 const generate = () => {
     router.post(route('plans.generate', { year: props.year, month: props.month }));
 };
+
+// Aprobación del cliente: visible solo si la marca lo requiere.
+const requiresApproval = computed(
+    () => (page.props.brand as { requires_client_approval?: boolean } | null)
+        ?.requires_client_approval ?? false
+);
+
+const eligibleRendered = computed(() =>
+    props.posts.filter((p) => p.status === 'rendered')
+);
+
+const weekEligible = (week: Week) =>
+    props.posts.some(
+        (p) =>
+            p.status === 'rendered' &&
+            p.scheduled_date >= week.from &&
+            p.scheduled_date <= week.to
+    );
+
+const sendToReview = (week?: Week) => {
+    router.post(
+        route('reviews.store', { year: props.year, month: props.month }),
+        week ? { week_from: week.from } : {}
+    );
+};
+
+const rotateReview = (review: Review) => {
+    router.post(route('reviews.rotate', { review: review.id }));
+};
+
+const revokeReview = (review: Review) => {
+    if (!confirm('¿Revocar el enlace de revisión? El cliente dejará de poder acceder.')) {
+        return;
+    }
+    router.post(route('reviews.revoke', { review: review.id }));
+};
+
+// El enlace con el token en claro llega una sola vez vía flash.
+const reviewUrl = ref<string | null>(null);
+watch(
+    () => (page.props.flash as { review_url?: string | null }).review_url,
+    (url) => {
+        if (url) reviewUrl.value = url;
+    },
+    { immediate: true }
+);
+
+const copied = ref(false);
+const copyLink = async () => {
+    if (!reviewUrl.value) return;
+    await navigator.clipboard.writeText(reviewUrl.value);
+    copied.value = true;
+    setTimeout(() => (copied.value = false), 2000);
+};
+
+const formatDate = (iso: string) => {
+    const [y, m, d] = iso.slice(0, 10).split('-');
+    return `${d}/${m}${iso.length > 10 ? '/' + y.slice(2) : ''}`;
+};
+
+const formatDateTime = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) : '';
+
+const reviewStatusText = (review: Review) => {
+    const s = review.summary;
+    const counts = `${s.approved} aprobados · ${s.rejected} rechazados · ${s.pending} pendientes`;
+    if (review.status === 'open') {
+        return `Revisión enviada el ${formatDateTime(review.created_at)} · ${counts} · vence el ${formatDate(review.expires_at)}`;
+    }
+    if (review.status === 'submitted') {
+        return `Enviada el ${formatDateTime(review.submitted_at)} · ${counts}`;
+    }
+    return review.status === 'revoked'
+        ? `Revisión revocada · ${counts}`
+        : `Revisión vencida · ${counts}`;
+};
+
+const weekComments = computed(() => {
+    const map: Record<string, string> = {};
+    for (const review of props.reviews) {
+        for (const c of review.week_comments) {
+            map[c.week_from] ??= c.comment;
+        }
+    }
+    return map;
+});
 
 const regenerateWeek = (week: Week) => {
     if (
@@ -267,7 +369,17 @@ onBeforeUnmount(() => {
                         </button>
                     </div>
 
-                    <div class="ms-auto">
+                    <div class="ms-auto flex items-center gap-2">
+                        <button
+                            v-if="requiresApproval"
+                            type="button"
+                            :disabled="eligibleRendered.length === 0"
+                            :title="eligibleRendered.length === 0 ? 'No hay diseños listos para revisar' : 'Enviar el mes a aprobación del cliente'"
+                            class="rounded-md border border-sabere-accent px-4 py-2 text-sm font-medium text-sabere-accent hover:bg-sabere-accent/10 disabled:opacity-50"
+                            @click="sendToReview()"
+                        >
+                            Enviar a aprobación
+                        </button>
                         <button
                             v-if="pending || !plan || plan.posts_count === 0 || hasEmptyWeeks"
                             type="button"
@@ -280,6 +392,42 @@ onBeforeUnmount(() => {
                             <span v-else>Completar mes</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- Bandas de estado de revisiones del cliente -->
+                <div
+                    v-for="review in reviews"
+                    :key="review.id"
+                    class="mb-3 rounded-md border p-3 text-sm"
+                    :class="review.status === 'open'
+                        ? 'border-teal-200 bg-teal-50 text-teal-800'
+                        : 'border-gray-200 bg-gray-50 text-gray-600'"
+                >
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span>{{ reviewStatusText(review) }}</span>
+                        <span class="text-xs text-gray-500">
+                            ({{ formatDate(review.from_date) }} – {{ formatDate(review.to_date) }})
+                        </span>
+                        <div v-if="review.status === 'open'" class="ms-auto flex gap-2">
+                            <button
+                                type="button"
+                                class="rounded border border-teal-300 px-2 py-0.5 text-xs hover:bg-teal-100"
+                                @click="rotateReview(review)"
+                            >
+                                Nuevo enlace
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded border border-red-200 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                                @click="revokeReview(review)"
+                            >
+                                Revocar
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="review.general_comment" class="mt-1 text-xs italic text-gray-600">
+                        «{{ review.general_comment }}»
+                    </p>
                 </div>
 
                 <GenerationErrors
@@ -321,7 +469,22 @@ onBeforeUnmount(() => {
                     </div>
 
                     <template v-for="(row, weekIndex) in rows" :key="weekIndex">
-                        <div class="flex items-center justify-center bg-gray-50">
+                        <div class="flex flex-col items-center justify-center gap-0.5 bg-gray-50">
+                            <button
+                                v-if="weeks[weekIndex] && requiresApproval"
+                                type="button"
+                                :disabled="!weekEligible(weeks[weekIndex])"
+                                :title="weekEligible(weeks[weekIndex])
+                                    ? `Enviar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to} a aprobación`
+                                    : 'Sin diseños listos para revisar esta semana'"
+                                class="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-sabere-accent disabled:opacity-40"
+                                @click="sendToReview(weeks[weekIndex])"
+                            >
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                                    <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
                             <button
                                 v-if="weeks[weekIndex]"
                                 type="button"
@@ -349,7 +512,10 @@ onBeforeUnmount(() => {
                                     v-for="post in postsByDate[cell.date] ?? []"
                                     :key="post.id"
                                     type="button"
-                                    class="mt-1 block w-full rounded border border-gray-100 bg-sabere-light p-1 text-left hover:border-sabere-accent"
+                                    class="mt-1 block w-full rounded border bg-sabere-light p-1 text-left hover:border-sabere-accent"
+                                    :class="post.status === 'drafted' && post.review?.decision === 'rejected'
+                                        ? 'border-red-300'
+                                        : 'border-gray-100'"
                                     @click="selectedPostId = post.id"
                                 >
                                     <div class="flex items-center gap-1">
@@ -374,10 +540,57 @@ onBeforeUnmount(() => {
                                     <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-gray-700">
                                         {{ post.hook }}
                                     </p>
+                                    <p
+                                        v-if="post.status === 'drafted' && post.review?.decision === 'rejected'"
+                                        class="mt-0.5 text-[10px] font-medium text-red-600"
+                                    >
+                                        Rechazado por el cliente
+                                    </p>
                                 </button>
                             </template>
                         </div>
+                        <div
+                            v-if="weeks[weekIndex] && weekComments[weeks[weekIndex].from]"
+                            class="col-span-8 bg-amber-50 px-3 py-1.5 text-xs italic text-amber-800"
+                        >
+                            Comentario del cliente (semana del {{ formatDate(weeks[weekIndex].from) }}):
+                            «{{ weekComments[weeks[weekIndex].from] }}»
+                        </div>
                     </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal con el enlace de revisión (se muestra una sola vez) -->
+        <div
+            v-if="reviewUrl"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            @click.self="reviewUrl = null"
+        >
+            <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+                <h3 class="text-lg font-semibold text-gray-900">Enlace de revisión</h3>
+                <p class="mt-2 break-all rounded bg-gray-50 p-3 font-mono text-xs text-gray-700">
+                    {{ reviewUrl }}
+                </p>
+                <p class="mt-2 text-sm text-gray-500">
+                    El cliente también lo recibió por correo. Este enlace no se vuelve
+                    a mostrar; puedes generar uno nuevo.
+                </p>
+                <div class="mt-4 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                        @click="reviewUrl = null"
+                    >
+                        Cerrar
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-md bg-sabere-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                        @click="copyLink"
+                    >
+                        {{ copied ? 'Copiado ✓' : 'Copiar enlace' }}
+                    </button>
                 </div>
             </div>
         </div>

@@ -9,6 +9,8 @@ use App\Models\Brand;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
 use App\Models\Post;
+use App\Models\ReviewItem;
+use App\Models\ReviewRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +26,13 @@ class PlanController extends Controller
     {
         $plan = MonthlyPlan::where('year', $year)->where('month', $month)->first();
 
+        // Decisión más reciente de cada post en revisiones del cliente.
+        $latestItems = ReviewItem::query()
+            ->whereHas('reviewRequest', fn ($q) => $q->where('brand_id', $brand->id))
+            ->orderByDesc('id')
+            ->get()
+            ->keyBy('post_id');
+
         $posts = $plan
             ? $plan->posts()
                 ->with('contentPillar')
@@ -33,6 +42,12 @@ class PlanController extends Controller
                     'scheduled_date' => $post->scheduled_at->format('Y-m-d'),
                     'scheduled_time' => $post->scheduled_at->format('H:i'),
                     'asset_urls' => $this->assetUrls($post),
+                    'review' => $latestItems->has($post->id)
+                        ? [
+                            'decision' => $latestItems[$post->id]->decision->value,
+                            'comment' => $latestItems[$post->id]->comment,
+                        ]
+                        : null,
                 ])
             : collect();
 
@@ -48,6 +63,34 @@ class PlanController extends Controller
                 'posts_count' => $plan
                     ? $plan->posts()->whereBetween('scheduled_at', [$range[0], $range[1]->endOfDay()])->count()
                     : 0,
+            ]);
+
+        // Solicitudes de revisión del cliente del mes: abiertas o enviadas
+        // en los últimos 60 días.
+        $monthStart = CarbonImmutable::create($year, $month, 1)->startOfDay();
+        $monthEnd = $monthStart->endOfMonth();
+
+        $reviews = $brand->reviewRequests()
+            ->with('weekComments')
+            ->where('from_date', '<=', $monthEnd->toDateString())
+            ->where('to_date', '>=', $monthStart->toDateString())
+            ->where(fn ($q) => $q->open()->orWhere('created_at', '>=', now()->subDays(60)))
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (ReviewRequest $review) => [
+                'id' => $review->id,
+                'from_date' => $review->from_date->format('Y-m-d'),
+                'to_date' => $review->to_date->format('Y-m-d'),
+                'status' => $review->state(),
+                'created_at' => $review->created_at->toIso8601String(),
+                'expires_at' => $review->expires_at->format('Y-m-d'),
+                'submitted_at' => $review->submitted_at?->toIso8601String(),
+                'general_comment' => $review->general_comment,
+                'summary' => $review->summary(),
+                'week_comments' => $review->weekComments->map(fn ($c) => [
+                    'week_from' => $c->week_from->format('Y-m-d'),
+                    'comment' => $c->comment,
+                ])->values(),
             ]);
 
         return Inertia::render('Plans/Show', [
@@ -67,6 +110,7 @@ class PlanController extends Controller
             'pillars' => ContentPillar::orderBy('id')->get(),
             'allowedFormats' => $allowedFormats,
             'weeks' => $weeks,
+            'reviews' => $reviews,
         ]);
     }
 

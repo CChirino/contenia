@@ -39,11 +39,17 @@ class HandleInertiaRequests extends Middleware
             // middleware `brand` ya dejó la marca activa en el contenedor.
             'brand' => fn () => app()->bound('brand')
                 ? [
-                    ...app('brand')->only('id', 'slug', 'name', 'palette'),
+                    ...app('brand')->only('id', 'slug', 'name', 'palette', 'requires_client_approval'),
                     'logo_url' => route('brands.logo', ['brand' => app('brand')->slug]),
                 ]
                 : null,
             'brands' => fn () => $this->assignedBrands($request),
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                // El enlace de revisión con el token en claro solo viaja una
+                // vez por flash; en BD solo se guarda el hash.
+                'review_url' => fn () => $request->session()->get('review_url'),
+            ],
         ];
     }
 

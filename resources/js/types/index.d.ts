@@ -47,6 +47,7 @@ export type PostStatus =
     | 'drafted'
     | 'approved'
     | 'rendered'
+    | 'client_approved'
     | 'scheduled'
     | 'published'
     | 'failed';
@@ -105,6 +106,7 @@ export interface Post {
     frames: string[] | null;
     asset_urls?: { frames: string[]; final: string | null };
     status: PostStatus;
+    review?: { decision: string; comment: string | null } | null;
     error: string | null;
     regeneration_error: string | null;
     published_at: string | null;
@@ -116,6 +118,7 @@ export interface ActiveBrand {
     name: string;
     palette: Record<string, string>;
     logo_url: string;
+    requires_client_approval?: boolean;
 }
 
 export interface BrandSummary {

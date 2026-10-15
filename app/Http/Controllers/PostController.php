@@ -22,13 +22,15 @@ class PostController extends Controller
     public function update(UpdatePostRequest $request, Brand $brand, Post $post): RedirectResponse
     {
         abort_unless(
-            in_array($post->status, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered], true),
+            in_array($post->status, [PostStatus::Drafted, PostStatus::Approved, PostStatus::Rendered, PostStatus::ClientApproved], true),
             422,
-            'Solo se puede editar un post en estado borrador, aprobado o renderizado.'
+            'Solo se puede editar un post en estado borrador, aprobado, renderizado o aprobado por el cliente.'
         );
 
         $hadRender = $post->rendered_at !== null;
-        $wasRendered = $post->status === PostStatus::Rendered;
+        // Editar un renderizado (o ya aprobado por el cliente) lo devuelve a
+        // aprobado: se re-renderiza y vuelve a la revisión del cliente.
+        $wasRendered = in_array($post->status, [PostStatus::Rendered, PostStatus::ClientApproved], true);
 
         $post->update($request->validated());
 
@@ -59,7 +61,11 @@ class PostController extends Controller
             && $post->rendered_at->gte($post->updated_at);
 
         if ($hasFreshRender) {
-            $post->update(['status' => PostStatus::Rendered]);
+            $post->update([
+                'status' => $post->brand->requires_client_approval
+                    ? PostStatus::Rendered
+                    : PostStatus::ClientApproved,
+            ]);
         } else {
             $post->update([
                 'status' => PostStatus::Approved,

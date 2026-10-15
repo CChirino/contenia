@@ -11,7 +11,7 @@ import { usePage } from '@inertiajs/vue3';
  * OJO: usa siempre parámetros nombrados ({post: id}); un escalar posicional
  * se interpretaría como `brand`.
  */
-const BRAND_ROUTE_PREFIXES = ['plans.', 'posts.', 'settings.'];
+const BRAND_ROUTE_PREFIXES = ['plans.', 'posts.', 'settings.', 'reviews.'];
 
 export function useBrandRoute() {
     const page = usePage();

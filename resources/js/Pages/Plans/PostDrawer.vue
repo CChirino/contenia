@@ -28,6 +28,7 @@ const statusLabels: Record<string, string> = {
     drafted: 'Borrador',
     approved: 'Aprobado',
     rendered: 'Renderizado',
+    client_approved: 'Aprobado por el cliente',
     scheduled: 'Programado',
     published: 'Publicado',
     failed: 'Fallido',
@@ -49,7 +50,7 @@ const scheduledInput = computed(() =>
 );
 
 const editable = computed(() =>
-    ['drafted', 'approved', 'rendered'].includes(props.post.status)
+    ['drafted', 'approved', 'rendered', 'client_approved'].includes(props.post.status)
 );
 
 const isVideo = computed(() => ['reel', 'video'].includes(props.post.format));
@@ -220,6 +221,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                         class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
                     >
                         {{ post.error }}
+                    </div>
+
+                    <div
+                        v-if="post.review?.comment"
+                        class="rounded-md border border-amber-200 bg-amber-50 p-3"
+                    >
+                        <h4 class="text-xs font-semibold uppercase text-amber-700">
+                            Comentario del cliente
+                            <template v-if="post.review.decision === 'rejected'">(rechazado)</template>
+                        </h4>
+                        <p class="mt-1 text-sm text-amber-800">{{ post.review.comment }}</p>
                     </div>
 
                     <div>

@@ -5,7 +5,15 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+interface Contact {
+    id: number;
+    name: string;
+    email: string;
+    whatsapp: string | null;
+}
 
 const props = defineProps<{
     brand: {
@@ -17,6 +25,7 @@ const props = defineProps<{
         requires_client_approval: boolean;
         plan_id: number | null;
         logo_url: string;
+        contacts?: Contact[];
     } | null;
     plans: { id: number; name: string; price_label: string | null }[];
 }>();
@@ -64,6 +73,32 @@ const submit = () => {
 
 const onLogo = (event: Event) => {
     form.logo = (event.target as HTMLInputElement).files?.[0] ?? null;
+};
+
+const contacts = computed(() => props.brand?.contacts ?? []);
+
+const contactForm = useForm({ name: '', email: '', whatsapp: '' });
+
+const addContact = () => {
+    if (!props.brand) return;
+    contactForm.post(
+        route('brands.contacts.store', { brand: props.brand.id }),
+        {
+            preserveScroll: true,
+            onSuccess: () => contactForm.reset(),
+        }
+    );
+};
+
+const removeContact = (contact: Contact) => {
+    if (!props.brand) return;
+    router.delete(
+        route('brands.contacts.destroy', {
+            brand: props.brand.id,
+            contact: contact.id,
+        }),
+        { preserveScroll: true }
+    );
 };
 </script>
 
@@ -161,6 +196,65 @@ const onLogo = (event: Event) => {
                         </PrimaryButton>
                     </div>
                 </form>
+
+                <div
+                    v-if="brand"
+                    class="mt-6 overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg"
+                >
+                    <h3 class="text-base font-semibold text-gray-800">Contactos aprobadores</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Reciben por correo los enlaces de revisión del contenido de esta marca.
+                    </p>
+
+                    <div
+                        v-if="brand.requires_client_approval && contacts.length === 0"
+                        class="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                    >
+                        Esta marca requiere aprobación del cliente pero no tiene contactos:
+                        los enlaces de revisión no llegarán a nadie por correo.
+                    </div>
+
+                    <ul v-if="contacts.length" class="mt-4 divide-y divide-gray-100">
+                        <li
+                            v-for="contact in contacts"
+                            :key="contact.id"
+                            class="flex items-center gap-4 py-2 text-sm"
+                        >
+                            <span class="w-40 font-medium text-gray-800">{{ contact.name }}</span>
+                            <span class="text-gray-600">{{ contact.email }}</span>
+                            <span class="text-gray-500">{{ contact.whatsapp ?? '' }}</span>
+                            <button
+                                type="button"
+                                class="ms-auto text-xs text-red-600 hover:underline"
+                                @click="removeContact(contact)"
+                            >
+                                Eliminar
+                            </button>
+                        </li>
+                    </ul>
+
+                    <form
+                        class="mt-4 flex flex-wrap items-end gap-3"
+                        @submit.prevent="addContact"
+                    >
+                        <div>
+                            <InputLabel for="c_name" value="Nombre" />
+                            <TextInput id="c_name" v-model="contactForm.name" class="mt-1 block w-40" required />
+                            <InputError :message="contactForm.errors.name" class="mt-1" />
+                        </div>
+                        <div>
+                            <InputLabel for="c_email" value="Email" />
+                            <TextInput id="c_email" v-model="contactForm.email" type="email" class="mt-1 block w-56" required />
+                            <InputError :message="contactForm.errors.email" class="mt-1" />
+                        </div>
+                        <div>
+                            <InputLabel for="c_whatsapp" value="WhatsApp (opcional)" />
+                            <TextInput id="c_whatsapp" v-model="contactForm.whatsapp" class="mt-1 block w-36" />
+                            <InputError :message="contactForm.errors.whatsapp" class="mt-1" />
+                        </div>
+                        <PrimaryButton :disabled="contactForm.processing">Añadir</PrimaryButton>
+                    </form>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

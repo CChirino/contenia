@@ -42,7 +42,7 @@ class RenderPostTest extends TestCase
         Storage::fake('local');
     }
 
-    public function test_renders_approved_post_and_marks_rendered(): void
+    public function test_renders_approved_post_and_marks_client_approved(): void
     {
         $this->app->instance(FrameRenderer::class, new FakeFrameRenderer);
         $post = $this->makePost(PostStatus::Approved);
@@ -54,7 +54,8 @@ class RenderPostTest extends TestCase
         );
 
         $post->refresh();
-        $this->assertSame(PostStatus::Rendered, $post->status);
+        // Saberé no requiere aprobación del cliente: salta directo.
+        $this->assertSame(PostStatus::ClientApproved, $post->status);
         $this->assertSame(['frame-01.png'], $post->frames);
         $this->assertSame($post->assetPath('frame-01.png'), $post->asset_path);
         $this->assertNotNull($post->rendered_at);
@@ -162,7 +163,7 @@ class RenderPostTest extends TestCase
         Queue::assertPushed(RenderPost::class);
     }
 
-    public function test_approve_with_fresh_render_goes_straight_to_rendered(): void
+    public function test_approve_with_fresh_render_goes_straight_to_client_approved(): void
     {
         Queue::fake();
         $post = $this->makePost(PostStatus::Drafted);
@@ -172,7 +173,7 @@ class RenderPostTest extends TestCase
             ->post(route('posts.approve', ['post' => $post]))
             ->assertRedirect();
 
-        $this->assertSame(PostStatus::Rendered, $post->fresh()->status);
+        $this->assertSame(PostStatus::ClientApproved, $post->fresh()->status);
         Queue::assertNotPushed(RenderPost::class);
     }
 
@@ -290,7 +291,7 @@ class RenderPostTest extends TestCase
         );
 
         $post->refresh();
-        $this->assertSame(PostStatus::Rendered, $post->status);
+        $this->assertSame(PostStatus::ClientApproved, $post->status);
         $this->assertSame($post->assetPath('final.mp4'), $post->asset_path);
         $this->assertCount(1, $assembler->calls);
         $this->assertCount(count($post->frames), $assembler->calls[0]['frames']);

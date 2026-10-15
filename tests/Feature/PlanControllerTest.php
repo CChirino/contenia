@@ -6,6 +6,7 @@ use App\Jobs\GenerateMonthlyPlan;
 use App\Models\ContentPillar;
 use App\Models\MonthlyPlan;
 use App\Models\Post;
+use App\Models\ReviewRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -194,5 +195,41 @@ class PlanControllerTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->postJson('/b/sabere/plans/2026/10/weeks/2026-11-02/regenerate')
             ->assertStatus(422);
+    }
+
+    public function test_show_includes_reviews_and_post_review_props(): void
+    {
+        $plan = MonthlyPlan::factory()->create(['year' => 2026, 'month' => 10]);
+        $post = Post::factory()->create([
+            'monthly_plan_id' => $plan->id,
+            'scheduled_at' => '2026-10-06 10:00:00',
+        ]);
+
+        $review = ReviewRequest::factory()->create([
+            'from_date' => '2026-10-01',
+            'to_date' => '2026-10-31',
+        ]);
+        $review->items()->create([
+            'post_id' => $post->id,
+            'decision' => 'rejected',
+            'comment' => 'Cambiar el gancho',
+            'week_from' => '2026-10-05',
+        ]);
+        $review->weekComments()->create([
+            'week_from' => '2026-10-05',
+            'comment' => 'Más cortos en general',
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get('/b/sabere/plans/2026/10')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('reviews', 1)
+                ->where('reviews.0.status', 'open')
+                ->where('reviews.0.summary.rejected', 1)
+                ->where('reviews.0.week_comments.0.comment', 'Más cortos en general')
+                ->where('posts.0.review.decision', 'rejected')
+                ->where('posts.0.review.comment', 'Cambiar el gancho')
+            );
     }
 }

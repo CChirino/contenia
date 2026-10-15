@@ -77,7 +77,11 @@ class RenderPost implements ShouldQueue
             } elseif ($post->status === PostStatus::Approved) {
                 // Solo los aprobados pasan a rendered; un render sobre un
                 // borrador es una vista previa que conserva su estado.
-                $post->status = PostStatus::Rendered;
+                // Si la marca no requiere aprobación del cliente se salta
+                // el paso y queda listo para programar.
+                $post->status = $post->brand->requires_client_approval
+                    ? PostStatus::Rendered
+                    : PostStatus::ClientApproved;
             }
 
             $post->save();
