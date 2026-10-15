@@ -10,7 +10,7 @@ const props = withDefaults(
     {
         align: 'right',
         width: '48',
-        contentClasses: 'py-1 bg-white',
+        contentClasses: 'py-1 bg-surface',
     },
 );
 
@@ -71,7 +71,7 @@ const open = ref(false);
                 @click="open = false"
             >
                 <div
-                    class="rounded-md ring-1 ring-black ring-opacity-5"
+                    class="rounded-md ring-1 ring-black ring-opacity-5 dark:ring-line-strong dark:ring-opacity-100"
                     :class="contentClasses"
                 >
                     <slot name="content" />

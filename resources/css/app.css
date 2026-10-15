@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --c-surface: 255 255 255;
+        --c-surface-2: 249 250 251;
+        --c-surface-3: 243 244 246;
+        --c-fg: 17 24 39;
+        --c-fg-2: 55 65 81;
+        --c-muted: 107 114 128;
+        --c-line: 229 231 235;
+        --c-line-strong: 209 213 219;
+    }
+
+    .dark {
+        --c-surface: 26 42 66;
+        --c-surface-2: 15 26 43;
+        --c-surface-3: 36 56 90;
+        --c-fg: 241 245 249;
+        --c-fg-2: 203 213 225;
+        --c-muted: 143 163 191;
+        --c-line: 46 67 102;
+        --c-line-strong: 59 83 128;
+
+        color-scheme: dark;
+    }
+}

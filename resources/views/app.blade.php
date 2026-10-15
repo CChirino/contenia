@@ -3,8 +3,16 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light dark">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+
+        <script>
+            const t = localStorage.getItem('theme');
+            if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        </script>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -15,7 +23,7 @@
         @vite(['resources/js/app.ts', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
     </head>
-    <body class="font-sans antialiased">
+    <body class="font-sans antialiased bg-surface-2 text-fg">
         @inertia
     </body>
 </html>

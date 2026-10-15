@@ -4,6 +4,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import ThemeSelector from '@/Components/ThemeSelector.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { useBrandRoute } from '@/composables/useBrandRoute';
 import { computed } from 'vue';
@@ -29,9 +30,9 @@ const brandPlanUrl = (slug: string) => {
 
 <template>
     <div>
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-surface-2">
             <nav
-                class="border-b border-gray-100 bg-white"
+                class="border-b border-line bg-surface"
             >
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -40,7 +41,7 @@ const brandPlanUrl = (slug: string) => {
                             <!-- Logo -->
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <span class="text-xl font-semibold text-sabere-dark">Saberé<span class="text-sabere-accent">.</span></span>
+                                    <span class="text-xl font-semibold text-sabere-dark dark:text-fg">Saberé<span class="text-sabere-accent">.</span></span>
                                 </Link>
                             </div>
 
@@ -54,7 +55,7 @@ const brandPlanUrl = (slug: string) => {
                                         <template #trigger>
                                             <button
                                                 type="button"
-                                                class="inline-flex h-full items-center gap-2 border-b-2 border-transparent px-1 pt-1 text-sm font-medium leading-5 text-gray-700 transition duration-150 ease-in-out hover:border-gray-300 focus:outline-none"
+                                                class="inline-flex h-full items-center gap-2 border-b-2 border-transparent px-1 pt-1 text-sm font-medium leading-5 text-fg-2 transition duration-150 ease-in-out hover:border-line-strong focus:outline-none"
                                             >
                                                 <img
                                                     :src="activeBrand.logo_url"
@@ -112,8 +113,8 @@ const brandPlanUrl = (slug: string) => {
                                                 class="inline-flex h-full items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="
                                                     route().current('settings.*')
-                                                        ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
-                                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700'
+                                                        ? 'border-indigo-400 text-fg focus:border-indigo-700'
+                                                        : 'border-transparent text-muted hover:border-line-strong hover:text-fg-2 focus:border-line-strong focus:text-fg-2'
                                                 "
                                             >
                                                 Configuración
@@ -158,8 +159,8 @@ const brandPlanUrl = (slug: string) => {
                                                 :class="
                                                     route().current('brands.*') || route().current('users.*')
                                                         || route().current('admin.plans.*') || route().current('portfolio.*')
-                                                        ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
-                                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700'
+                                                        ? 'border-indigo-400 text-fg focus:border-indigo-700'
+                                                        : 'border-transparent text-muted hover:border-line-strong hover:text-fg-2 focus:border-line-strong focus:text-fg-2'
                                                 "
                                             >
                                                 Administración
@@ -205,7 +206,7 @@ const brandPlanUrl = (slug: string) => {
                                         <span class="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
+                                                class="inline-flex items-center rounded-md border border-transparent bg-surface px-3 py-2 text-sm font-medium leading-4 text-muted transition duration-150 ease-in-out hover:text-fg-2 focus:outline-none"
                                             >
                                                 {{ $page.props.auth.user.name }}
 
@@ -226,6 +227,8 @@ const brandPlanUrl = (slug: string) => {
                                     </template>
 
                                     <template #content>
+                                        <ThemeSelector />
+                                        <div class="border-t border-line" />
                                         <DropdownLink
                                             :href="route('profile.edit')"
                                         >
@@ -250,7 +253,7 @@ const brandPlanUrl = (slug: string) => {
                                     showingNavigationDropdown =
                                         !showingNavigationDropdown
                                 "
-                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
+                                class="inline-flex items-center justify-center rounded-md p-2 text-muted transition duration-150 ease-in-out hover:bg-surface-3 hover:text-muted focus:bg-surface-3 focus:text-muted focus:outline-none"
                             >
                                 <svg
                                     class="h-6 w-6"
@@ -329,15 +332,15 @@ const brandPlanUrl = (slug: string) => {
 
                     <!-- Responsive Settings Options -->
                     <div
-                        class="border-t border-gray-200 pb-1 pt-4"
+                        class="border-t border-line pb-1 pt-4"
                     >
                         <div class="px-4">
                             <div
-                                class="text-base font-medium text-gray-800"
+                                class="text-base font-medium text-fg"
                             >
                                 {{ $page.props.auth.user.name }}
                             </div>
-                            <div class="text-sm font-medium text-gray-500">
+                            <div class="text-sm font-medium text-muted">
                                 {{ $page.props.auth.user.email }}
                             </div>
                         </div>
@@ -353,6 +356,7 @@ const brandPlanUrl = (slug: string) => {
                             >
                                 Log Out
                             </ResponsiveNavLink>
+                            <ThemeSelector />
                         </div>
                     </div>
                 </div>
@@ -360,7 +364,7 @@ const brandPlanUrl = (slug: string) => {
 
             <!-- Page Heading -->
             <header
-                class="bg-white shadow"
+                class="bg-surface shadow"
                 v-if="$slots.header"
             >
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
