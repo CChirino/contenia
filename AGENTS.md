@@ -117,6 +117,16 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - Media del portal: `URL::temporarySignedRoute('assets.show', $review->expires_at, …)` — las URLs firmadas caducan con la revisión.
 - Correo: `MAIL_FROM_*` global; en local `MAIL_MAILER=log` → el correo sale en `storage/logs/laravel.log` (lo procesa el worker `queue`).
 
+## Planes y cuotas
+
+- `plans`: `posts_per_month` / `regenerations_per_month` / `image_refreshes_per_month` (null = ilimitado, plan Interno), `networks` (redes permitidas) y `price_label`. Catálogo admin en `/plans` (`admin.plans.*`, sin borrado si tiene marcas). Cartera `/portfolio` (admin): consumo del mes por marca, costo IA (suma `llm_logs.cost_usd` del mes), última revisión/publicado y extensiones `POST /portfolio/{brand}/extensions` (reemplazan `extra_*`).
+- `brand_usage` lleva contadores por marca y **mes del contenido** (no del calendario): `posts_generated`, `regenerations`, `image_refreshes`, `llm_tokens_in/out`, `image_calls`, `extra_*`. `Brand::usageFor($y,$m)` la crea al vuelo.
+- `QuotaGuard` (`App\Services\Quota`): `limit/used/remaining/check/record/summary/allowsNetwork`. `check` lanza `QuotaExceededException` (ValidationException clave `quota` → 422 Inertia). `record` va en la misma transacción que persiste el resultado — un fallo no consume cupo.
+- El periodo se fija con `app()->instance('usage_period', [$year, $month])` en los jobs; el `LlmLogObserver` suma tokens a ese periodo (fallback: mes del log). Los incrementos de `brand_usage` se hacen con `withoutGlobalScopes()->whereKey($id)` — `Model::increment` delega sin clave y el scope filtraría por la marca activa.
+- Qué cuenta: posts persistidos por `GenerateMonthlyPlan` (recorte proporcional + `monthly_plans.quota_notice`), regeneraciones en `RegeneratePost`, y `image_refreshes`/`image_calls` solo cuando `BackgroundService` usa el generador IA (Pixabay/geométrico no). Redes fuera del plan no entran al prompt ni persisten; `NetworkStrategyController` las fuerza a `posts_per_week=0`.
+- `config/llm_pricing.php`: USD por millón de tokens por modelo (`:free` → 0, desconocido → 0).
+- Grilla: barra de uso en `Plans/Show` (oculta si ilimitado), banda ámbar con `quota_notice`, botones deshabilitados al agotarse. UI de planes/cartera solo para `admin`.
+
 ## Notas
 
 - Locale `es`, timezone `America/Caracas`, faker `es_VE`.
