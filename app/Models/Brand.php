@@ -90,4 +90,14 @@ class Brand extends Model
     {
         return $this->belongsToMany(User::class, 'brand_user');
     }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(BrandContact::class);
+    }
+
+    public function reviewRequests(): HasMany
+    {
+        return $this->hasMany(ReviewRequest::class);
+    }
 }

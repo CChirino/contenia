@@ -11,8 +11,11 @@ class PostStatusTest extends TestCase
     {
         $this->assertTrue(PostStatus::Drafted->canTransitionTo(PostStatus::Approved));
         $this->assertTrue(PostStatus::Approved->canTransitionTo(PostStatus::Rendered));
-        $this->assertTrue(PostStatus::Rendered->canTransitionTo(PostStatus::Scheduled));
+        $this->assertTrue(PostStatus::Rendered->canTransitionTo(PostStatus::ClientApproved));
+        $this->assertTrue(PostStatus::Rendered->canTransitionTo(PostStatus::Drafted));
         $this->assertTrue(PostStatus::Rendered->canTransitionTo(PostStatus::Approved));
+        $this->assertTrue(PostStatus::ClientApproved->canTransitionTo(PostStatus::Scheduled));
+        $this->assertTrue(PostStatus::ClientApproved->canTransitionTo(PostStatus::Approved));
         $this->assertTrue(PostStatus::Scheduled->canTransitionTo(PostStatus::Published));
         $this->assertTrue(PostStatus::Scheduled->canTransitionTo(PostStatus::Failed));
         $this->assertTrue(PostStatus::Failed->canTransitionTo(PostStatus::Scheduled));
@@ -22,15 +25,24 @@ class PostStatusTest extends TestCase
     {
         $invalid = [
             [PostStatus::Drafted, PostStatus::Rendered],
+            [PostStatus::Drafted, PostStatus::ClientApproved],
             [PostStatus::Drafted, PostStatus::Scheduled],
             [PostStatus::Drafted, PostStatus::Published],
+            [PostStatus::Approved, PostStatus::ClientApproved],
             [PostStatus::Approved, PostStatus::Scheduled],
             [PostStatus::Approved, PostStatus::Published],
-            [PostStatus::Rendered, PostStatus::Drafted],
+            // Ya no se puede programar directo desde rendered: pasa por el
+            // cliente (o se salta el paso a client_approved).
+            [PostStatus::Rendered, PostStatus::Scheduled],
             [PostStatus::Rendered, PostStatus::Published],
+            [PostStatus::ClientApproved, PostStatus::Drafted],
+            [PostStatus::ClientApproved, PostStatus::Rendered],
+            [PostStatus::ClientApproved, PostStatus::Published],
             [PostStatus::Scheduled, PostStatus::Approved],
             [PostStatus::Scheduled, PostStatus::Drafted],
+            [PostStatus::Scheduled, PostStatus::ClientApproved],
             [PostStatus::Published, PostStatus::Drafted],
+            [PostStatus::Published, PostStatus::ClientApproved],
             [PostStatus::Published, PostStatus::Scheduled],
             [PostStatus::Published, PostStatus::Failed],
             [PostStatus::Failed, PostStatus::Drafted],
