@@ -9,6 +9,7 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RenderFrameController;
+use App\Http\Controllers\ReviewPortalController;
 use App\Http\Controllers\ReviewRequestController;
 use App\Http\Controllers\Settings\BrandProfileController;
 use App\Http\Controllers\Settings\CalendarEventController;
@@ -67,8 +68,18 @@ Route::get('/assets/{brand:slug}/{post}/{file}', AssetController::class)
 
 // Portal público del cliente (el token identifica la marca; el portal
 // llega en el Paso 4 — por ahora la ruta existe para generar el enlace).
-Route::get('/review/{token}', fn () => abort(404))
-    ->middleware('throttle:60,1')->name('review.show');
+// Portal público del cliente: sin auth ni marca; el token la resuelve
+// (ResolveReviewToken fija la marca y frena enlaces revocados/vencidos).
+Route::prefix('review/{token}')->middleware(['throttle:60,1', 'review.token'])->name('review.')->group(function () {
+    Route::get('/', [ReviewPortalController::class, 'show'])->name('show');
+    Route::post('/items/{post}', [ReviewPortalController::class, 'item'])->name('item');
+    Route::post('/weeks/{week_from}/approve', [ReviewPortalController::class, 'approveWeek'])
+        ->where('week_from', '\\d{4}-\\d{2}-\\d{2}')->name('week.approve');
+    Route::post('/weeks/{week_from}/comment', [ReviewPortalController::class, 'weekComment'])
+        ->where('week_from', '\\d{4}-\\d{2}-\\d{2}')->name('week.comment');
+    Route::post('/approve-all', [ReviewPortalController::class, 'approveAll'])->name('approve_all');
+    Route::post('/submit', [ReviewPortalController::class, 'submit'])->name('submit');
+});
 
 // URL antigua sin marca: redirige a la marca del usuario (301).
 Route::get('/plans/{year}/{month}', function (int $year, int $month) use ($defaultBrand) {

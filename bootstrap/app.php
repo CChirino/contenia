@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ResolveReviewToken;
 use App\Http\Middleware\SetActiveBrand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,8 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'admin' => EnsureAdmin::class,
             'brand' => SetActiveBrand::class,
+            'review.token' => ResolveReviewToken::class,
         ]);
 
         // La marca debe estar en el contenedor antes de resolver los
@@ -30,6 +33,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(
             SubstituteBindings::class,
             SetActiveBrand::class,
+        );
+        // El portal también fija la marca antes del route-model-binding.
+        $middleware->prependToPriorityList(
+            SubstituteBindings::class,
+            ResolveReviewToken::class,
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
