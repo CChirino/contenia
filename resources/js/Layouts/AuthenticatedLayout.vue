@@ -157,6 +157,7 @@ const brandPlanUrl = (slug: string) => {
                                                 class="inline-flex h-full items-center border-b-2 px-1 pt-1 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none"
                                                 :class="
                                                     route().current('brands.*') || route().current('users.*')
+                                                        || route().current('admin.plans.*') || route().current('portfolio.*')
                                                         ? 'border-indigo-400 text-gray-900 focus:border-indigo-700'
                                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 focus:border-gray-300 focus:text-gray-700'
                                                 "
@@ -183,6 +184,12 @@ const brandPlanUrl = (slug: string) => {
                                             </DropdownLink>
                                             <DropdownLink :href="route('users.index')">
                                                 Usuarios
+                                            </DropdownLink>
+                                            <DropdownLink :href="route('admin.plans.index')">
+                                                Planes
+                                            </DropdownLink>
+                                            <DropdownLink :href="route('portfolio.index')">
+                                                Cartera
                                             </DropdownLink>
                                         </template>
                                     </Dropdown>

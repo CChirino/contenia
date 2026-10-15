@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BrandContactController;
 use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\BrandLogoController;
@@ -59,6 +60,20 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+
+    // Cartera: consumo y extensiones de cuota por marca.
+    Route::get('/portfolio', [PortfolioController::class, 'index'])
+        ->name('portfolio.index');
+    Route::post('/portfolio/{brand}/extensions', [PortfolioController::class, 'extend'])
+        ->name('portfolio.extend');
+
+    // Catálogo de planes (names admin.plans.*: las rutas de la grilla ya usan plans.*).
+    Route::get('/plans', [App\Http\Controllers\Admin\PlanController::class, 'index'])->name('admin.plans.index');
+    Route::get('/plans/create', [App\Http\Controllers\Admin\PlanController::class, 'create'])->name('admin.plans.create');
+    Route::post('/plans', [App\Http\Controllers\Admin\PlanController::class, 'store'])->name('admin.plans.store');
+    Route::get('/plans/{plan}/edit', [App\Http\Controllers\Admin\PlanController::class, 'edit'])->name('admin.plans.edit');
+    Route::put('/plans/{plan}', [App\Http\Controllers\Admin\PlanController::class, 'update'])->name('admin.plans.update');
+    Route::delete('/plans/{plan}', [App\Http\Controllers\Admin\PlanController::class, 'destroy'])->name('admin.plans.destroy');
 });
 
 Route::get('/render/{brand:slug}/{post}/{frame}', RenderFrameController::class)
@@ -66,17 +81,15 @@ Route::get('/render/{brand:slug}/{post}/{frame}', RenderFrameController::class)
 Route::get('/assets/{brand:slug}/{post}/{file}', AssetController::class)
     ->middleware('signed')->name('assets.show');
 
-// Portal público del cliente (el token identifica la marca; el portal
-// llega en el Paso 4 — por ahora la ruta existe para generar el enlace).
 // Portal público del cliente: sin auth ni marca; el token la resuelve
 // (ResolveReviewToken fija la marca y frena enlaces revocados/vencidos).
 Route::prefix('review/{token}')->middleware(['throttle:60,1', 'review.token'])->name('review.')->group(function () {
     Route::get('/', [ReviewPortalController::class, 'show'])->name('show');
     Route::post('/items/{post}', [ReviewPortalController::class, 'item'])->name('item');
     Route::post('/weeks/{week_from}/approve', [ReviewPortalController::class, 'approveWeek'])
-        ->where('week_from', '\\d{4}-\\d{2}-\\d{2}')->name('week.approve');
+        ->where('week_from', '\d{4}-\d{2}-\d{2}')->name('week.approve');
     Route::post('/weeks/{week_from}/comment', [ReviewPortalController::class, 'weekComment'])
-        ->where('week_from', '\\d{4}-\\d{2}-\\d{2}')->name('week.comment');
+        ->where('week_from', '\d{4}-\d{2}-\d{2}')->name('week.comment');
     Route::post('/approve-all', [ReviewPortalController::class, 'approveAll'])->name('approve_all');
     Route::post('/submit', [ReviewPortalController::class, 'submit'])->name('submit');
 });
