@@ -67,7 +67,7 @@ class PromptBuilder
      */
     public function photoKeywordsRule(): string
     {
-        return "photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena del sector de la marca (según su descripción) u oficina, p. ej. 'office laptop desk', 'notebook pencils desk', 'team meeting table'. Sin niños ni menores; adultos solo si son claros profesionales, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, whiteboard, books, tablet, hallway, storefront, workshop, kitchen); evita abstractos (rubric, assessment, performance, strategy, biometric).";
+        return "photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena del sector de la marca (según su descripción) u oficina, p. ej. 'office laptop desk', 'notebook pencils desk', 'team meeting table'. Sin niños ni menores; adultos solo si son claramente profesionales, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, whiteboard, books, tablet, hallway, storefront, workshop, kitchen); evita abstractos (rubric, assessment, performance, strategy, biometric).";
     }
 
     protected function systemPrompt(): string
