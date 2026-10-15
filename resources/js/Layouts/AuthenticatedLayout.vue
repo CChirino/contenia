@@ -201,7 +201,7 @@ const brandPlanUrl = (slug: string) => {
                         <div class="hidden sm:ms-6 sm:flex sm:items-center">
                             <!-- Settings Dropdown -->
                             <div class="relative ms-3">
-                                <Dropdown align="right" width="48">
+                                <Dropdown align="right" width="60">
                                     <template #trigger>
                                         <span class="inline-flex rounded-md">
                                             <button

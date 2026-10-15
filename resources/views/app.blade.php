@@ -8,10 +8,12 @@
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <script>
-            const t = localStorage.getItem('theme');
-            if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
+            (function () {
+                const t = localStorage.getItem('theme');
+                if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
         </script>
 
         <!-- Fonts -->
