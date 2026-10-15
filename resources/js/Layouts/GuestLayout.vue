@@ -8,7 +8,7 @@ import { Link } from '@inertiajs/vue3';
     >
         <div>
             <Link href="/">
-                <span class="text-3xl font-semibold text-sabere-dark dark:text-fg">Saberé<span class="text-sabere-accent">.</span></span>
+                <span class="text-3xl font-semibold text-brand-ink dark:text-fg">Contenia<span class="text-brand-primary">.</span></span>
             </Link>
         </div>
 

@@ -41,7 +41,7 @@ const brandPlanUrl = (slug: string) => {
                             <!-- Logo -->
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <span class="text-xl font-semibold text-sabere-dark dark:text-fg">Saberé<span class="text-sabere-accent">.</span></span>
+                                    <span class="text-xl font-semibold text-brand-ink dark:text-fg">Contenia<span class="text-brand-primary">.</span></span>
                                 </Link>
                             </div>
 

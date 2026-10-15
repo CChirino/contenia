@@ -243,7 +243,7 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
 
                         <div class="p-4">
                             <div class="flex items-center gap-2 text-xs">
-                                <span class="rounded bg-sabere-dark dark:bg-surface-3 px-2 py-0.5 font-semibold text-white">
+                                <span class="rounded bg-brand-ink dark:bg-surface-3 px-2 py-0.5 font-semibold text-white">
                                     {{ networkLabels[post.network] ?? post.network }}
                                 </span>
                                 <span class="text-muted">
@@ -324,7 +324,7 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                         :value="weekDraft(week)"
                         rows="2"
                         placeholder="Comentario para esta semana (opcional)"
-                        class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm placeholder:text-muted focus:border-sabere-accent focus:ring-sabere-accent"
+                        class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm placeholder:text-muted focus:border-brand-primary focus:ring-brand-primary"
                         @input="weekDrafts[week.week_from] = ($event.target as HTMLTextAreaElement).value"
                         @blur="saveWeekComment(week)"
                     />
@@ -346,7 +346,7 @@ const moveCarousel = (post: ReviewPost, dir: number) => {
                     v-model="generalComment"
                     rows="1"
                     placeholder="Comentario general para el equipo (opcional)"
-                    class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm placeholder:text-muted focus:border-sabere-accent focus:ring-sabere-accent sm:max-w-md"
+                    class="block w-full rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm placeholder:text-muted focus:border-brand-primary focus:ring-brand-primary sm:max-w-md"
                 />
                 <button
                     type="button"

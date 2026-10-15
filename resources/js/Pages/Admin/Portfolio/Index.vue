@@ -98,7 +98,7 @@ const submitExtend = () => {
                 <input
                     type="month"
                     :value="period"
-                    class="rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                    class="rounded-md border-line-strong bg-surface text-fg text-sm shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                     @change="changeMonth"
                 />
             </div>
@@ -170,7 +170,7 @@ const submitExtend = () => {
                                     </Link>
                                     <button
                                         type="button"
-                                        class="ms-3 text-sabere-accent hover:opacity-80"
+                                        class="ms-3 text-brand-primary hover:opacity-80"
                                         @click="openExtend(row)"
                                     >
                                         Extender

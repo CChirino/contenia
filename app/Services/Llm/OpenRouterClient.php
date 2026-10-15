@@ -28,7 +28,7 @@ class OpenRouterClient implements LlmClient
             ->withHeaders([
                 'Authorization' => 'Bearer '.config('llm.openrouter.api_key'),
                 'HTTP-Referer' => config('app.url'),
-                'X-Title' => 'Sabere Marketing',
+                'X-Title' => 'Contenia',
             ])
             ->post(self::ENDPOINT, [
                 'model' => $model,

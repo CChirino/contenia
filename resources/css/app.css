@@ -15,14 +15,14 @@
     }
 
     .dark {
-        --c-surface: 26 42 66;
-        --c-surface-2: 15 26 43;
-        --c-surface-3: 36 56 90;
+        --c-surface: 24 22 54;
+        --c-surface-2: 14 13 31;
+        --c-surface-3: 36 33 77;
         --c-fg: 241 245 249;
         --c-fg-2: 203 213 225;
         --c-muted: 143 163 191;
-        --c-line: 46 67 102;
-        --c-line-strong: 59 83 128;
+        --c-line: 47 43 94;
+        --c-line-strong: 61 56 120;
 
         color-scheme: dark;
     }

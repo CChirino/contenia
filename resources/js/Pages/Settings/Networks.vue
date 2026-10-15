@@ -112,7 +112,7 @@ const submit = () => {
                                             type="checkbox"
                                             v-model="strategy.preferred_formats"
                                             :value="format"
-                                            class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
+                                            class="rounded border-line-strong bg-surface text-brand-primary shadow-sm focus:ring-brand-primary dark:ring-offset-surface"
                                         />
                                         {{ formatLabels[format] ?? format }}
                                     </label>
@@ -129,7 +129,7 @@ const submit = () => {
                                     :id="`focus_${strategy.id}`"
                                     v-model="strategy.focus"
                                     rows="3"
-                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                                 />
                                 <InputError
                                     :message="form.errors[`strategies.${index}.focus`]"

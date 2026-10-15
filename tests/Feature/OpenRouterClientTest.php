@@ -61,7 +61,7 @@ class OpenRouterClientTest extends TestCase
             $body = $request->data();
 
             return $request->hasHeader('Authorization', 'Bearer or-key')
-                && $request->hasHeader('X-Title', 'Sabere Marketing')
+                && $request->hasHeader('X-Title', 'Contenia')
                 && $body['model'] === 'anthropic/claude-sonnet-4.5'
                 && $body['max_tokens'] === (int) config('llm.max_tokens')
                 && $body['messages'][0] === ['role' => 'system', 'content' => 'system prompt']

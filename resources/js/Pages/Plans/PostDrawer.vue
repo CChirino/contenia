@@ -200,7 +200,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
             <div class="flex h-full w-full flex-col overflow-y-auto bg-surface shadow-xl">
                 <div class="flex items-center justify-between border-b border-line px-6 py-4">
                     <div class="flex items-center gap-2">
-                        <span class="rounded bg-sabere-dark px-2 py-0.5 text-xs font-semibold text-white">
+                        <span class="rounded bg-brand-ink px-2 py-0.5 text-xs font-semibold text-white">
                             {{ networkLabels[post.network] }}
                         </span>
                         <span class="text-sm text-fg-2">
@@ -262,7 +262,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
                     <div>
                         <h4 class="text-xs font-semibold uppercase text-muted">Hashtags</h4>
-                        <p class="mt-1 text-sm text-sabere-purple">{{ post.hashtags.join(' ') }}</p>
+                        <p class="mt-1 text-sm text-brand-secondary">{{ post.hashtags.join(' ') }}</p>
                     </div>
 
                     <div v-if="post.design_payload?.slides?.length">
@@ -417,7 +417,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 id="edit_copy"
                                 v-model="editForm.copy"
                                 rows="5"
-                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                             />
                             <InputError :message="editForm.errors.copy" class="mt-1" />
                         </div>
@@ -447,7 +447,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 <select
                                     id="edit_format"
                                     v-model="editForm.format"
-                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                                 >
                                     <option
                                         v-for="f in allowedFormats[post.network]"
@@ -478,7 +478,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 <select
                                     id="edit_icon"
                                     v-model="editForm.icon"
-                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                    class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                                 >
                                     <option :value="null">—</option>
                                     <option v-for="i in iconOptions" :key="i" :value="i">{{ i }}</option>
@@ -502,7 +502,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                                 rows="3"
                                 maxlength="500"
                                 placeholder="Ej.: hazlo más breve, cambia el enfoque…"
-                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                             />
                             <InputError :message="regenerateForm.errors.comment" class="mt-1" />
                         </div>

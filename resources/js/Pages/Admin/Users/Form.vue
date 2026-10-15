@@ -84,7 +84,7 @@ const submit = () => {
                         <select
                             id="role"
                             v-model="form.role"
-                            class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                            class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                         >
                             <option v-for="role in roles" :key="role" :value="role">
                                 {{ role === 'admin' ? 'Admin' : 'Operador' }}

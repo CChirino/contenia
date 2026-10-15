@@ -98,7 +98,7 @@ const limits = [
                                     type="checkbox"
                                     v-model="form.networks"
                                     :value="network"
-                                    class="rounded border-line-strong bg-surface text-sabere-accent shadow-sm focus:ring-sabere-accent dark:ring-offset-surface"
+                                    class="rounded border-line-strong bg-surface text-brand-primary shadow-sm focus:ring-brand-primary dark:ring-offset-surface"
                                 />
                                 {{ networkLabels[network] ?? network }}
                             </label>

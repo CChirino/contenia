@@ -136,7 +136,7 @@ const removeContact = (contact: Contact) => {
                         <select
                             id="plan_id"
                             v-model="form.plan_id"
-                            class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-sabere-accent focus:ring-sabere-accent"
+                            class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                         >
                             <option v-for="plan in plans" :key="plan.id" :value="plan.id">
                                 {{ plan.name }}<template v-if="plan.price_label"> · {{ plan.price_label }}</template>

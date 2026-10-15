@@ -53,9 +53,9 @@ const networkLabels: Record<NetworkName, string> = {
 };
 
 const networkChipClass: Record<NetworkName, string> = {
-    instagram: 'bg-sabere-purple',
-    linkedin: 'bg-sabere-dark',
-    tiktok: 'bg-sabere-accent',
+    instagram: 'bg-brand-secondary',
+    linkedin: 'bg-brand-ink',
+    tiktok: 'bg-brand-primary',
 };
 
 const statusDotClass: Record<string, string> = {
@@ -101,7 +101,7 @@ const pct = (a: { used: number; limit: number | null }) =>
     a.limit === null || a.limit === 0 ? 0 : Math.min(100, Math.round((a.used / a.limit) * 100));
 
 const barClass = (a: { used: number; limit: number | null }) =>
-    pct(a) >= 100 ? 'bg-red-500' : pct(a) >= 80 ? 'bg-amber-400' : 'bg-sabere-accent';
+    pct(a) >= 100 ? 'bg-red-500' : pct(a) >= 80 ? 'bg-amber-400' : 'bg-brand-primary';
 
 const remaining = (action: string) => {
     const a = props.quota?.actions.find((x) => x.action === action);
@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
                             type="button"
                             class="rounded-full px-3 py-1 text-xs font-medium"
                             :class="networkFilter === null
-                                ? 'bg-sabere-dark text-white'
+                                ? 'bg-brand-ink text-white'
                                 : 'bg-surface-3 text-fg-2 hover:bg-line'"
                             @click="networkFilter = null"
                         >
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
                             type="button"
                             :disabled="eligibleRendered.length === 0"
                             :title="eligibleRendered.length === 0 ? 'No hay diseños listos para revisar' : 'Enviar el mes a aprobación del cliente'"
-                            class="rounded-md border border-sabere-accent px-4 py-2 text-sm font-medium text-sabere-accent hover:bg-sabere-accent/10 disabled:opacity-50"
+                            class="rounded-md border border-brand-primary px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 disabled:opacity-50"
                             @click="sendToReview()"
                         >
                             Enviar a aprobación
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
                             type="button"
                             :disabled="pending || postsExhausted"
                             :title="postsExhausted ? 'Cupo de posts del mes agotado' : undefined"
-                            class="rounded-md bg-sabere-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                            class="rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                             @click="generate"
                         >
                             <span v-if="pending">Generando…</span>
@@ -533,7 +533,7 @@ onBeforeUnmount(() => {
                                 :title="weekEligible(weeks[weekIndex])
                                     ? `Enviar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to} a aprobación`
                                     : 'Sin diseños listos para revisar esta semana'"
-                                class="rounded p-1 text-muted hover:bg-surface-3 hover:text-sabere-accent disabled:opacity-40"
+                                class="rounded p-1 text-muted hover:bg-surface-3 hover:text-brand-primary disabled:opacity-40"
                                 @click="sendToReview(weeks[weekIndex])"
                             >
                                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -548,7 +548,7 @@ onBeforeUnmount(() => {
                                 :title="postsExhausted
                                     ? 'Cupo de posts del mes agotado'
                                     : `Regenerar semana ${weeks[weekIndex].from} – ${weeks[weekIndex].to}`"
-                                class="rounded p-1 text-muted hover:bg-surface-3 hover:text-sabere-dark dark:hover:text-sabere-accent disabled:opacity-40"
+                                class="rounded p-1 text-muted hover:bg-surface-3 hover:text-brand-ink dark:hover:text-brand-primary disabled:opacity-40"
                                 @click="regenerateWeek(weeks[weekIndex])"
                             >
                                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -570,7 +570,7 @@ onBeforeUnmount(() => {
                                     v-for="post in postsByDate[cell.date] ?? []"
                                     :key="post.id"
                                     type="button"
-                                    class="mt-1 block w-full rounded border bg-sabere-light dark:bg-surface-3 p-1 text-left hover:border-sabere-accent"
+                                    class="mt-1 block w-full rounded border bg-brand-tint dark:bg-surface-3 p-1 text-left hover:border-brand-primary"
                                     :class="post.status === 'drafted' && post.review?.decision === 'rejected'
                                         ? 'border-red-300 dark:border-red-700'
                                         : 'border-line'"
@@ -644,7 +644,7 @@ onBeforeUnmount(() => {
                     </button>
                     <button
                         type="button"
-                        class="rounded-md bg-sabere-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                        class="rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                         @click="copyLink"
                     >
                         {{ copied ? 'Copiado ✓' : 'Copiar enlace' }}

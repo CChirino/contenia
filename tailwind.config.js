@@ -18,11 +18,11 @@ export default {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                sabere: {
-                    dark: '#1A2A42',
-                    light: '#F8F5F0',
-                    accent: '#27C2A5',
-                    purple: '#7854D2',
+                brand: {
+                    primary: '#4F46E5',
+                    secondary: '#8B5CF6',
+                    ink: '#14122B',
+                    tint: '#F5F4FF',
                 },
                 surface: 'rgb(var(--c-surface) / <alpha-value>)',
                 'surface-2': 'rgb(var(--c-surface-2) / <alpha-value>)',
