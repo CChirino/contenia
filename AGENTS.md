@@ -1,6 +1,6 @@
-# Saberé Marketing
+# Contenia
 
-Aplicación de planificación y publicación de contenido de redes sociales de Saberé (Instagram, LinkedIn, TikTok).
+Plataforma multimarca de contenido para redes sociales (agencia). **Saberé es la marca id=1**; la app se llama Contenia y también planifica y publica en Instagram, LinkedIn y TikTok.
 
 Stack: Laravel 12 + Inertia + Vue 3 + TypeScript + Vite + Tailwind + MySQL (Laravel Sail). Tests con PHPUnit.
 
@@ -101,7 +101,7 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - **Comandos**: `plan:generate`, `posts:enrich-photos` y `render:post` aceptan `--brand=slug` (en `render:post` se deduce del post si falta).
 - **Admin**: `/brands` (crear/editar/pausar, sin borrado; logo SVG/PNG ≤1 MB) y `/users` (operadores, roles, asignación) bajo middleware `admin`. El selector de marca del nav lista las asignadas (todas para admin).
 - **Logo por marca**: `GET /b/{brand}/logo` (pública, solo lectura — Chromium la usa en el render) sirve `logo_path` o el SVG del repo.
-- **Paleta por marca**: `brands.palette` llega a las plantillas de render vía variables CSS `--brand-dark/light/accent/secondary` que `BrandFrame` fija en el contenedor (más `wordmark` = `brand.name.`). La UI de la app NO usa la paleta de marca: sigue con Tailwind `sabere-*`.
+- **Paleta por marca**: `brands.palette` llega a las plantillas de render vía variables CSS `--brand-dark/light/accent/secondary` que `BrandFrame` fija en el contenedor (más `wordmark` = `brand.name.`). La UI de la app NO usa la paleta de marca: sigue con Tailwind `brand-*` (producto).
 - **Calendario**: feriados globales (`brand_id=null`) compartidos por todas las marcas — solo lectura para operadores, CRUD para admin; los eventos de la marca llevan `brand_id` activo (el servidor lo decide, ignora el del cliente).
 - **Crear una marca**: UI `/brands/create` (admin) o `DefaultsSeeder::forBrand($brand)` — siembra perfil vacío + estrategias por red; nunca duplica feriados globales.
 - **Assets por marca**: `storage/app/brands/{brand_id}/posts/{post_id}/` (frames, bg.png, final.mp4). Migración del layout plano viejo: `sail artisan brands:migrate-assets` (idempotente; reescribe `posts.asset_path`).
@@ -130,5 +130,6 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 ## Notas
 
 - Locale `es`, timezone `America/Caracas`, faker `es_VE`.
-- Paleta Tailwind `sabere.*` (`dark`, `light`, `accent`, `purple`) y fuente Inter.
+- El producto se llama **Contenia** (`APP_NAME`); Saberé es solo la marca id=1. Paleta Tailwind del producto `brand.*` (`primary` índigo, `secondary`, `ink`, `tint`) — la UI usa `brand-*`, no `sabere-*`. Las plantillas de render (`Templates/`, `Pages/Render/`) usan la paleta de cada marca vía `--brand-*` y no cambian.
+- Prompts por marca: `brand_profile.description` alimenta `PromptBuilder::brandIntro()` ("Eres el community manager de {marca}, {descripción}."); la regla de `photo_keywords` está centralizada en `PromptBuilder::photoKeywordsRule()` y es genérica (sector de la marca, no escolar).
 - Alias `@/*` → `resources/js/*`.
