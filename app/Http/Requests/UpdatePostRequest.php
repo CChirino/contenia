@@ -22,6 +22,7 @@ class UpdatePostRequest extends FormRequest
         $allowedFormats = collect(PostFormat::allowedFor($post->network))->map->value;
 
         return [
+            'hook' => ['sometimes', 'required', 'string', 'max:255'],
             'copy' => ['required', 'string'],
             'hashtags' => ['required', 'array'],
             'hashtags.*' => ['string', 'max:100'],

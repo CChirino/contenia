@@ -11,10 +11,13 @@ use App\Jobs\RegeneratePost;
 use App\Jobs\RenderPost;
 use App\Models\Brand;
 use App\Models\Post;
+use App\Models\PostEdit;
+use App\Models\ReviewRequest;
 use App\Services\Quota\QuotaGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
@@ -34,7 +37,34 @@ class PostController extends Controller
         // aprobado: se re-renderiza y vuelve a la revisión del cliente.
         $wasRendered = in_array($post->status, [PostStatus::Rendered, PostStatus::ClientApproved], true);
 
-        $post->update($request->validated());
+        $validated = $request->validated();
+
+        // Memoria (spec §8.2): diffs de hook/copy como evidencia para
+        // DistillFeedback. Solo se registran los campos que cambian.
+        $changes = [];
+        foreach (['hook', 'copy'] as $field) {
+            if (array_key_exists($field, $validated)
+                && (string) $validated[$field] !== (string) $post->{$field}) {
+                $changes[$field] = [(string) $post->{$field}, (string) $validated[$field]];
+            }
+        }
+
+        $post->update($validated);
+
+        if ($changes !== []) {
+            $reviewRequestId = $this->reviewRequestFor($post);
+
+            foreach ($changes as $field => [$before, $after]) {
+                PostEdit::create([
+                    'post_id' => $post->id,
+                    'user_id' => $request->user()->id,
+                    'field' => $field,
+                    'before' => Str::limit($before, 1000, ''),
+                    'after' => Str::limit($after, 1000, ''),
+                    'review_request_id' => $reviewRequestId,
+                ]);
+            }
+        }
 
         // Editar un post con render previo lo re-renderiza; si estaba
         // renderizado vuelve a aprobado (un borrador queda en borrador).
@@ -136,6 +166,21 @@ class PostController extends Controller
         $zip->close();
 
         return response()->download($zipPath, "post-{$post->id}-frames.zip")->deleteFileAfterSend();
+    }
+
+    /**
+     * Revisión que incluye el post: la abierta si la hay, o la más reciente.
+     * Sirve para asignar las ediciones a un periodo de feedback.
+     */
+    private function reviewRequestFor(Post $post): ?int
+    {
+        $requests = ReviewRequest::whereHas(
+            'items',
+            fn ($q) => $q->where('post_id', $post->id)
+        )->orderByDesc('id')->get();
+
+        return ($requests->first(fn (ReviewRequest $r) => $r->isOpen())
+            ?? $requests->first())?->id;
     }
 
     public function regenerate(RegeneratePostRequest $request, Brand $brand, Post $post): RedirectResponse

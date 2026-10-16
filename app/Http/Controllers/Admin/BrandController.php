@@ -6,6 +6,7 @@ use App\Enums\BrandStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBrandRequest;
 use App\Http\Requests\Admin\UpdateBrandRequest;
+use App\Jobs\DistillFeedback;
 use App\Jobs\OnboardBrand;
 use App\Models\Brand;
 use App\Models\MonthlyPlan;
@@ -129,6 +130,16 @@ class BrandController extends Controller
         OnboardBrand::dispatch($brand, $samples);
 
         return back()->with('success', 'Generando propuesta… (tarda ~1 min).');
+    }
+
+    /**
+     * Destila a mano el feedback del último mes en pautas de la marca.
+     */
+    public function distillGuidelines(Brand $brand): RedirectResponse
+    {
+        DistillFeedback::dispatch($brand, now()->subMonth(), now());
+
+        return back()->with('success', 'Destilando el feedback del último mes en pautas…');
     }
 
     public function toggle(Brand $brand): RedirectResponse
