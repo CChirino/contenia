@@ -11,8 +11,8 @@ Decisiones:
 
 - Migración `create_onboarding_and_guidelines`:
   - `brands.onboarding_proposal` json nullable + `brands.onboarded_at` timestamp nullable.
-  - `brand_guidelines`: `brand_id` FK, `text` string(200), `source` enum(`ai`,`client_feedback`,`operator`), `status` enum(`pending`,`active`,`discarded`,`pending_retire`,`retired`) default `pending`, `weight` smallint default 1, `evidence_count` int default 1, `period_from`/`period_to` dates nullable, timestamps. Índice `(brand_id, status)`.
-  - `post_edits`: `post_id` FK, `user_id` FK, `field` string(20), `before`/`after` text, `review_request_id` FK nullable (pertenencia a un periodo), timestamps.
+  - `brand_guidelines`: `brand_id` FK, `text` string(200), `source` enum(`ai_distilled`,`client_feedback`,`operator`) (según spec §3.1), `status` enum(`pending`,`active`,`pending_retire`,`retired`,`discarded`) default `pending` (`discarded` la añadimos: §3.1 no la lista pero §8.2 contempla "✗ descartar"), `weight` smallint default 1, `evidence_count` int default 1, `period_from`/`period_to` dates nullable, timestamps. Índice `(brand_id, status)`.
+  - `post_edits`: `post_id` FK, `user_id` FK, `field` string(10) (`hook`/`copy`, según spec §3.1), `before`/`after` text, `review_request_id` FK nullable (pertenencia a un periodo), timestamps.
 - `App\Services\Onboarding\BrandScraper`:
   - `collect(string $url): array` → `{title, meta_description, pages: [{url, text}] (≤5, ≤8 000 chars cada una), colors: [hex,…], logo_img_url}`.
   - `Http::timeout(10)->get($url)` a la home; DOMDocument/`loadHTML` suprimiendo errores; elimina `script/style/noscript`; recoge `title`, `meta[name=description]`, enlaces internos del mismo host (prioriza rutas con `about|nosotros|servicios|blog|productos|equipo`), hasta 5, una petición cada una con timeout 10 (presupuesto total 30 s). Texto visible: `textContent` colapsado.
@@ -36,13 +36,13 @@ Decisiones:
 
 ## Paso 3 — `post_edits` y disparo de `DistillFeedback`
 
-- En `PostController::update`, antes de guardar: para `hook`/`copy`/`slides` cambiados por el operador, inserta en `post_edits` (`before`/`after` truncados a 1 000 chars; `review_request_id` = la revisión abierta/más reciente que incluya el post, si la hay).
+- En `PostController::update`, antes de guardar: para `hook`/`copy` cambiados por el operador, inserta en `post_edits` (`before`/`after` truncados a 1 000 chars; `review_request_id` = la revisión abierta/más reciente que incluya el post, si la hay).
 - Listener `OnReviewSubmitted` sobre el evento `ReviewSubmitted` (ya existente, §5 de Fase 2): encola `DistillFeedback($brand, $request->from, $request->to)`.
 - `App\Jobs\DistillFeedback(Brand $brand, Carbon $from, Carbon $to)`:
   - Reúne evidencia del periodo: comentarios de rechazo de `review_items`, comentarios de `review_week_comments`, `general_comment` de las solicitudes, y `post_edits` con `review_request_id` en el rango (o `created_at` en el rango).
   - Si la evidencia total está vacía → no llama al LLM, termina.
   - Prompt: pautas existentes (id, texto, status, weight, evidence_count) + evidencia → pide `{new: [{text ≤200}], reinforce: [ids], retire: [{id, reason}]}` via `emit_result`. Solo ids de la marca.
-  - Aplica: nuevas → `pending` con `source=ai` (o `client_feedback` si el motivo son solo comentarios del cliente); `reinforce` → `evidence_count++`, `weight = min(weight+1, 10)`, solo si `active|pending`; `retire` → si `active` → `pending_retire`, si `pending` → `discarded`.
+  - Aplica: nuevas → `pending` con `source=ai_distilled` (o `client_feedback` si el motivo son solo comentarios del cliente); `reinforce` → `evidence_count++`, `weight = min(weight+1, 10)`, solo si `active|pending`; `retire` → si `active` → `pending_retire`, si `pending` → `discarded`.
 - `POST /brands/{brand}/guidelines/distill` (admin) lanza el job a mano con el último mes.
 
 ## Paso 4 — Pautas en UI y en los prompts
@@ -56,7 +56,7 @@ Decisiones:
 - `BrandScraperTest`: `Http::fake` con HTML fixture (title, meta, enlaces a `/nosotros`, colores en `<style>`, img de logo en data URI) → `collect` devuelve páginas priorizadas, colores hex, texto sin etiquetas; web caída → `ok=false` sin excepción; URLs externas no se siguen; budget de 5 páginas.
 - `OnboardBrandTest` (`FakeLlmClient`): produce propuesta con 4–6 pilares sumando 100 (validación/renormalización), solo redes del plan, paleta hex válida, guarda en `onboarding_proposal` **sin tocar** `brand_profile`; error de scraping + sin samples → propuesta `{error}`; `OnboardBrand` fija `app('brand')` (test con marca no activa).
 - `ApplyProposalTest`: cada endpoint aplica su sección, marca `applied`, y no pisa pilares existentes sin confirmar; redes fuera del plan se ignoran; solo admin.
-- `PostEditsTest`: editar hook/copy crea filas con diff; slides también; regenerar por IA no crea `post_edits` (solo `update` del controlador).
+- `PostEditsTest`: editar hook o copy crea filas con diff; regenerar por IA no crea `post_edits` (solo `update` del controlador).
 - `DistillFeedbackTest`: al enviar una revisión con rechazos+comentarios se encola el job; el job con `FakeLlmClient` crea `pending`, refuerza una activa (`evidence_count++`), marca `pending_retire`; evidencia vacía → no llama al LLM; pauta retirada pendiente → descartada; no toca pautas de otra marca.
 - `GuidelinesTest` (UI/controlador): CRUD, transiciones de estado válidas, ≤200 chars, aislamiento por marca.
 - `PromptBuilderTest`: system prompt incluye activas (máx. 15, por weight), excluye pending/discarded/retired.

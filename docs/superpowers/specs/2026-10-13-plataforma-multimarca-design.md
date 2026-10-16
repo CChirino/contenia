@@ -35,7 +35,7 @@ Convertir `sabere-marketing` en una plataforma donde **una agencia pequeña (1�
 | `review_week_comments` | `review_request_id`, `week_from`, `comment` | Comentario general por semana. |
 | `plans` | `name`, `posts_per_month`, `regenerations_per_month`, `image_refreshes_per_month`, `networks` json, `price_label` | `null` en un contador = ilimitado. |
 | `brand_usage` | `brand_id`, `year`, `month`, `posts_generated`, `regenerations`, `image_refreshes`, `llm_tokens_in`, `llm_tokens_out`, `image_calls`, `extra_posts`, `extra_regenerations`, `extra_image_refreshes` | Única por `(brand_id, year, month)`. |
-| `brand_guidelines` | `brand_id`, `text` (≤200), `source` (`client_feedback`/`operator`/`ai_distilled`), `weight` int, `evidence_count` int, `status` (`pending`/`active`/`pending_retire`/`retired`) | Memoria de la marca. |
+| `brand_guidelines` | `brand_id`, `text` (≤200), `source` (`client_feedback`/`operator`/`ai_distilled`), `weight` int, `evidence_count` int, `status` (`pending`/`active`/`pending_retire`/`retired`/`discarded`) | Memoria de la marca. |
 | `post_edits` | `post_id`, `user_id`, `field` (`hook`/`copy`), `before`, `after` | Evidencia para la memoria (§8.2). |
 | `calendar_events.brand_id` | nullable | `null` = evento global (feriados). |
 
