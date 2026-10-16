@@ -6,13 +6,26 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
 
 interface Contact {
     id: number;
     name: string;
     email: string;
     whatsapp: string | null;
+}
+
+interface OnboardingProposal {
+    error?: string;
+    generated_at?: string;
+    description?: string;
+    tone_of_voice?: string;
+    audience?: string;
+    cta?: string;
+    base_hashtags?: string[];
+    pillars?: { name: string; description: string; weight: number }[];
+    strategies?: { network: string; posts_per_week: number; formats: string[]; focus: string }[];
+    palette?: Record<string, string>;
 }
 
 const props = defineProps<{
@@ -26,8 +39,11 @@ const props = defineProps<{
         plan_id: number | null;
         logo_url: string;
         contacts?: Contact[];
+        onboarding_proposal?: OnboardingProposal | null;
+        onboarded_at?: string | null;
     } | null;
     plans: { id: number; name: string; price_label: string | null }[];
+    onboarding_pending?: boolean;
 }>();
 
 const paletteFields = [
@@ -76,6 +92,45 @@ const onLogo = (event: Event) => {
 };
 
 const contacts = computed(() => props.brand?.contacts ?? []);
+
+// Onboarding con IA: propuesta en borrador (nunca pisa datos reales).
+const proposal = computed(() => props.brand?.onboarding_proposal ?? null);
+
+const onboardForm = useForm({ sample_posts: '', social_handle: '' });
+
+const runOnboarding = () => {
+    if (!props.brand) return;
+    onboardForm.post(
+        route('brands.onboarding.run', { brand: props.brand.id }),
+        { preserveScroll: true }
+    );
+};
+
+// Mientras el job genera la propuesta, refresca brand + flag cada 5 s.
+let poll: ReturnType<typeof setInterval> | null = null;
+
+const stopPolling = () => {
+    if (poll) {
+        clearInterval(poll);
+        poll = null;
+    }
+};
+
+watch(
+    () => props.onboarding_pending,
+    (pending) => {
+        if (pending && !poll) {
+            poll = setInterval(() => {
+                router.reload({ only: ['brand', 'onboarding_pending'] });
+            }, 5000);
+        } else if (!pending) {
+            stopPolling();
+        }
+    },
+    { immediate: true }
+);
+
+onBeforeUnmount(stopPolling);
 
 const contactForm = useForm({ name: '', email: '', whatsapp: '' });
 
@@ -196,6 +251,72 @@ const removeContact = (contact: Contact) => {
                         </PrimaryButton>
                     </div>
                 </form>
+
+                <div
+                    v-if="brand"
+                    class="mt-6 overflow-hidden bg-surface p-6 shadow-sm sm:rounded-lg"
+                >
+                    <h3 class="text-base font-semibold text-fg">Proponer con IA</h3>
+                    <p class="mt-1 text-sm text-muted">
+                        Lee el sitio web de la marca y genera un borrador de perfil, pilares,
+                        estrategias y paleta. Nada se guarda hasta que revises y apliques la propuesta.
+                    </p>
+
+                    <div
+                        v-if="proposal?.error"
+                        class="mt-3 rounded-md border border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-300"
+                    >
+                        {{ proposal.error }}
+                    </div>
+                    <div
+                        v-else-if="proposal"
+                        class="mt-3 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
+                    >
+                        Propuesta generada el {{ proposal.generated_at ?? '—' }} —
+                        la vista completa para aplicarla llega en la siguiente iteración.
+                    </div>
+                    <div
+                        v-if="brand.onboarded_at"
+                        class="mt-3 rounded-md border border-emerald-200 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/30 p-3 text-sm text-emerald-700 dark:text-emerald-300"
+                    >
+                        Marca configurada con ayuda de IA ✓ ({{ brand.onboarded_at }})
+                    </div>
+
+                    <div v-if="!brand.website_url" class="mt-3 text-sm text-muted">
+                        Guarda primero el sitio web de la marca para poder proponer con IA.
+                    </div>
+
+                    <form
+                        v-else
+                        class="mt-4 space-y-4"
+                        @submit.prevent="runOnboarding"
+                    >
+                        <div>
+                            <InputLabel for="sample_posts" value="Posts de ejemplo (uno por párrafo, máx. 5)" />
+                            <textarea
+                                id="sample_posts"
+                                v-model="onboardForm.sample_posts"
+                                rows="4"
+                                class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
+                                placeholder="Pega posts previos que te gusten, separados por una línea en blanco"
+                            ></textarea>
+                            <InputError :message="onboardForm.errors.sample_posts" class="mt-1" />
+                        </div>
+                        <div>
+                            <InputLabel for="social_handle" value="Usuario de Instagram/LinkedIn (opcional)" />
+                            <TextInput
+                                id="social_handle"
+                                v-model="onboardForm.social_handle"
+                                class="mt-1 block w-64"
+                                placeholder="@marca"
+                            />
+                            <InputError :message="onboardForm.errors.social_handle" class="mt-1" />
+                        </div>
+                        <PrimaryButton :disabled="onboardForm.processing || onboarding_pending">
+                            {{ onboarding_pending ? 'Generando propuesta…' : 'Proponer con IA' }}
+                        </PrimaryButton>
+                    </form>
+                </div>
 
                 <div
                     v-if="brand"

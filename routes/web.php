@@ -52,6 +52,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/brands/{brand}/edit', [BrandController::class, 'edit'])->name('brands.edit');
     Route::put('/brands/{brand}', [BrandController::class, 'update'])->name('brands.update');
     Route::post('/brands/{brand}/toggle', [BrandController::class, 'toggle'])->name('brands.toggle');
+    Route::post('/brands/{brand}/onboarding', [BrandController::class, 'runOnboarding'])
+        ->name('brands.onboarding.run');
     Route::post('/brands/{brand}/contacts', [BrandContactController::class, 'store'])->name('brands.contacts.store');
     Route::delete('/brands/{brand}/contacts/{contact}', [BrandContactController::class, 'destroy'])->name('brands.contacts.destroy');
 
