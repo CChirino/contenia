@@ -146,6 +146,9 @@ const brandPlanUrl = (slug: string) => {
                                             <DropdownLink :href="route('settings.calendar.index')">
                                                 Calendario
                                             </DropdownLink>
+                                            <DropdownLink :href="route('settings.guidelines.index')">
+                                                Pautas
+                                            </DropdownLink>
                                         </template>
                                     </Dropdown>
                                 </div>
@@ -327,6 +330,12 @@ const brandPlanUrl = (slug: string) => {
                             :active="route().current('settings.calendar.index')"
                         >
                             Calendario
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="route('settings.guidelines.index')"
+                            :active="route().current('settings.guidelines.index')"
+                        >
+                            Pautas
                         </ResponsiveNavLink>
                     </div>
 
