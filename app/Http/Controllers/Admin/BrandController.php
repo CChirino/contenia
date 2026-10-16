@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\BrandStatus;
+use App\Enums\Network;
+use App\Enums\PostFormat;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBrandRequest;
 use App\Http\Requests\Admin\UpdateBrandRequest;
@@ -82,9 +84,16 @@ class BrandController extends Controller
                 'contacts' => $brand->contacts()->orderBy('id')->get(['id', 'name', 'email', 'whatsapp']),
                 'onboarding_proposal' => $brand->onboarding_proposal,
                 'onboarded_at' => $brand->onboarded_at?->toIso8601String(),
+                'plan_networks' => $brand->plan?->networks ?? [],
+                'pillars_count' => $brand->pillars()->count(),
             ],
             'plans' => Plan::orderBy('name')->get(['id', 'name', 'price_label']),
             'onboarding_pending' => Cache::has("onboarding:{$brand->id}"),
+            // Formatos permitidos por red (espejo de PostFormat::allowedFor).
+            'allowed_formats' => collect(Network::cases())
+                ->mapWithKeys(fn (Network $n) => [
+                    $n->value => array_map(fn (PostFormat $f) => $f->value, PostFormat::allowedFor($n)),
+                ]),
         ]);
     }
 

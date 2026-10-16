@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import OnboardingProposal from '@/Pages/Admin/Brands/OnboardingProposal.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -26,6 +27,7 @@ interface OnboardingProposal {
     pillars?: { name: string; description: string; weight: number }[];
     strategies?: { network: string; posts_per_week: number; formats: string[]; focus: string }[];
     palette?: Record<string, string>;
+    applied?: Record<string, boolean>;
 }
 
 const props = defineProps<{
@@ -41,9 +43,12 @@ const props = defineProps<{
         contacts?: Contact[];
         onboarding_proposal?: OnboardingProposal | null;
         onboarded_at?: string | null;
+        plan_networks?: string[];
+        pillars_count?: number;
     } | null;
     plans: { id: number; name: string; price_label: string | null }[];
     onboarding_pending?: boolean;
+    allowed_formats?: Record<string, string[]>;
 }>();
 
 const paletteFields = [
@@ -268,19 +273,16 @@ const removeContact = (contact: Contact) => {
                     >
                         {{ proposal.error }}
                     </div>
-                    <div
+                    <OnboardingProposal
                         v-else-if="proposal"
-                        class="mt-3 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
-                    >
-                        Propuesta generada el {{ proposal.generated_at ?? '—' }} —
-                        la vista completa para aplicarla llega en la siguiente iteración.
-                    </div>
-                    <div
-                        v-if="brand.onboarded_at"
-                        class="mt-3 rounded-md border border-emerald-200 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/30 p-3 text-sm text-emerald-700 dark:text-emerald-300"
-                    >
-                        Marca configurada con ayuda de IA ✓ ({{ brand.onboarded_at }})
-                    </div>
+                        :key="proposal.generated_at"
+                        :brand-id="brand.id"
+                        :proposal="proposal"
+                        :onboarded-at="brand.onboarded_at"
+                        :plan-networks="brand.plan_networks ?? []"
+                        :allowed-formats="allowed_formats ?? {}"
+                        :pillars-count="brand.pillars_count ?? 0"
+                    />
 
                     <div v-if="!brand.website_url" class="mt-3 text-sm text-muted">
                         Guarda primero el sitio web de la marca para poder proponer con IA.

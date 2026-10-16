@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BrandContactController;
 use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\OnboardingApplyController;
 use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AssetController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\ReviewRequestController;
 use App\Http\Controllers\Settings\BrandProfileController;
 use App\Http\Controllers\Settings\CalendarEventController;
 use App\Http\Controllers\Settings\ContentPillarController;
+use App\Http\Controllers\Settings\GuidelineController;
 use App\Http\Controllers\Settings\NetworkStrategyController;
 use App\Models\Brand;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +58,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ->name('brands.onboarding.run');
     Route::post('/brands/{brand}/guidelines/distill', [BrandController::class, 'distillGuidelines'])
         ->name('brands.guidelines.distill');
+
+    // Aplicar la propuesta de onboarding por secciones (borrador → datos reales).
+    Route::post('/brands/{brand}/onboarding/apply/profile', [OnboardingApplyController::class, 'profile'])
+        ->name('brands.onboarding.apply.profile');
+    Route::post('/brands/{brand}/onboarding/apply/pillars', [OnboardingApplyController::class, 'pillars'])
+        ->name('brands.onboarding.apply.pillars');
+    Route::post('/brands/{brand}/onboarding/apply/strategies', [OnboardingApplyController::class, 'strategies'])
+        ->name('brands.onboarding.apply.strategies');
+    Route::post('/brands/{brand}/onboarding/apply/palette', [OnboardingApplyController::class, 'palette'])
+        ->name('brands.onboarding.apply.palette');
     Route::post('/brands/{brand}/contacts', [BrandContactController::class, 'store'])->name('brands.contacts.store');
     Route::delete('/brands/{brand}/contacts/{contact}', [BrandContactController::class, 'destroy'])->name('brands.contacts.destroy');
 
@@ -165,6 +177,16 @@ Route::prefix('b/{brand:slug}/settings')->middleware(['auth', 'brand'])->name('s
     Route::post('calendar', [CalendarEventController::class, 'store'])->name('calendar.store');
     Route::put('calendar/{event}', [CalendarEventController::class, 'update'])->name('calendar.update');
     Route::delete('calendar/{event}', [CalendarEventController::class, 'destroy'])->name('calendar.destroy');
+
+    // Pautas aprendidas: la IA propone, el operador confirma.
+    Route::get('guidelines', [GuidelineController::class, 'index'])->name('guidelines.index');
+    Route::post('guidelines', [GuidelineController::class, 'store'])->name('guidelines.store');
+    Route::post('guidelines/{guideline}/activate', [GuidelineController::class, 'activate'])->name('guidelines.activate');
+    Route::post('guidelines/{guideline}/discard', [GuidelineController::class, 'discard'])->name('guidelines.discard');
+    Route::post('guidelines/{guideline}/retire', [GuidelineController::class, 'retire'])->name('guidelines.retire');
+    Route::post('guidelines/{guideline}/keep', [GuidelineController::class, 'keep'])->name('guidelines.keep');
+    Route::put('guidelines/{guideline}', [GuidelineController::class, 'update'])->name('guidelines.update');
+    Route::delete('guidelines/{guideline}', [GuidelineController::class, 'destroy'])->name('guidelines.destroy');
 });
 
 require __DIR__.'/auth.php';
