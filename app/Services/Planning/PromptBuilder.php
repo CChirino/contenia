@@ -2,10 +2,12 @@
 
 namespace App\Services\Planning;
 
+use App\Enums\GuidelineStatus;
 use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Enums\PostIcon;
 use App\Models\Brand;
+use App\Models\BrandGuideline;
 use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
 use App\Models\ContentPillar;
@@ -70,13 +72,34 @@ class PromptBuilder
         return "photo_keywords: 2-3 palabras EN INGLÉS para buscar una FOTO DE STOCK de ambiente (no el concepto literal): escena del sector de la marca (según su descripción) u oficina, p. ej. 'office laptop desk', 'notebook pencils desk', 'team meeting table'. Sin niños ni menores; adultos solo si son claramente profesionales, preferible manos, objetos y espacios. Usa sustantivos concretos y fotografiables típicos de bancos de fotos (desk, notebook, laptop, whiteboard, books, tablet, hallway, storefront, workshop, kitchen); evita abstractos (rubric, assessment, performance, strategy, biometric).";
     }
 
+    /**
+     * Pautas aprendidas de la marca activa (spec §8.2): hasta 15
+     * `brand_guidelines` activas por peso y recencia, como bloque de
+     * viñetas. Vacío → '' (sin bloque en el prompt).
+     */
+    public function learnedGuidelines(): string
+    {
+        $texts = BrandGuideline::where('status', GuidelineStatus::Active)
+            ->orderByDesc('weight')
+            ->orderByDesc('updated_at')
+            ->limit(15)
+            ->pluck('text');
+
+        if ($texts->isEmpty()) {
+            return '';
+        }
+
+        return "Pautas aprendidas de esta marca:\n"
+            .$texts->map(fn (string $t) => "- {$t}")->implode("\n");
+    }
+
     protected function systemPrompt(): string
     {
         $brand = BrandProfile::current();
 
         $hashtags = collect($brand->base_hashtags)->implode(' ');
 
-        return <<<PROMPT
+        $prompt = <<<PROMPT
         {$this->brandIntro()} Generas contenido para sus redes sociales.
 
         Perfil de marca:
@@ -92,6 +115,12 @@ class PromptBuilder
         - Cada post es para UNA red concreta; adapta formato y tono a esa red.
         - Responde únicamente con la herramienta emit_result, respetando el esquema indicado.
         PROMPT;
+
+        // Las pautas activas se inyectan al final del system: cubre la
+        // generación semanal/mensual y la regeneración de posts (forPost).
+        $guidelines = $this->learnedGuidelines();
+
+        return $guidelines === '' ? $prompt : "{$prompt}\n\n{$guidelines}";
     }
 
     /**

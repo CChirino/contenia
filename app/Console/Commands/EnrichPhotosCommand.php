@@ -83,6 +83,11 @@ class EnrichPhotosCommand extends Command
         Responde únicamente con la herramienta emit_result, devolviendo un item por cada post listado.
         PROMPT;
 
+        // Las pautas activas de la marca también aplican al enriquecimiento.
+        if ($guidelines = $prompts->learnedGuidelines()) {
+            $system .= "\n\n{$guidelines}";
+        }
+
         $updated = 0;
 
         foreach ($posts->chunk(15) as $i => $batch) {
