@@ -37,6 +37,7 @@ class Brand extends Model
             'status' => BrandStatus::class,
             'requires_client_approval' => 'boolean',
             'onboarding_proposal' => 'array',
+            'onboarded_at' => 'datetime',
         ];
     }
 
@@ -100,6 +101,11 @@ class Brand extends Model
     public function reviewRequests(): HasMany
     {
         return $this->hasMany(ReviewRequest::class);
+    }
+
+    public function guidelines(): HasMany
+    {
+        return $this->hasMany(BrandGuideline::class);
     }
 
     public function usage(): HasMany
