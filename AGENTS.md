@@ -68,7 +68,7 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - `LLM_DRIVER=fake` usa `FakeLlmClient` (respuestas encoladas con `withResponse()`); forzado en `phpunit.xml` para tests.
 - La interfaz es `App\Services\Llm\LlmClient`, bindeada en `AppServiceProvider`. Todas las llamadas se registran en `llm_logs`.
 - Ajustes comunes: `LLM_TIMEOUT` (default 300 s por llamada), `LLM_RETRIES` (default 3 intentos, con backoff de 5 s·intento ante 429/5xx/errores de conexión) y `LLM_MAX_TOKENS` (default 8000; con modelos gratuitos de OpenRouter conviene 16000).
-- Modelos gratuitos de OpenRouter: verificado funcionando `nvidia/nemotron-3-super-120b-a12b:free`; `google/gemma-4-31b-it:free` y `qwen/qwen3.8-27b:free` suelen estar saturados (429 del pool compartido). Algunos modelos ignoran `tool_choice` y devuelven el JSON en `message.content` (con o sin ```json), o `posts` doble-codificado — el cliente y el job lo toleran como fallback.
+- Modelos gratuitos de OpenRouter (verificado 2026-10-24 con tool-calling): `nvidia/nemotron-3.5-super-vl:free` (en uso), `nvidia/nemotron-3.5-lightning:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`. `nvidia/nemotron-3-super-120b-a12b:free` devuelve 404 del proveedor desde esa fecha (incluso sin tools); `google/gemma-4-*:free` suele estar saturado (429). Si un job LLM falla con 404/"Function … Not found", prueba el modelo a mano con `curl` y cambia `OPENROUTER_MODEL` (`GET /api/v1/models` lista los `:free` con `tools` en `supported_parameters`); el cliente solo reintenta 429/5xx. Algunos modelos ignoran `tool_choice` y devuelven el JSON en `message.content` (con o sin ```json), o `posts` doble-codificado — el cliente y el job lo toleran como fallback.
 
 ## Imágenes (fondos de diseño)
 
