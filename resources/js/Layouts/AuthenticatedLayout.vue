@@ -15,6 +15,12 @@ const page = usePage();
 const showingNavigationDropdown = ref(false);
 
 const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
+
+// La guía de inicio enlaza pantallas reales con ?from=onboarding: se
+// muestra un banner fino para volver al asistente.
+const fromOnboarding = computed(() =>
+    typeof window !== 'undefined' && window.location.search.includes('from=onboarding'),
+);
 const activeBrand = computed(() => page.props.brand);
 const assignedBrands = computed(() => page.props.brands ?? []);
 
@@ -233,6 +239,13 @@ const brandPlanUrl = (slug: string) => {
                                         <ThemeSelector />
                                         <div class="border-t border-line" />
                                         <DropdownLink
+                                            :href="route('onboarding.restart')"
+                                            method="post"
+                                            as="button"
+                                        >
+                                            Guía de inicio
+                                        </DropdownLink>
+                                        <DropdownLink
                                             :href="route('profile.edit')"
                                         >
                                             Profile
@@ -370,6 +383,16 @@ const brandPlanUrl = (slug: string) => {
                     </div>
                 </div>
             </nav>
+
+            <div
+                v-if="fromOnboarding"
+                class="border-b border-brand-primary/30 bg-brand-tint px-4 py-2 text-center text-xs text-fg-2 dark:bg-brand-primary/10"
+            >
+                Estás viendo la app desde la guía ·
+                <a :href="route('onboarding.show')" class="font-medium text-brand-primary underline">
+                    ← Volver a la guía
+                </a>
+            </div>
 
             <!-- Page Heading -->
             <header
