@@ -19,6 +19,8 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Admin Saberé',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                // El admin semilla no es un "usuario nuevo": ya conoce la app.
+                'onboarded_at' => now(),
             ]
         );
     }

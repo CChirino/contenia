@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\BrandLogoController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
@@ -46,8 +47,22 @@ Route::get('/brand/logo.svg', function () {
 Route::get('/b/{brand:slug}/logo', BrandLogoController::class)
     ->name('brands.logo');
 
+// Asistente de primeros pasos: bajo auth pero sin `onboarded` (es el destino).
+Route::prefix('onboarding')->middleware('auth')->name('onboarding.')->group(function () {
+    Route::get('/', [OnboardingController::class, 'show'])->name('show');
+    Route::patch('/state', [OnboardingController::class, 'state'])->name('state');
+    Route::post('/skip', [OnboardingController::class, 'skip'])->name('skip');
+    Route::post('/restart', [OnboardingController::class, 'restart'])->name('restart');
+    Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
+    Route::post('/brand', [OnboardingController::class, 'storeBrand'])->name('brand.store');
+    Route::get('/status', [OnboardingController::class, 'status'])->name('status');
+    Route::post('/apply-all', [OnboardingController::class, 'applyAll'])->name('apply-all');
+    Route::post('/manual', [OnboardingController::class, 'manualSetup'])->name('manual');
+    Route::get('/preview', [OnboardingController::class, 'preview'])->name('preview');
+});
+
 // Administración de marcas y usuarios: solo admin.
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'admin', 'onboarded'])->group(function () {
     Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
     Route::get('/brands/create', [BrandController::class, 'create'])->name('brands.create');
     Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
@@ -131,9 +146,9 @@ Route::get('/dashboard', function () use ($defaultBrand) {
         'year' => $now->year,
         'month' => $now->month,
     ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'onboarded'])->name('dashboard');
 
-Route::prefix('b/{brand:slug}')->middleware(['auth', 'brand'])->group(function () {
+Route::prefix('b/{brand:slug}')->middleware(['auth', 'brand', 'onboarded'])->group(function () {
     Route::get('/plans/{year}/{month}', [PlanController::class, 'show'])->name('plans.show');
     Route::post('/plans/{year}/{month}/generate', [PlanController::class, 'generate'])->name('plans.generate');
     Route::get('/plans/{year}/{month}/status', [PlanController::class, 'status'])->name('plans.status');
@@ -155,13 +170,13 @@ Route::prefix('b/{brand:slug}')->middleware(['auth', 'brand'])->group(function (
     Route::get('/posts/{post}/download', [PostController::class, 'download'])->name('posts.download');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::prefix('b/{brand:slug}/settings')->middleware(['auth', 'brand'])->name('settings.')->group(function () {
+Route::prefix('b/{brand:slug}/settings')->middleware(['auth', 'brand', 'onboarded'])->name('settings.')->group(function () {
     Route::get('brand', [BrandProfileController::class, 'edit'])->name('brand.edit');
     Route::put('brand', [BrandProfileController::class, 'update'])->name('brand.update');
 

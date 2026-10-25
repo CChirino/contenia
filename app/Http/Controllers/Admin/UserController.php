@@ -46,6 +46,8 @@ class UserController extends Controller
             'email' => $data['email'],
             'password' => $data['password'],
             'role' => $data['role'],
+            // Los usuarios creados por el admin pasan por el asistente.
+            'onboarded_at' => null,
         ]);
 
         $user->brands()->sync($data['brand_ids'] ?? []);

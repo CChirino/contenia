@@ -27,6 +27,8 @@ class User extends Authenticatable
         'password',
         'role',
         'last_brand_id',
+        'onboarded_at',
+        'onboarding_state',
     ];
 
     /**
@@ -50,6 +52,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'onboarded_at' => 'datetime',
+            'onboarding_state' => 'array',
         ];
     }
 
