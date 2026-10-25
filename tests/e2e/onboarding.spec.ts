@@ -52,23 +52,24 @@ async function shotBoth(page: Page, name: string) {
 
 // ---------- datos ----------
 
+// Misma forma que produce OnboardBrand::normalize (campos planos, estrategias en lista).
 const FAKE_PROPOSAL = {
-    profile: {
-        description: 'Empresa de pruebas del asistente de inicio.',
-        tone_of_voice: 'Cercano y profesional',
-        audience: 'Equipo de QA',
-        cta: 'Escríbenos',
-        base_hashtags: ['wizard', 'testing'],
-    },
+    description: 'Empresa de pruebas del asistente de inicio.',
+    tone_of_voice: 'Cercano y profesional',
+    audience: 'Equipo de QA',
+    cta: 'Escríbenos',
+    base_hashtags: ['wizard', 'testing'],
     pillars: [
         { name: 'Educativo', description: 'Contenido formativo', weight: 40 },
         { name: 'Marca', description: 'Identidad y producto', weight: 30 },
         { name: 'Comunidad', description: 'Cercanía con la audiencia', weight: 30 },
     ],
-    strategies: {
-        instagram: { role: 'Marca visual', cadence_per_week: 3, formats: ['image'] },
-    },
-    palette: { primary: '#4F46E5', dark: '#14122B', light: '#F5F4FF', accent: '#8B5CF6' },
+    strategies: [
+        { network: 'instagram', posts_per_week: 3, formats: ['image'], focus: 'Marca visual' },
+        { network: 'linkedin', posts_per_week: 2, formats: ['image'], focus: 'Autoridad' },
+    ],
+    palette: { dark: '#111111', light: '#FAFAFA', accent: '#FF6600', secondary: '#0066FF' },
+    generated_at: new Date().toISOString(),
 };
 
 function cleanup() {
@@ -128,10 +129,17 @@ test.describe.serial('Asistente de inicio', () => {
         );
         // storeBrand persiste step=3: al recargar ya estamos en el paso 3.
         await page.reload();
-        await expect(page.getByText('Aplicar todo')).toBeVisible();
+        // Las 4 tarjetas de la propuesta deben renderizarse (no solo el botón).
+        await expect(page.getByRole('heading', { name: 'Perfil de marca' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Pilares de contenido' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Estrategias por red' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Paleta' })).toBeVisible();
+        await expect(page.getByText('Suma: 100 / 100')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Continuar →' })).toBeDisabled();
         await shotBoth(page, '03-propuesta');
         await page.getByRole('button', { name: 'Aplicar todo' }).click();
         await expect(page.getByText('Perfil y pilares aplicados')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Continuar →' })).toBeEnabled();
         await shotBoth(page, '03-aplicada');
         await page.getByRole('button', { name: 'Continuar →' }).click();
 
@@ -142,6 +150,9 @@ test.describe.serial('Asistente de inicio', () => {
         );
         await expect(page.getByRole('heading', { name: 'Identidad' })).toBeVisible();
         await previewResp;
+        // La paleta mostrada es la aplicada desde la propuesta, no la por defecto.
+        await expect(page.getByText('#FF6600')).toBeVisible();
+        await expect(page.getByText('#0066FF')).toBeVisible();
         await shotBoth(page, '04-identidad');
         await page.getByRole('button', { name: 'Continuar →' }).click();
 
