@@ -11,12 +11,14 @@ use App\Models\BrandProfile;
 use App\Models\MonthlyPlan;
 use App\Models\Plan;
 use App\Models\Post;
+use App\Models\User;
 use App\Services\Onboarding\ProposalApplier;
 use App\Services\Render\TemplateRegistry;
 use Database\Seeders\DefaultsSeeder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -68,14 +70,29 @@ class OnboardingController extends Controller
             ] : null,
             'plans' => Plan::orderBy('name')->get(['id', 'name', 'price_label', 'posts_per_month']),
             'state' => $state,
-            'brands' => $user->isAdmin()
-                ? null
-                : $user->brands()->orderBy('name')->get(['brands.id', 'name', 'slug']),
+            'brands' => $this->tourBrands($user),
             'allowed_formats' => collect(Network::cases())
                 ->mapWithKeys(fn (Network $n) => [
                     $n->value => array_map(fn (PostFormat $f) => $f->value, PostFormat::allowedFor($n)),
                 ]),
         ]);
+    }
+
+    /**
+     * Marcas que ve el recorrido B (nombre en la bienvenida y enlaces
+     * "Ir a verlo"): las asignadas al operador; para admin, todas, con la
+     * última usada primero para que los enlaces apunten a su marca habitual.
+     *
+     * @return Collection<int, Brand>
+     */
+    private function tourBrands(User $user): Collection
+    {
+        $query = $user->isAdmin() ? Brand::query() : $user->brands();
+
+        return $query
+            ->orderByRaw('CASE WHEN brands.id = ? THEN 0 ELSE 1 END', [$user->last_brand_id ?? 0])
+            ->orderBy('brands.name')
+            ->get(['brands.id', 'brands.name', 'brands.slug']);
     }
 
     /**

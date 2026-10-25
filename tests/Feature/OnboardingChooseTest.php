@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Brand;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -48,6 +49,26 @@ class OnboardingChooseTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Onboarding/Index')
                 ->where('track', 'operator')
+            );
+    }
+
+    public function test_admin_tour_receives_all_brands_with_last_used_first(): void
+    {
+        $other = Brand::factory()->create(['name' => 'Aaa Marca']);
+        $user = User::factory()->create([
+            'role' => UserRole::Admin,
+            'onboarded_at' => null,
+            'last_brand_id' => $other->id,
+            'onboarding_state' => ['track' => 'operator', 'step' => 1],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('onboarding.show'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Onboarding/Index')
+                ->has('brands', Brand::count())
+                ->where('brands.0.slug', $other->slug)
             );
     }
 }

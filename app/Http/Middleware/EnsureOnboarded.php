@@ -36,9 +36,14 @@ class EnsureOnboarded
     {
         $user = $request->user();
 
+        // "Ir a verlo" del recorrido B abre la pantalla real con ?from=onboarding
+        // (la app muestra la banda "Volver a la guía"); no hay que rebotarlo.
+        $fromTour = $request->isMethod('GET') && $request->query('from') === 'onboarding';
+
         if (
             $user !== null
             && $user->onboarded_at === null
+            && ! $fromTour
             && ! $request->routeIs(self::EXCEPT)
         ) {
             return redirect()->route('onboarding.show');

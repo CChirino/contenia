@@ -188,6 +188,20 @@ test.describe.serial('Asistente de inicio', () => {
             await shotBoth(page, name);
         }
 
+        // "Ir a verlo" abre la pantalla real (sin rebotar al wizard) con la banda
+        // de retorno; "Volver a la guía" retoma en el mismo paso.
+        await page.getByRole('button', { name: '← Atrás' }).click();
+        await expect(page.getByRole('heading', { name: 'El post' })).toBeVisible();
+        await page.getByRole('link', { name: 'Ir a verlo →' }).click();
+        await page.waitForURL(/\/b\/demo\/plans\/.*from=onboarding/);
+        await expect(page.getByText('Estás viendo la app desde la guía')).toBeVisible();
+        await shotBoth(page, '12b-op-ir-a-verlo');
+        await page.getByRole('link', { name: '← Volver a la guía' }).click();
+        await page.waitForURL(/\/onboarding/);
+        await expect(page.getByRole('heading', { name: 'El post' })).toBeVisible();
+        await page.getByRole('button', { name: 'Continuar →' }).click();
+        await expect(page.getByRole('heading', { name: 'Aprobación del cliente' })).toBeVisible();
+
         await page.getByRole('button', { name: 'Continuar →' }).click();
         await expect(page.getByRole('heading', { name: 'Pautas' })).toBeVisible();
         await shotBoth(page, '14-op-pautas');
