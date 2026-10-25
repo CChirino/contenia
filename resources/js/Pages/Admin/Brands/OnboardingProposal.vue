@@ -280,7 +280,8 @@ const applyPalette = () => {
             </p>
             <InputError :message="pillarsForm.errors.pillars" class="mt-1" />
 
-            <table class="mt-3 w-full text-left text-sm">
+            <div class="mt-3 overflow-x-auto">
+            <table class="w-full min-w-[30rem] text-left text-sm">
                 <thead>
                     <tr class="border-b border-line text-muted">
                         <th class="py-2 pe-4 w-52">Nombre</th>
@@ -316,6 +317,7 @@ const applyPalette = () => {
                     </tr>
                 </tbody>
             </table>
+            </div>
 
             <div class="mt-4 flex items-center justify-between">
                 <SecondaryButton
@@ -346,7 +348,8 @@ const applyPalette = () => {
                 Solo se aplican las redes incluidas en el plan de la marca.
             </p>
 
-            <table class="mt-3 w-full text-left text-sm">
+            <div class="mt-3 overflow-x-auto">
+            <table class="w-full min-w-[34rem] text-left text-sm">
                 <thead>
                     <tr class="border-b border-line text-muted">
                         <th class="py-2 pe-4 w-28">Red</th>
@@ -404,6 +407,7 @@ const applyPalette = () => {
                     </tr>
                 </tbody>
             </table>
+            </div>
             <InputError :message="strategiesForm.errors.strategies" class="mt-1" />
 
             <div v-if="!compact" class="mt-4 flex justify-end">

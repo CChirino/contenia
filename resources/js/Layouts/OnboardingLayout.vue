@@ -63,7 +63,7 @@ const skip = () => router.post('/onboarding/skip');
                                 <span v-else>{{ i + 1 }}</span>
                             </span>
                             <span
-                                class="hidden truncate text-xs sm:block"
+                                class="hidden truncate text-xs lg:block"
                                 :class="i + 1 === current ? 'font-medium text-fg' : 'text-muted'"
                             >
                                 {{ label }}
@@ -76,6 +76,10 @@ const skip = () => router.post('/onboarding/skip');
                         />
                     </template>
                 </div>
+                <p class="mt-2 text-xs text-muted lg:hidden">
+                    Paso {{ current }} de {{ steps.length }} ·
+                    <span class="font-medium text-fg">{{ steps[current - 1] }}</span>
+                </p>
             </div>
         </header>
 
