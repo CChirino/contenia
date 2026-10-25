@@ -55,15 +55,26 @@ class OnboardingController extends Controller
         return Inertia::render('Onboarding/Index', [
             'track' => $track,
             'step' => (int) ($state['step'] ?? 1),
-            'brand' => $brand?->only(
-                'id', 'name', 'slug', 'website_url', 'palette',
-                'requires_client_approval', 'plan_id'
-            ),
+            'brand' => $brand ? [
+                ...$brand->only(
+                    'id', 'name', 'slug', 'website_url', 'palette',
+                    'requires_client_approval', 'plan_id', 'onboarding_proposal',
+                ),
+                'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+                'plan' => $brand->plan?->only('name', 'price_label', 'posts_per_month'),
+                'contacts' => $brand->contacts()->orderBy('id')->get(['id', 'name', 'email', 'whatsapp']),
+                'plan_networks' => $brand->plan?->networks ?? [],
+                'pillars_count' => $brand->pillars()->count(),
+            ] : null,
             'plans' => Plan::orderBy('name')->get(['id', 'name', 'price_label', 'posts_per_month']),
             'state' => $state,
             'brands' => $user->isAdmin()
                 ? null
                 : $user->brands()->orderBy('name')->get(['brands.id', 'name', 'slug']),
+            'allowed_formats' => collect(Network::cases())
+                ->mapWithKeys(fn (Network $n) => [
+                    $n->value => array_map(fn (PostFormat $f) => $f->value, PostFormat::allowedFor($n)),
+                ]),
         ]);
     }
 

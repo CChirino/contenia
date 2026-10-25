@@ -34,14 +34,19 @@ interface OnboardingProposal {
     applied?: Record<string, boolean>;
 }
 
-const props = defineProps<{
-    brandId: number;
-    proposal: OnboardingProposal;
-    onboardedAt?: string | null;
-    planNetworks: string[];
-    allowedFormats: Record<string, string[]>;
-    pillarsCount: number;
-}>();
+const props = withDefaults(
+    defineProps<{
+        brandId: number;
+        proposal: OnboardingProposal;
+        onboardedAt?: string | null;
+        planNetworks: string[];
+        allowedFormats: Record<string, string[]>;
+        pillarsCount: number;
+        /** Modo solo lectura/edición: oculta los botones "Aplicar X" y el aviso. */
+        compact?: boolean;
+    }>(),
+    { compact: false },
+);
 
 const applied = computed(() => props.proposal.applied ?? {});
 
@@ -185,13 +190,13 @@ const applyPalette = () => {
 <template>
     <div class="mt-6 space-y-6">
         <div
-            v-if="onboardedAt"
+            v-if="onboardedAt && !compact"
             class="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
         >
             Marca configurada con ayuda de IA ✓ ({{ onboardedAt }})
         </div>
         <div
-            v-else
+            v-else-if="!compact"
             class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
         >
             Propuesta generada el {{ proposal.generated_at ?? '—' }} — revisa y aplica
@@ -245,7 +250,7 @@ const applyPalette = () => {
                         <InputError :message="profileForm.errors.base_hashtags" class="mt-1" />
                     </div>
                 </div>
-                <div class="flex justify-end">
+                <div v-if="!compact" class="flex justify-end">
                     <PrimaryButton :disabled="profileForm.processing" @click="applyProfile">
                         Aplicar perfil
                     </PrimaryButton>
@@ -320,6 +325,7 @@ const applyPalette = () => {
                     + Añadir pilar
                 </SecondaryButton>
                 <PrimaryButton
+                    v-if="!compact"
                     :disabled="pillarsForm.processing || pillarsSum !== 100 || pillarsForm.pillars.length === 0"
                     @click="applyPillars"
                 >
@@ -400,7 +406,7 @@ const applyPalette = () => {
             </table>
             <InputError :message="strategiesForm.errors.strategies" class="mt-1" />
 
-            <div class="mt-4 flex justify-end">
+            <div v-if="!compact" class="mt-4 flex justify-end">
                 <PrimaryButton
                     :disabled="strategiesForm.processing || !strategiesForm.strategies.some((s) => s.inPlan)"
                     @click="applyStrategies"
@@ -436,7 +442,7 @@ const applyPalette = () => {
                     <InputError :message="paletteForm.errors[`palette.${field.key}`]" class="mt-1" />
                 </div>
             </div>
-            <div class="mt-4 flex justify-end">
+            <div v-if="!compact" class="mt-4 flex justify-end">
                 <PrimaryButton :disabled="paletteForm.processing" @click="applyPalette">
                     Aplicar paleta
                 </PrimaryButton>

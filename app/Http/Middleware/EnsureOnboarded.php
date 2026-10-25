@@ -13,6 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureOnboarded
 {
+    // El wizard llama a endpoints reales (marca, propuesta, contactos y
+    // generación de la primera grilla) antes de tener onboarded_at.
     private const EXCEPT = [
         'onboarding.*',
         'profile.*',
@@ -20,6 +22,11 @@ class EnsureOnboarded
         'login',
         'brands.logo',
         'brand.logo',
+        'brands.update',
+        'brands.onboarding.*',
+        'brands.contacts.*',
+        'plans.generate',
+        'plans.status',
         'assets.*',
         'render.*',
         'review.*',
