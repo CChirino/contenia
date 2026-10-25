@@ -26,6 +26,23 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Los tests que autentican usuarios sin tocar `onboarded_at` quieren un
+     * usuario ya incorporado (no el wizard). El asistente se prueba pasando
+     * 'onboarded_at' => null explícito a la factory.
+     */
+    public function actingAs($user, $guard = null)
+    {
+        if (
+            $user instanceof User
+            && ! array_key_exists('onboarded_at', $user->getAttributes())
+        ) {
+            $user->forceFill(['onboarded_at' => now()])->save();
+        }
+
+        return parent::actingAs($user, $guard);
+    }
+
+    /**
      * Admin autenticado con la marca activa en el contenedor (Saberé si no se
      * indica otra). Devuelve el usuario; $brand queda como marca activa.
      */
