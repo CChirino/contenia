@@ -139,7 +139,7 @@ class OnboardingController extends Controller
 
     /**
      * Cierra el wizard y lleva a la grilla: marca del estado o la
-     * primera del usuario; mes del estado o el siguiente.
+     * última usada por el usuario; mes del estado o el siguiente.
      */
     public function complete(Request $request): RedirectResponse
     {
@@ -150,7 +150,7 @@ class OnboardingController extends Controller
 
         $brand = isset($state['brand_id'])
             ? Brand::find($state['brand_id'])
-            : ($user->brands()->first() ?? Brand::first());
+            : $this->tourBrands($user)->first();
 
         abort_unless($brand !== null, 422, 'No hay marca a la que ir.');
 
