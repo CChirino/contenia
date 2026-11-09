@@ -207,7 +207,7 @@ const brandPlanUrl = (slug: string) => {
                             </div>
                         </div>
 
-                        <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div class="hidden shrink-0 sm:ms-6 sm:flex sm:items-center">
                             <!-- Settings Dropdown -->
                             <div class="relative ms-3">
                                 <Dropdown align="right" width="60">
@@ -216,8 +216,12 @@ const brandPlanUrl = (slug: string) => {
                                             <button
                                                 type="button"
                                                 class="inline-flex items-center rounded-md border border-transparent bg-surface px-3 py-2 text-sm font-medium leading-4 text-muted transition duration-150 ease-in-out hover:text-fg-2 focus:outline-none"
+                                                :title="$page.props.auth.user.name"
                                             >
-                                                {{ $page.props.auth.user.name }}
+                                                <span class="hidden whitespace-nowrap lg:inline">{{ $page.props.auth.user.name }}</span>
+                                                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white lg:hidden">
+                                                    {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
+                                                </span>
 
                                                 <svg
                                                     class="-me-0.5 ms-2 h-4 w-4"

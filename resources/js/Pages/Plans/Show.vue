@@ -136,6 +136,22 @@ const rows = computed(() => {
     return result;
 });
 
+// Vista agenda (móvil): por semana, solo los días con posts.
+const weekdayShort = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const agenda = computed(() =>
+    rows.value.map((row, weekIndex) => ({
+        week: props.weeks[weekIndex] ?? null,
+        days: row
+            .filter((c): c is { date: string; day: number } => c !== null)
+            .map((c) => ({
+                ...c,
+                weekday: weekdayShort[new Date(`${c.date}T00:00:00`).getDay()],
+                posts: postsByDate.value[c.date] ?? [],
+            }))
+            .filter((d) => d.posts.length > 0),
+    })),
+);
+
 const filteredPosts = computed(() =>
     networkFilter.value
         ? props.posts.filter((p) => p.network === networkFilter.value)
@@ -513,8 +529,95 @@ onBeforeUnmount(() => {
                     Generando la grilla… esta página se actualizará automáticamente.
                 </div>
 
-                <!-- Grilla mensual -->
-                <div class="grid grid-cols-[2.5rem_repeat(7,minmax(0,1fr))] gap-px overflow-hidden rounded-lg border border-line bg-line">
+                <!-- Agenda (móvil): semanas con sus días con posts -->
+                <div class="space-y-4 md:hidden">
+                    <section
+                        v-for="(entry, weekIndex) in agenda"
+                        :key="weekIndex"
+                        class="overflow-hidden rounded-lg border border-line bg-surface"
+                    >
+                        <header class="flex items-center justify-between gap-2 bg-surface-2 px-3 py-2">
+                            <span class="text-xs font-medium text-muted">
+                                <template v-if="entry.week">
+                                    Semana {{ formatDate(entry.week.from) }} – {{ formatDate(entry.week.to) }}
+                                </template>
+                                <template v-else>Semana {{ weekIndex + 1 }}</template>
+                            </span>
+                            <span v-if="entry.week" class="flex items-center gap-1">
+                                <button
+                                    v-if="requiresApproval"
+                                    type="button"
+                                    :disabled="!weekEligible(entry.week)"
+                                    class="rounded px-2 py-1 text-xs text-muted hover:bg-surface-3 hover:text-brand-primary disabled:opacity-40"
+                                    @click="sendToReview(entry.week)"
+                                >
+                                    Enviar semana
+                                </button>
+                                <button
+                                    type="button"
+                                    :disabled="pending || postsExhausted"
+                                    class="rounded px-2 py-1 text-xs text-muted hover:bg-surface-3 hover:text-brand-ink dark:hover:text-brand-primary disabled:opacity-40"
+                                    @click="regenerateWeek(entry.week)"
+                                >
+                                    ↻ Regenerar
+                                </button>
+                            </span>
+                        </header>
+                        <p v-if="entry.days.length === 0" class="px-3 py-3 text-xs text-muted">
+                            Sin posts esta semana.
+                        </p>
+                        <div v-for="day in entry.days" :key="day.date" class="border-t border-line px-3 py-2">
+                            <div class="text-xs font-medium text-muted">{{ day.weekday }} {{ day.day }}</div>
+                            <button
+                                v-for="post in day.posts"
+                                :key="post.id"
+                                type="button"
+                                class="mt-1.5 flex w-full items-start gap-3 rounded border bg-brand-tint p-2 text-left hover:border-brand-primary dark:bg-surface-3"
+                                :class="post.status === 'drafted' && post.review?.decision === 'rejected'
+                                    ? 'border-red-300 dark:border-red-700'
+                                    : 'border-line'"
+                                @click="selectedPostId = post.id"
+                            >
+                                <img
+                                    v-if="post.rendered_at && post.asset_urls?.frames?.[0]"
+                                    :src="post.asset_urls.frames[0]"
+                                    alt=""
+                                    class="h-14 w-14 shrink-0 rounded object-cover"
+                                >
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                                            :class="networkChipClass[post.network]"
+                                        >
+                                            {{ networkLabels[post.network] }}
+                                        </span>
+                                        <span class="ms-auto flex items-center gap-1 text-[11px] text-muted">
+                                            <span class="inline-block h-2 w-2 rounded-full" :class="statusDotClass[post.status]" />
+                                            {{ statusLabels[post.status] }}
+                                        </span>
+                                    </div>
+                                    <p class="mt-1 line-clamp-2 text-sm leading-snug text-fg-2">{{ post.hook }}</p>
+                                    <p
+                                        v-if="post.status === 'drafted' && post.review?.decision === 'rejected'"
+                                        class="mt-0.5 text-[11px] font-medium text-red-600 dark:text-red-400"
+                                    >
+                                        Rechazado por el cliente
+                                    </p>
+                                </div>
+                            </button>
+                        </div>
+                        <div
+                            v-if="entry.week && weekComments[entry.week.from]"
+                            class="border-t border-line bg-amber-50 px-3 py-1.5 text-xs italic text-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
+                        >
+                            Comentario del cliente: «{{ weekComments[entry.week.from] }}»
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Grilla mensual (tablet y escritorio) -->
+                <div class="hidden grid-cols-[2.5rem_repeat(7,minmax(0,1fr))] gap-px overflow-hidden rounded-lg border border-line bg-line md:grid">
                     <div class="bg-surface-2" />
                     <div
                         v-for="weekday in ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']"
@@ -581,7 +684,7 @@ onBeforeUnmount(() => {
                                             v-if="post.rendered_at && post.asset_urls?.frames?.[0]"
                                             :src="post.asset_urls.frames[0]"
                                             alt=""
-                                            class="h-10 w-10 shrink-0 rounded object-cover"
+                                            class="hidden h-10 w-10 shrink-0 rounded object-cover lg:block"
                                         >
                                         <span
                                             class="rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"

@@ -93,7 +93,8 @@ const destroy = (pillar: ContentPillar) => {
                         </span>
                     </div>
 
-                    <table class="w-full text-left text-sm">
+                    <div class="overflow-x-auto">
+                    <table class="w-full min-w-[32rem] text-left text-sm">
                         <thead>
                             <tr class="border-b border-line text-muted">
                                 <th class="py-2 pe-4">Nombre</th>
@@ -163,6 +164,7 @@ const destroy = (pillar: ContentPillar) => {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">

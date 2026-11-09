@@ -92,7 +92,8 @@ const destroy = (event: CalendarEvent) => {
                         Compartidos por todas las marcas.<template v-if="!isAdmin"> Solo lectura.</template>
                     </p>
 
-                    <table class="w-full text-left text-sm">
+                    <div class="overflow-x-auto">
+                    <table class="w-full min-w-[36rem] text-left text-sm">
                         <thead>
                             <tr class="border-b border-line text-muted">
                                 <th class="py-2 pe-4 w-36">Fecha</th>
@@ -174,12 +175,14 @@ const destroy = (event: CalendarEvent) => {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">
                     <h3 class="mb-4 text-lg font-medium text-fg">Eventos de la marca</h3>
 
-                    <table class="w-full text-left text-sm">
+                    <div class="overflow-x-auto">
+                    <table class="w-full min-w-[36rem] text-left text-sm">
                         <thead>
                             <tr class="border-b border-line text-muted">
                                 <th class="py-2 pe-4 w-36">Fecha</th>
@@ -261,6 +264,7 @@ const destroy = (event: CalendarEvent) => {
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 <div class="bg-surface p-4 shadow sm:rounded-lg sm:p-8">

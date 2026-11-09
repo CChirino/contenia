@@ -106,7 +106,7 @@ const submitExtend = () => {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-surface shadow-sm sm:rounded-lg">
+                <div class="overflow-x-auto bg-surface shadow-sm sm:rounded-lg">
                     <table class="min-w-full divide-y divide-line">
                         <thead class="bg-surface-2">
                             <tr>
