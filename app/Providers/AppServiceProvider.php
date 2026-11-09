@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\LlmLog;
+use App\Observers\LlmLogObserver;
 use App\Services\Images\FakeGenerator;
 use App\Services\Images\FakePhotoSource;
 use App\Services\Images\GeometricGenerator;
@@ -14,6 +16,9 @@ use App\Services\Llm\AnthropicClient;
 use App\Services\Llm\FakeLlmClient;
 use App\Services\Llm\LlmClient;
 use App\Services\Llm\OpenRouterClient;
+use App\Services\Media\FakeMediaInspector;
+use App\Services\Media\FfmpegMediaInspector;
+use App\Services\Media\MediaInspector;
 use App\Services\Render\FfmpegVideoAssembler;
 use App\Services\Render\FrameRenderer;
 use App\Services\Render\PlaywrightFrameRenderer;
@@ -67,6 +72,16 @@ class AppServiceProvider extends ServiceProvider
             };
         });
 
+        $this->app->singleton(MediaInspector::class, function () {
+            return match (config('media.inspector')) {
+                'ffmpeg' => new FfmpegMediaInspector,
+                'fake' => new FakeMediaInspector,
+                default => throw new InvalidArgumentException(
+                    'Inspector de medios desconocido: '.config('media.inspector')
+                ),
+            };
+        });
+
         $this->app->bind(FrameRenderer::class, PlaywrightFrameRenderer::class);
         $this->app->bind(VideoAssembler::class, FfmpegVideoAssembler::class);
     }
@@ -78,6 +93,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        \App\Models\LlmLog::observe(\App\Observers\LlmLogObserver::class);
+        LlmLog::observe(LlmLogObserver::class);
     }
 }

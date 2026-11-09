@@ -2,22 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\MediaMode;
+use App\Enums\MediaSource;
+use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Enums\PostStatus;
 use App\Enums\QuotaAction;
 use App\Http\Requests\RegeneratePostRequest;
+use App\Http\Requests\StorePostFromMediaRequest;
 use App\Http\Requests\UpdatePostRequest;
+use App\Jobs\ComposeFromMedia;
 use App\Jobs\RegeneratePost;
 use App\Jobs\RenderPost;
 use App\Models\Brand;
+use App\Models\MonthlyPlan;
 use App\Models\Post;
 use App\Models\PostEdit;
 use App\Models\ReviewRequest;
+use App\Services\Media\MediaInspector;
 use App\Services\Quota\QuotaGuard;
+use App\Services\Render\TemplateRegistry;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
@@ -169,6 +179,130 @@ class PostController extends Controller
     }
 
     /**
+     * Crea un post "desde archivo": el operador sube la foto/video y la
+     * IA redacta hook/copy/hashtags (job ComposeFromMedia). El formato se
+     * deriva del tipo de archivo y la red.
+     */
+    public function storeFromMedia(StorePostFromMediaRequest $request, Brand $brand, int $year, int $month, MediaInspector $inspector): RedirectResponse
+    {
+        $data = $request->validated();
+        $file = $request->file('file');
+        $mime = $file->getMimeType();
+        $isVideo = str_starts_with($mime, 'video/');
+        $network = Network::from($data['network']);
+
+        // La red debe estar permitida por el plan de la marca.
+        if (! app(QuotaGuard::class)->allowsNetwork($brand, $network)) {
+            throw ValidationException::withMessages([
+                'network' => 'La red elegida no está permitida por el plan de esta marca.',
+            ]);
+        }
+
+        // Formato derivado: imagen → image; video → reel (Instagram) o
+        // video (TikTok). Las combinaciones imposibles devuelven 422.
+        if ($isVideo && $network === Network::LinkedIn) {
+            throw ValidationException::withMessages([
+                'file' => 'LinkedIn no admite video en esta aplicación.',
+            ]);
+        }
+
+        if (! $isVideo && $network === Network::TikTok) {
+            throw ValidationException::withMessages([
+                'file' => 'TikTok solo admite video.',
+            ]);
+        }
+
+        $format = $isVideo
+            ? ($network === Network::TikTok ? PostFormat::Video : PostFormat::Reel)
+            : PostFormat::Image;
+
+        // Tamaño por tipo: las imágenes tienen un tope menor que el video.
+        if (! $isVideo
+            && $file->getSize() > (int) config('media.image_max_mb', 10) * 1024 * 1024) {
+            throw ValidationException::withMessages([
+                'file' => 'La imagen supera el máximo de '.config('media.image_max_mb').' MB.',
+            ]);
+        }
+
+        // La fecha debe pertenecer al año/mes de la grilla.
+        $date = CarbonImmutable::parse($data['date'], 'America/Caracas');
+
+        if ($date->year !== $year || $date->month !== $month) {
+            throw ValidationException::withMessages([
+                'date' => 'La fecha debe pertenecer al mes de la grilla.',
+            ]);
+        }
+
+        // Probe temprano: metadatos y, en video, la duración máxima.
+        $meta = $inspector->probe($file->getRealPath());
+
+        if ($isVideo
+            && ($meta['duration'] ?? 0) > (float) config('media.video_max_seconds', 90)) {
+            throw ValidationException::withMessages([
+                'file' => 'El video supera la duración máxima de '.config('media.video_max_seconds').' segundos.',
+            ]);
+        }
+
+        // Cupo de posts del mes antes de crear nada.
+        app(QuotaGuard::class)->check($brand, QuotaAction::PostsGenerated, $year, $month);
+
+        $plan = MonthlyPlan::firstOrCreate(
+            ['year' => $year, 'month' => $month],
+            ['status' => 'draft']
+        );
+
+        $post = $plan->posts()->create([
+            'scheduled_at' => $date->setTime(match ($network) {
+                Network::LinkedIn => 8,
+                Network::Instagram => 18,
+                Network::TikTok => 19,
+            }, 0),
+            'network' => $network,
+            'format' => $format,
+            'status' => PostStatus::Drafted,
+            'hook' => 'Analizando material…',
+            'copy' => '',
+            'hashtags' => [],
+            'design_payload' => ['slides' => []],
+            'template' => TemplateRegistry::for($network, $format)->name,
+            'media_source' => MediaSource::Upload,
+            'media_mode' => MediaMode::from($data['mode']),
+            'operator_note' => $data['note'] ?? null,
+            'composing_at' => now(),
+        ]);
+
+        // El archivo vive junto al resto de assets del post (disco local).
+        $ext = $file->getClientOriginalExtension() ?: ($isVideo ? 'mp4' : 'jpg');
+        $stored = Storage::disk('local')->putFileAs($post->assetDir(), $file, "source.{$ext}");
+
+        $post->update([
+            'source_path' => $stored,
+            'source_mime' => $mime,
+            'source_meta' => $meta,
+        ]);
+
+        ComposeFromMedia::dispatch($post->fresh());
+
+        return back()->with('success', 'Post desde archivo encolado: la IA está redactando el contenido.');
+    }
+
+    /**
+     * Reintenta la redacción de un post desde archivo (p. ej. tras un
+     * compose_error). Reutiliza la descripción de visión si ya existe.
+     */
+    public function compose(Brand $brand, Post $post): RedirectResponse
+    {
+        abort_unless($post->media_source === MediaSource::Upload, 422, 'Este post no fue creado desde un archivo.');
+        abort_if($post->composing_at !== null, 409, 'Ya hay una redacción en curso para este post.');
+
+        $post->update(['composing_at' => now(), 'compose_error' => null]);
+
+        ComposeFromMedia::dispatch($post->fresh(), $post->media_description !== null);
+
+        return back()->with('success', 'Redacción del post encolada.');
+    }
+
+    /**
      * Revisión que incluye el post: la abierta si la hay, o la más reciente.
      * Sirve para asignar las ediciones a un periodo de feedback.
      */
@@ -196,6 +330,18 @@ class PostController extends Controller
             $post->brand, QuotaAction::Regenerations,
             $post->monthlyPlan->year, $post->monthlyPlan->month
         );
+
+        // Posts desde archivo: la regeneración reescribe hook/copy con
+        // ComposeFromMedia reutilizando la descripción de visión (misma
+        // cuota de regeneraciones).
+        if ($post->media_source === MediaSource::Upload) {
+            abort_if($post->composing_at !== null, 409, 'Ya hay una redacción en curso para este post.');
+
+            $post->update(['composing_at' => now()]);
+            ComposeFromMedia::dispatch($post, true, $request->validated('comment'));
+
+            return back()->with('success', 'Reescritura del post encolada.');
+        }
 
         RegeneratePost::dispatch($post, $request->validated('comment'));
 

@@ -3,10 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\GuidelineStatus;
+use App\Enums\MediaMode;
+use App\Enums\MediaSource;
+use App\Enums\Network;
+use App\Enums\PostFormat;
 use App\Models\Brand;
 use App\Models\BrandGuideline;
 use App\Models\BrandProfile;
 use App\Models\CalendarEvent;
+use App\Models\ContentPillar;
+use App\Models\Post;
 use App\Services\Planning\PromptBuilder;
 use Carbon\CarbonImmutable;
 use Database\Seeders\DefaultsSeeder;
@@ -210,5 +216,36 @@ class PromptBuilderTest extends TestCase
         );
 
         $this->assertStringNotContainsString('Pautas aprendidas', $system);
+    }
+
+    public function test_media_prompt_incluye_descripcion_nota_pilares_y_pautas(): void
+    {
+        $this->seed(DefaultsSeeder::class);
+
+        BrandGuideline::factory()->create([
+            'text' => 'Termina el copy con una pregunta',
+            'status' => GuidelineStatus::Active,
+        ]);
+
+        $pillar = ContentPillar::first();
+
+        $post = Post::factory()->create([
+            'network' => Network::Instagram,
+            'format' => PostFormat::Image,
+            'media_source' => MediaSource::Upload,
+            'media_mode' => MediaMode::Template,
+            'source_mime' => 'image/jpeg',
+            'operator_note' => 'Foto del taller de robótica',
+            'media_description' => ['description' => 'Estudiantes con laptops'],
+            'content_pillar_id' => $pillar->id,
+        ]);
+
+        ['system' => $system, 'user' => $user] = (new PromptBuilder)->forMedia($post);
+
+        $this->assertStringContainsString('Estudiantes con laptops', $user);
+        $this->assertStringContainsString('Foto del taller de robótica', $user);
+        $this->assertStringContainsString("- {$pillar->id}: {$pillar->name}", $user);
+        $this->assertStringContainsString('Termina el copy con una pregunta', $system);
+        $this->assertStringContainsString('No incluyas background_prompt', $user);
     }
 }

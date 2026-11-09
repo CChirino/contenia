@@ -28,6 +28,9 @@ return [
     'openrouter' => [
         'api_key' => env('OPENROUTER_API_KEY'),
         'model' => env('OPENROUTER_MODEL', 'anthropic/claude-sonnet-4.5'),
+        // Modelo de visión para describir el material subido por el operador
+        // (los modelos de texto devuelven 404 "no support image input").
+        'vision_model' => env('LLM_VISION_MODEL', 'nvidia/nemotron-3.5-super-vl:free'),
     ],
 
 ];

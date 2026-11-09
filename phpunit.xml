@@ -34,6 +34,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="LLM_DRIVER" value="fake"/>
         <env name="IMAGE_DRIVER" value="fake"/>
+        <env name="MEDIA_INSPECTOR" value="fake"/>
         <env name="PHOTO_SOURCE" value="fake"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

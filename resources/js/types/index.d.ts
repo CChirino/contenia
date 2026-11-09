@@ -120,6 +120,15 @@ export interface Post {
     render_requested_at: string | null;
     frames: string[] | null;
     asset_urls?: { frames: string[]; final: string | null };
+    media_source: 'ai' | 'upload';
+    media_mode: 'template' | 'raw' | null;
+    source_path: string | null;
+    source_mime: string | null;
+    source_url?: string | null;
+    media_description: Record<string, unknown> | null;
+    operator_note: string | null;
+    composing_at: string | null;
+    compose_error: string | null;
     status: PostStatus;
     review?: { decision: string; comment: string | null } | null;
     error: string | null;

@@ -215,6 +215,95 @@ class PromptBuilder
         PROMPT;
     }
 
+    /**
+     * Prompts para redactar un post a partir de material subido por el
+     * operador (posts desde archivo): mismo system que el resto (marca,
+     * pautas) y un user con la descripción de visión, la nota del
+     * operador y los pilares por id. Sin background_prompt ni
+     * photo_keywords: el material visual ya existe.
+     *
+     * @return array{system: string, user: string}
+     */
+    public function forMedia(Post $post, ?string $comment = null): array
+    {
+        return [
+            'system' => $this->systemPrompt(),
+            'user' => $this->mediaUserPrompt($post, $comment),
+        ];
+    }
+
+    /**
+     * Prompt del paso de visión: describe el material en español para
+     * que la redacción lo use como contexto.
+     *
+     * @return array{system: string, user: string}
+     */
+    public function forMediaDescription(Post $post): array
+    {
+        $meta = json_encode($post->source_meta ?? [], JSON_UNESCAPED_UNICODE);
+
+        return [
+            'system' => 'Eres un analista de contenido visual para redes sociales. '
+                .'Describe el material adjunto en español de forma objetiva y concisa. '
+                .'Responde únicamente con un JSON que respete el esquema indicado.',
+            'user' => "Describe este material de la marca {$post->brand->name} "
+                ."(subido para {$post->network->value}). Metadatos: {$meta}. "
+                .'Incluye: description (qué se ve), elements (objetos/elementos clave), '
+                .'people (quién aparece, si aplica), visible_text (texto legible en el '
+                .'material), mood (tono visual) y suggested_angle (enfoque sugerido '
+                .'para el post).',
+        ];
+    }
+
+    protected function mediaUserPrompt(Post $post, ?string $comment): string
+    {
+        $pillars = ContentPillar::all()
+            ->map(fn (ContentPillar $p) => "- {$p->id}: {$p->name} — {$p->description}")
+            ->implode("\n");
+
+        $description = json_encode(
+            $post->media_description ?? new \stdClass,
+            JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
+        );
+
+        $mode = $post->media_mode?->value ?? 'template';
+        $slidesRule = match (true) {
+            $mode === 'raw' => 'slides = [] (modo "tal cual": el material se publica sin plantilla).',
+            $post->format === PostFormat::Image => 'slides = exactamente 1 slide (title + body) para la plantilla.',
+            default => 'slides = exactamente 1 slide (title + body): es la portada del video.',
+        };
+
+        $note = trim((string) ($post->operator_note ?? ''));
+
+        $prompt = <<<PROMPT
+        El operador subió un archivo multimedia ({$post->source_mime}) para {$post->network->value}
+        en formato {$post->format->value}. Redacta el post completo sobre ese material:
+        hook, copy, hashtags, design_payload.slides, content_pillar_id e icon.
+
+        Descripción del material (generada por un modelo de visión):
+        {$description}
+
+        Pilares de contenido (content_pillar_id debe ser uno de estos ids):
+        {$pillars}
+
+        Fecha programada: {$post->scheduled_at->format('Y-m-d H:i')}
+
+        Reglas:
+        - {$slidesRule}
+        - No incluyas background_prompt ni photo_keywords: el material visual ya existe.
+        PROMPT;
+
+        if ($note !== '') {
+            $prompt .= "\n\nNota del operador (tenla en cuenta): {$note}";
+        }
+
+        if ($comment) {
+            $prompt .= "\n\nComentario del usuario (reescribe teniéndolo en cuenta): {$comment}";
+        }
+
+        return $prompt;
+    }
+
     protected function postUserPrompt(Post $post, ?string $comment): string
     {
         $post->loadMissing('contentPillar');

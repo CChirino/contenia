@@ -31,7 +31,8 @@ class PortfolioTest extends TestCase
         $usage = $brand->usageFor(2026, 10);
         $usage->update(['posts_generated' => 4, 'image_calls' => 2]);
 
-        LlmLog::withoutGlobalScopes()->create([
+        // forceCreate: created_at no es fillable y debe quedar en el mes consultado.
+        LlmLog::withoutGlobalScopes()->forceCreate([
             'brand_id' => $brand->id,
             'purpose' => 'test',
             'prompt' => 'p',

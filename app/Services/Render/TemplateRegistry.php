@@ -2,6 +2,8 @@
 
 namespace App\Services\Render;
 
+use App\Enums\MediaMode;
+use App\Enums\MediaSource;
 use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Models\Post;
@@ -42,6 +44,13 @@ class TemplateRegistry
      */
     public static function frameCount(Post $post): int
     {
+        // Video subido en modo plantilla: solo se renderiza la portada.
+        if ($post->media_source === MediaSource::Upload
+            && $post->media_mode === MediaMode::Template
+            && in_array($post->format, [PostFormat::Reel, PostFormat::Video], true)) {
+            return 1;
+        }
+
         $slides = count($post->design_payload['slides'] ?? []);
 
         return match ($post->format) {

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\MediaMode;
+use App\Enums\MediaSource;
 use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Enums\PostIcon;
@@ -36,6 +38,15 @@ class Post extends Model
         'icon',
         'background_source',
         'background_meta',
+        'media_source',
+        'media_mode',
+        'source_path',
+        'source_mime',
+        'source_meta',
+        'media_description',
+        'operator_note',
+        'composing_at',
+        'compose_error',
         'render_error',
         'rendered_at',
         'render_requested_at',
@@ -63,6 +74,11 @@ class Post extends Model
             'frames' => 'array',
             'background_meta' => 'array',
             'icon' => PostIcon::class,
+            'media_source' => MediaSource::class,
+            'media_mode' => MediaMode::class,
+            'source_meta' => 'array',
+            'media_description' => 'array',
+            'composing_at' => 'datetime',
         ];
     }
 

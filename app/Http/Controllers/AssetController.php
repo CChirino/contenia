@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AssetController extends Controller
 {
-    private const ALLOWED_PATTERN = '/^(bg\.png|bg-alt\.png|frame-\d{2}\.png|final\.png|final\.mp4)$/';
+    private const ALLOWED_PATTERN = '/^(bg\.png|bg-alt\.png|frame-\d{2}\.png|final\.png|final\.mp4|source\.[A-Za-z0-9]+)$/';
 
     public function __invoke(Brand $brand, string $post, string $file): BinaryFileResponse
     {

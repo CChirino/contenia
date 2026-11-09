@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import FromMediaModal from '@/Pages/Plans/FromMediaModal.vue';
 import GenerationErrors from '@/Pages/Plans/GenerationErrors.vue';
 import PostDrawer from '@/Pages/Plans/PostDrawer.vue';
 import { ContentPillar, MonthlyPlan, NetworkName, Post, QuotaSummary } from '@/types';
@@ -311,8 +312,9 @@ const startPolling = () => {
         );
         const data = await res.json();
         const ids = (data.rendering_ids ?? []).join(',');
+        const composing = (data.composing_ids ?? []).join(',');
 
-        if (!data.pending && ids === '') {
+        if (!data.pending && ids === '' && composing === '') {
             stopPolling();
             router.reload({ only: ['plan', 'posts', 'weeks'] });
             return;
@@ -322,8 +324,16 @@ const startPolling = () => {
             lastRenderingIds = ids;
             router.reload({ only: ['posts'] });
         }
+
+        // Al vaciarse composing_ids los textos de la IA están listos.
+        if (composing !== lastComposingIds) {
+            lastComposingIds = composing;
+            router.reload({ only: ['posts'] });
+        }
     }, 3000);
 };
+
+let lastComposingIds = '';
 
 const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
@@ -335,10 +345,27 @@ const hasRendering = computed(() =>
     props.posts.some((p) => p.render_requested_at !== null)
 );
 
+// Posts desde archivo que la IA sigue redactando: arrancan el polling
+// igual que un render en curso.
+const hasComposing = computed(() =>
+    props.posts.some((p) => p.composing_at !== null)
+);
+
+const showFromMedia = ref(false);
+
+// Fechas ocupadas por red, para proponer la fecha en el modal.
+const takenDates = computed(() => {
+    const map: Record<string, string[]> = {};
+    for (const p of props.posts) {
+        (map[p.network] ??= []).push(p.scheduled_date);
+    }
+    return map;
+});
+
 // Arranca el polling tanto al montar como cuando una acción (generar,
 // regenerar semana, aprobar) deja el plan o algún post en proceso.
 watch(
-    () => pending.value || hasRendering.value,
+    () => pending.value || hasRendering.value || hasComposing.value,
     (active) => {
         if (active && !pollTimer) startPolling();
     },
@@ -415,6 +442,15 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div class="ms-auto flex items-center gap-2">
+                        <button
+                            type="button"
+                            :disabled="pending || postsExhausted"
+                            :title="postsExhausted ? 'Cupo de posts del mes agotado' : 'Crea un post subiendo una foto o video'"
+                            class="rounded-md border border-brand-primary px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 disabled:opacity-50"
+                            @click="showFromMedia = true"
+                        >
+                            + Desde archivo
+                        </button>
                         <button
                             v-if="requiresApproval"
                             type="button"
@@ -531,6 +567,16 @@ onBeforeUnmount(() => {
 
                 <!-- Agenda (móvil): semanas con sus días con posts -->
                 <div class="space-y-4 md:hidden">
+                    <button
+                        type="button"
+                        :disabled="pending || postsExhausted"
+                        :title="postsExhausted ? 'Cupo de posts del mes agotado' : 'Crea un post subiendo una foto o video'"
+                        class="w-full rounded-md border border-brand-primary px-4 py-2.5 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 disabled:opacity-50"
+                        @click="showFromMedia = true"
+                    >
+                        + Desde archivo
+                    </button>
+
                     <section
                         v-for="(entry, weekIndex) in agenda"
                         :key="weekIndex"
@@ -592,12 +638,26 @@ onBeforeUnmount(() => {
                                         >
                                             {{ networkLabels[post.network] }}
                                         </span>
+                                        <svg
+                                            v-if="post.media_source === 'upload'"
+                                            class="h-3.5 w-3.5 shrink-0 text-muted"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            title="Desde archivo"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.17 7l-6.36 6.36a2.12 2.12 0 103 3l7.07-7.07a4.24 4.24 0 10-6-6L5.66 10.5a6.36 6.36 0 109 9l6.36-6.36" />
+                                        </svg>
                                         <span class="ms-auto flex items-center gap-1 text-[11px] text-muted">
                                             <span class="inline-block h-2 w-2 rounded-full" :class="statusDotClass[post.status]" />
                                             {{ statusLabels[post.status] }}
                                         </span>
                                     </div>
-                                    <p class="mt-1 line-clamp-2 text-sm leading-snug text-fg-2">{{ post.hook }}</p>
+                                    <p class="mt-1 line-clamp-2 text-sm leading-snug text-fg-2" :class="{ 'opacity-60': post.composing_at }">
+                                        <svg v-if="post.composing_at" class="inline-block h-3 w-3 animate-spin text-muted" viewBox="0 0 24 24" fill="none">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                        </svg>
+                                        {{ post.hook }}
+                                    </p>
                                     <p
                                         v-if="post.status === 'drafted' && post.review?.decision === 'rejected'"
                                         class="mt-0.5 text-[11px] font-medium text-red-600 dark:text-red-400"
@@ -692,13 +752,25 @@ onBeforeUnmount(() => {
                                         >
                                             {{ networkLabels[post.network] }}
                                         </span>
+                                        <svg
+                                            v-if="post.media_source === 'upload'"
+                                            class="h-3 w-3 shrink-0 text-muted"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            title="Desde archivo"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.17 7l-6.36 6.36a2.12 2.12 0 103 3l7.07-7.07a4.24 4.24 0 10-6-6L5.66 10.5a6.36 6.36 0 109 9l6.36-6.36" />
+                                        </svg>
                                         <span
                                             class="ms-auto inline-block h-2 w-2 rounded-full"
                                             :class="statusDotClass[post.status]"
                                             :title="statusLabels[post.status]"
                                         />
                                     </div>
-                                    <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-fg-2">
+                                    <p class="mt-1 line-clamp-2 text-[11px] leading-tight text-fg-2" :class="{ 'opacity-60': post.composing_at }">
+                                        <svg v-if="post.composing_at" class="inline-block h-3 w-3 animate-spin text-muted" viewBox="0 0 24 24" fill="none">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                        </svg>
                                         {{ post.hook }}
                                     </p>
                                     <p
@@ -755,6 +827,15 @@ onBeforeUnmount(() => {
                 </div>
             </div>
         </div>
+
+        <FromMediaModal
+            v-if="showFromMedia"
+            :year="year"
+            :month="month"
+            :networks="allowed_networks"
+            :taken-dates="takenDates"
+            @close="showFromMedia = false"
+        />
 
         <PostDrawer
             v-if="selectedPost"

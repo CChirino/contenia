@@ -44,6 +44,13 @@ class PlanController extends Controller
                     'scheduled_date' => $post->scheduled_at->format('Y-m-d'),
                     'scheduled_time' => $post->scheduled_at->format('H:i'),
                     'asset_urls' => $this->assetUrls($post),
+                    'source_url' => $post->source_path
+                        ? URL::temporarySignedRoute(
+                            'assets.show',
+                            now()->addMinutes(60),
+                            ['brand' => $post->brand->slug, 'post' => $post->id, 'file' => basename($post->source_path)],
+                        )
+                        : null,
                     'review' => $latestItems->has($post->id)
                         ? [
                             'decision' => $latestItems[$post->id]->decision->value,
@@ -195,11 +202,18 @@ class PlanController extends Controller
             ? $plan->posts()->whereNotNull('render_requested_at')->pluck('id')
             : collect();
 
+        // Posts desde archivo que la IA sigue redactando (polling igual
+        // que rendering_ids).
+        $composingIds = $plan
+            ? $plan->posts()->whereNotNull('composing_at')->pluck('id')
+            : collect();
+
         return response()->json([
             'generated_at' => $plan?->generated_at?->toIso8601String(),
             'posts_count' => $plan?->posts()->count() ?? 0,
             'pending' => $plan !== null && $plan->generating_at !== null,
             'rendering_ids' => $renderingIds,
+            'composing_ids' => $composingIds,
             'last_error' => $plan?->last_error,
         ]);
     }

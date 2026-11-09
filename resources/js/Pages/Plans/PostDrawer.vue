@@ -172,6 +172,11 @@ const submitEdit = () => {
         });
 };
 
+const retryCompose = () =>
+    router.post(route('posts.compose', { post: props.post.id }), {}, {
+        preserveScroll: true,
+    });
+
 const submitRegenerate = () => {
     regenerateForm.post(route('posts.regenerate', { post: props.post.id }), {
         preserveScroll: true,
@@ -219,10 +224,56 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                 </div>
 
                 <div class="flex-1 space-y-5 px-6 py-4">
+                    <div v-if="post.media_source === 'upload'" class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded bg-surface-3 px-2 py-0.5 text-xs font-medium text-fg-2">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.17 7l-6.36 6.36a2.12 2.12 0 103 3l7.07-7.07a4.24 4.24 0 10-6-6L5.66 10.5a6.36 6.36 0 109 9l6.36-6.36" />
+                            </svg>
+                            Desde archivo · {{ post.media_mode === 'raw' ? 'Tal cual' : 'Con plantilla' }}
+                        </span>
+                    </div>
+
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-2">
                         <span><strong>Pilar:</strong> {{ post.content_pillar?.name ?? '—' }}</span>
                         <span><strong>Formato:</strong> {{ formatLabels[post.format] ?? post.format }}</span>
                         <span><strong>Estado:</strong> {{ statusLabels[post.status] ?? post.status }}</span>
+                    </div>
+
+                    <div
+                        v-if="post.composing_at"
+                        class="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30 p-3 text-sm text-amber-700 dark:text-amber-300"
+                    >
+                        La IA está redactando el contenido…
+                    </div>
+
+                    <div
+                        v-else-if="post.compose_error"
+                        class="rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-300"
+                    >
+                        {{ post.compose_error }}
+                        <SecondaryButton type="button" class="mt-2" @click="retryCompose">
+                            Reintentar
+                        </SecondaryButton>
+                    </div>
+
+                    <div v-if="post.media_source === 'upload' && post.source_url" class="rounded-md border border-line p-3">
+                        <p class="text-xs font-medium text-muted">Material original</p>
+                        <video
+                            v-if="post.source_mime?.startsWith('video/')"
+                            :src="post.source_url"
+                            controls
+                            playsinline
+                            class="mt-2 max-h-64 w-full rounded-md"
+                        />
+                        <img
+                            v-else
+                            :src="post.source_url"
+                            alt=""
+                            class="mt-2 max-h-64 w-full rounded-md object-contain"
+                        >
+                        <p v-if="post.operator_note" class="mt-2 text-xs italic text-fg-2">
+                            «{{ post.operator_note }}»
+                        </p>
                     </div>
 
                     <div
@@ -523,6 +574,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     <PrimaryButton
                         v-if="post.status === 'drafted'"
                         type="button"
+                        :disabled="post.composing_at !== null"
                         @click="approve"
                     >
                         Aprobar
@@ -530,6 +582,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     <SecondaryButton
                         v-if="editable && !editing"
                         type="button"
+                        :disabled="post.composing_at !== null"
                         @click="editing = true; showRegenerate = false"
                     >
                         Editar
@@ -537,6 +590,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     <SecondaryButton
                         v-if="canGenerateDesign"
                         type="button"
+                        :disabled="post.composing_at !== null"
                         @click="generateDesign"
                     >
                         Generar diseño
@@ -544,6 +598,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     <SecondaryButton
                         v-if="post.status === 'drafted' && !showRegenerate"
                         type="button"
+                        :disabled="post.composing_at !== null"
                         @click="showRegenerate = true; editing = false"
                     >
                         Regenerar

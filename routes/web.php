@@ -163,6 +163,9 @@ Route::prefix('b/{brand:slug}')->middleware(['auth', 'brand', 'onboarded'])->gro
     Route::post('/reviews/{review}/rotate', [ReviewRequestController::class, 'rotate'])
         ->name('reviews.rotate');
 
+    Route::post('/plans/{year}/{month}/posts/from-media', [PostController::class, 'storeFromMedia'])
+        ->name('posts.from-media');
+    Route::post('/posts/{post}/compose', [PostController::class, 'compose'])->name('posts.compose');
     Route::patch('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
     Route::post('/posts/{post}/approve', [PostController::class, 'approve'])->name('posts.approve');
     Route::post('/posts/{post}/regenerate', [PostController::class, 'regenerate'])->name('posts.regenerate');

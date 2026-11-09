@@ -127,6 +127,10 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 - `config/llm_pricing.php`: USD por millón de tokens por modelo (`:free` → 0, desconocido → 0).
 - Grilla: barra de uso en `Plans/Show` (oculta si ilimitado), banda ámbar con `quota_notice`, botones deshabilitados al agotarse. UI de planes/cartera solo para `admin`.
 
+## Posts desde archivo
+
+El operador sube una foto o video y la IA redacta hook/copy/hashtags/pilar/icono (`media_source='upload'`). `POST /b/{brand}/plans/{a}/{m}/posts/from-media` (`posts.from-media`, valida tipo/tamaño/duración vía `config/media.php` y `MediaInspector`), `POST /b/{brand}/posts/{post}/compose` (`posts.compose`, reintento). Job `ComposeFromMedia`: paso visión (`LlmClient::describeImages`, modelo `LLM_VISION_MODEL`, default `nvidia/nemotron-3.5-super-vl:free` — los modelos de texto devuelven 404 "No endpoints found that support image input"; este responde JSON en ~8 s por imagen con `response_format: json_object`, sin tools) + paso redacción (`complete` con `PlanSchema::fromMedia`). `MEDIA_INSPECTOR=ffmpeg` (default) usa ffprobe/ffmpeg+GD; `fake` en tests. `media_mode`: `template` (foto=fondo bg.png; video=portada renderizada+logo overlay vía `VideoAssembler::assembleWithSource`) o `raw` (foto/frame y video normalizado tal cual). `plans.status` expone `composing_ids` para polling; `compose_error` habilita Reintentar.
+
 ## Notas
 
 - Locale `es`, timezone `America/Caracas`, faker `es_VE`.
