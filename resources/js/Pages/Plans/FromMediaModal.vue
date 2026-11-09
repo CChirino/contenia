@@ -114,6 +114,8 @@ const suggestDate = () => {
     form.date = d;
 };
 
+suggestDate();
+
 const onDrop = (e: DragEvent) => {
     dragOver.value = false;
     pickFile(e.dataTransfer?.files?.[0]);
