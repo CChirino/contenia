@@ -57,7 +57,7 @@ class BrandController extends Controller
                     'plan' => $brand->plan?->only('name', 'price_label'),
                     'operators_count' => $brand->users_count,
                     'posts_this_month' => $postsThisMonth,
-                    'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+                    'logo_url' => $brand->logoUrl(),
                 ];
             });
 
@@ -95,7 +95,7 @@ class BrandController extends Controller
         return Inertia::render('Admin/Brands/Form', [
             'brand' => [
                 ...$brand->only('id', 'name', 'slug', 'website_url', 'palette', 'requires_client_approval', 'plan_id'),
-                'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+                'logo_url' => $brand->logoUrl(),
                 'contacts' => $brand->contacts()->orderBy('id')->get(['id', 'name', 'email', 'whatsapp']),
                 'onboarding_proposal' => $brand->onboarding_proposal,
                 'onboarded_at' => $brand->onboarded_at?->toIso8601String(),

@@ -123,4 +123,16 @@ class Brand extends Model
     {
         return $this->usage()->firstOrCreate(['year' => $year, 'month' => $month]);
     }
+
+    /**
+     * URL pública del logo versionada con updated_at: al subir un logo
+     * nuevo cambia la URL y el navegador no muestra el anterior de caché.
+     */
+    public function logoUrl(): string
+    {
+        return route('brands.logo', array_filter([
+            'brand' => $this->slug,
+            'v' => $this->updated_at?->timestamp,
+        ]));
+    }
 }

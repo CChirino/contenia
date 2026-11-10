@@ -9,23 +9,56 @@ use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\Brand;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $users = User::with('brands:id,name,slug')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (User $user) => [
-                ...$user->only('id', 'name', 'email'),
-                'role' => $user->role->value,
-                'brands' => $user->brands->map->only('id', 'name')->all(),
-            ]);
+        $map = fn (User $user) => [
+            ...$user->only('id', 'name', 'email'),
+            'role' => $user->role->value,
+            'brands' => $user->brands->map->only('id', 'name')->all(),
+            'deleted_at' => $user->deleted_at?->toIso8601String(),
+            'is_self' => $user->id === $request->user()->id,
+        ];
 
-        return Inertia::render('Admin/Users/Index', ['users' => $users]);
+        return Inertia::render('Admin/Users/Index', [
+            'users' => User::with('brands:id,name,slug')->orderBy('name')->get()->map($map),
+            'deletedUsers' => User::onlyTrashed()->with('brands:id,name,slug')
+                ->latest('deleted_at')->get()->map($map),
+        ]);
+    }
+
+    /**
+     * Soft delete: el usuario deja de poder entrar (Auth excluye los
+     * eliminados) y su sesión cae en la siguiente petición. Conserva
+     * sus marcas por si se restaura. Nunca a uno mismo ni al último admin.
+     */
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        if ($user->id === $request->user()->id) {
+            throw ValidationException::withMessages(['user' => 'No puedes eliminar tu propio usuario.']);
+        }
+
+        if ($user->isAdmin() && User::where('role', UserRole::Admin)->count() <= 1) {
+            throw ValidationException::withMessages(['user' => 'No puedes eliminar al último administrador.']);
+        }
+
+        $user->delete();
+
+        return redirect()->route('users.index')->with('success', "{$user->name} eliminado.");
+    }
+
+    public function restore(int $user): RedirectResponse
+    {
+        $model = User::onlyTrashed()->findOrFail($user);
+        $model->restore();
+
+        return redirect()->route('users.index')->with('success', "{$model->name} restaurado.");
     }
 
     public function create(): Response

@@ -69,7 +69,7 @@ class PortfolioController extends Controller
                     'id' => $brand->id,
                     'name' => $brand->name,
                     'slug' => $brand->slug,
-                    'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+                    'logo_url' => $brand->logoUrl(),
                     'plan' => $brand->plan?->only('name', 'price_label'),
                     'status' => $brand->status->value,
                     'actions' => $actions,

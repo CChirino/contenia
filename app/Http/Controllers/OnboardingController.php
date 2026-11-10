@@ -63,7 +63,7 @@ class OnboardingController extends Controller
                     'id', 'name', 'slug', 'website_url', 'palette',
                     'requires_client_approval', 'plan_id', 'onboarding_proposal',
                 ),
-                'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+                'logo_url' => $brand->logoUrl(),
                 'plan' => $brand->plan?->only('name', 'price_label', 'posts_per_month'),
                 'contacts' => $brand->contacts()->orderBy('id')->get(['id', 'name', 'email', 'whatsapp']),
                 'plan_networks' => $brand->plan?->networks ?? [],
@@ -378,7 +378,7 @@ class OnboardingController extends Controller
             ],
             'backgroundUrl' => null,
             'icon' => PostIcon::default()->value,
-            'logoUrl' => route('brands.logo', ['brand' => $brand->slug]),
+            'logoUrl' => $brand->logoUrl(),
             'wordmark' => $brand->name.'.',
             'palette' => $brand->palette,
             'brand' => [

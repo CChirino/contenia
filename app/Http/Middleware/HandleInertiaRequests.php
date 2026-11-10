@@ -40,7 +40,7 @@ class HandleInertiaRequests extends Middleware
             'brand' => fn () => app()->bound('brand')
                 ? [
                     ...app('brand')->only('id', 'slug', 'name', 'palette', 'requires_client_approval'),
-                    'logo_url' => route('brands.logo', ['brand' => app('brand')->slug]),
+                    'logo_url' => app('brand')->logoUrl(),
                 ]
                 : null,
             'brands' => fn () => $this->assignedBrands($request),
@@ -68,12 +68,12 @@ class HandleInertiaRequests extends Middleware
         }
 
         $brands = $user->isAdmin()
-            ? Brand::orderBy('name')->get(['id', 'slug', 'name'])
-            : $user->brands()->orderBy('name')->get(['brands.id', 'slug', 'name']);
+            ? Brand::orderBy('name')->get(['id', 'slug', 'name', 'updated_at'])
+            : $user->brands()->orderBy('name')->get(['brands.id', 'slug', 'name', 'brands.updated_at']);
 
         return $brands->map(fn (Brand $brand) => [
             ...$brand->only('id', 'slug', 'name'),
-            'logo_url' => route('brands.logo', ['brand' => $brand->slug]),
+            'logo_url' => $brand->logoUrl(),
         ])->all();
     }
 }

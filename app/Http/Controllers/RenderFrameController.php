@@ -51,7 +51,7 @@ class RenderFrameController extends Controller
             ],
             'backgroundUrl' => $this->backgroundUrl($post, $frame, $template->usesAiBackground),
             'icon' => $post->icon?->value ?? 'lightbulb',
-            'logoUrl' => route('brands.logo', ['brand' => $brand->slug]),
+            'logoUrl' => $brand->logoUrl(),
             'wordmark' => $brand->name.'.',
             'palette' => $brand->palette,
             'brand' => [

@@ -63,7 +63,7 @@ class RenderFrameControllerTest extends TestCase
             ->where('palette.dark', '#2B1D3A')
             ->where('palette.accent', '#F2A541')
             ->where('wordmark', 'Demo Co.')
-            ->where('logoUrl', route('brands.logo', ['brand' => $brand->slug]))
+            ->where('logoUrl', $brand->fresh()->logoUrl())
         );
     }
 

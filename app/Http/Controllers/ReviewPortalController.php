@@ -46,7 +46,7 @@ class ReviewPortalController extends Controller
         return Inertia::render('Review/Show', [
             'brand' => [
                 'name' => $review->brand->name,
-                'logo_url' => route('brands.logo', ['brand' => $review->brand->slug]),
+                'logo_url' => $review->brand->logoUrl(),
                 'palette' => $review->brand->palette,
             ],
             'review' => [
