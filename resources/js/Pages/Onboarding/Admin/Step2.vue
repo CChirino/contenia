@@ -43,14 +43,18 @@ watch(() => props.brand, (b) => emit('gate', !!b), { immediate: true });
                 <InputError :message="form.errors.name" class="mt-1" />
             </div>
             <div>
-                <InputLabel for="ob_web" value="Sitio web (la IA lo leerá)" />
+                <InputLabel for="ob_web" value="Sitio web o red social principal (la IA lo leerá)" />
                 <TextInput
                     id="ob_web"
                     v-model="form.website_url"
                     type="url"
                     class="mt-1 block w-full"
-                    placeholder="https://tumarca.com"
+                    placeholder="https://tumarca.com o https://instagram.com/tumarca"
                 />
+                <p class="mt-1 text-xs text-muted">
+                    Si la marca no tiene web, pega su perfil de Instagram o Facebook. TikTok y LinkedIn no se
+                    pueden leer sin iniciar sesión: en ese caso pega captions de ejemplo en el siguiente paso.
+                </p>
                 <InputError :message="form.errors.website_url" class="mt-1" />
             </div>
             <div>

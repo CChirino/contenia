@@ -56,6 +56,10 @@ const stopMessages = () => {
 };
 
 const generateForm = useForm({ sample_posts: '', social_handle: '' });
+
+// Perfil de red social pegado como "sitio web" (marca sin web).
+const isSocialUrl = (url: string | null | undefined) =>
+    !!url && /(^|\/\/|\.)(instagram|facebook|fb|tiktok|linkedin)\.com/i.test(url);
 const generate = () => {
     if (!props.brand) return;
     generating.value = true;
@@ -108,7 +112,7 @@ onMounted(() => {
     <div v-if="brand">
         <h2 class="text-2xl font-bold text-fg">Deja que la IA lea {{ brand.name }}</h2>
         <p class="mt-2 text-fg-2">
-            Analiza tu web y propone perfil, pilares, estrategia por red y paleta.
+            Analiza tu web o tu perfil de Instagram/Facebook y propone perfil, pilares, estrategia por red y paleta.
         </p>
 
         <!-- Sin propuesta aún -->
@@ -116,6 +120,13 @@ onMounted(() => {
             v-if="!hasProposal"
             class="mt-6 space-y-5 rounded-lg bg-surface p-6 shadow-sm ring-1 ring-line"
         >
+            <p
+                v-if="!brand.website_url || isSocialUrl(brand.website_url)"
+                class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
+            >
+                Sin web: los posts de ejemplo son la mejor fuente para que la IA aprenda el tono.
+                Pega 3–5 captions reales de la marca.
+            </p>
             <div>
                 <InputLabel for="ob_samples" value="Posts de ejemplo (opcional, separados por línea en blanco)" />
                 <textarea
@@ -124,9 +135,10 @@ onMounted(() => {
                     rows="4"
                     class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                 />
+                <InputError :message="generateForm.errors.sample_posts" class="mt-1" />
             </div>
             <div>
-                <InputLabel for="ob_social" value="Usuario en redes (opcional)" />
+                <InputLabel for="ob_social" value="Usuario de Instagram o URL de la red (opcional)" />
                 <TextInput id="ob_social" v-model="generateForm.social_handle" class="mt-1 block w-full" placeholder="@tumarca" />
             </div>
             <InputError :message="(generateForm.errors as any).website_url" />
@@ -147,10 +159,6 @@ onMounted(() => {
                 </button>
             </div>
 
-            <p v-if="!brand.website_url" class="text-sm text-amber-600 dark:text-amber-400">
-                La marca no tiene sitio web: la propuesta saldrá solo de los ejemplos,
-                o puedes configurarla a mano.
-            </p>
         </div>
 
         <!-- Propuesta lista -->

@@ -340,7 +340,7 @@ class BrandScraper
      *
      * @return array<int, string>
      */
-    private function logoColors(string $logoUrl): array
+    public function logoColors(string $logoUrl): array
     {
         if (! function_exists('imagecreatefromstring')) {
             return [];

@@ -9,6 +9,7 @@ use App\Services\Llm\LlmClient;
 use App\Services\Llm\LlmException;
 use App\Services\Onboarding\BrandScraper;
 use App\Services\Onboarding\OnboardingSchema;
+use App\Services\Onboarding\SocialProfile;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
@@ -36,15 +37,22 @@ class OnboardBrand implements ShouldQueue
         public array $samples = [],
     ) {}
 
-    public function handle(LlmClient $llm, BrandScraper $scraper): void
+    public function handle(LlmClient $llm, BrandScraper $scraper, SocialProfile $social): void
     {
         // El job no depende de sesión: fija la marca para el scope y los logs.
         app()->instance('brand', $this->brand);
 
         try {
-            $collected = $this->brand->website_url
-                ? $scraper->collect($this->brand->website_url)
-                : ['ok' => false, 'error' => 'La marca no tiene sitio web.', 'colors' => [], 'pages' => []];
+            // Marca sin web cuya presencia principal es una red social:
+            // se lee el perfil público en vez de rastrear la "web".
+            $detected = SocialProfile::detect($this->brand->website_url, $this->samples['social_handle'] ?? null);
+
+            $collected = match (true) {
+                $detected !== null => $social->read($detected),
+                filled($this->brand->website_url) => $scraper->collect($this->brand->website_url),
+                default => ['ok' => false, 'error' => 'La marca no tiene sitio web.', 'colors' => [], 'pages' => []],
+            };
+            $isSocial = ($collected['source'] ?? null) === 'social';
 
             $posts = collect($this->samples['posts'] ?? [])
                 ->map(fn ($p) => trim((string) $p))
@@ -53,14 +61,19 @@ class OnboardBrand implements ShouldQueue
                 ->values()
                 ->all();
 
-            $hasSamples = $posts !== [] || filled($this->samples['social_handle'] ?? null);
+            // En modo social el usuario ya es la fuente leída: sin perfil
+            // legible solo los posts de ejemplo justifican la llamada.
+            $hasSamples = $posts !== []
+                || (! $isSocial && filled($this->samples['social_handle'] ?? null));
 
             if (! ($collected['ok'] ?? false) && ! $hasSamples) {
                 $this->brand->forceFill([
                     'onboarding_proposal' => [
-                        'error' => 'No se pudo leer el sitio web: '
-                            .($collected['error'] ?? 'error desconocido')
-                            .' Rellena la marca a mano o pega posts de ejemplo.',
+                        'error' => $isSocial
+                            ? $collected['error']
+                            : 'No se pudo leer el sitio web: '
+                                .($collected['error'] ?? 'error desconocido')
+                                .' Rellena la marca a mano o pega posts de ejemplo.',
                         'generated_at' => now()->toIso8601String(),
                     ],
                 ])->save();
@@ -92,9 +105,15 @@ class OnboardBrand implements ShouldQueue
                 return;
             }
 
-            $this->brand->forceFill([
-                'onboarding_proposal' => $this->normalize($result, $networks, $collected['colors'] ?? []),
-            ])->save();
+            $proposal = $this->normalize($result, $networks, $collected['colors'] ?? []);
+
+            // La foto de perfil es un candidato a logo: solo se aplica si
+            // el operador pulsa "Usar foto de perfil como logo".
+            if (filled($collected['profile_image_url'] ?? null)) {
+                $proposal['logo_candidate_url'] = $collected['profile_image_url'];
+            }
+
+            $this->brand->forceFill(['onboarding_proposal' => $proposal])->save();
         } finally {
             Cache::forget("onboarding:{$this->brand->id}");
         }
@@ -115,6 +134,10 @@ class OnboardBrand implements ShouldQueue
      */
     private function userPrompt(array $collected, array $posts, array $networks): string
     {
+        if (($collected['source'] ?? null) === 'social') {
+            return $this->socialUserPrompt($collected, $posts, $networks);
+        }
+
         $parts = [
             "Marca: {$this->brand->name}",
             'Sitio web: '.($this->brand->website_url ?? 'n/d'),
@@ -142,15 +165,65 @@ class OnboardBrand implements ShouldQueue
             $parts[] = 'Post de ejemplo '.($i + 1).":\n".$post;
         }
 
-        $parts[] = 'Redes del plan contratado (las únicas permitidas): '
-            .implode(', ', array_map(fn (Network $n) => $n->value, $networks));
-        $parts[] = 'Genera la propuesta con emit_result: description (≤300), tone_of_voice, audience, cta, '
-            .'base_hashtags (≤8, con #), 4-6 pillars cuyos weight sumen 100, una strategy por cada red '
-            .'del plan (posts_per_week 1-7, formats solo de los permitidos por la red, focus) y palette '
-            .'{dark, light, accent, secondary} en #RRGGBB eligiendo entre los colores detectados o '
-            .'proponiendo con contraste razonable.';
+        return implode("\n\n", [...$parts, ...$this->closingInstructions($networks)]);
+    }
 
-        return implode("\n\n", $parts);
+    /**
+     * Prompt para marcas sin web: perfil público de la red + posts de
+     * ejemplo, sin inventar lo que no aparece.
+     *
+     * @param  array<string, mixed>  $collected
+     * @param  array<int, string>  $posts
+     * @param  array<int, Network>  $networks
+     */
+    private function socialUserPrompt(array $collected, array $posts, array $networks): string
+    {
+        $label = SocialProfile::LABELS[$collected['network']] ?? $collected['network'];
+
+        $parts = [
+            "Marca: {$this->brand->name}",
+            "La marca no tiene sitio web; su presencia principal es {$label}: {$collected['profile_url']}",
+        ];
+
+        if ($collected['title'] ?? null) {
+            $parts[] = 'Nombre del perfil: '.$collected['title'];
+        }
+        if ($collected['meta_description'] ?? null) {
+            $parts[] = 'Bio/descripción: '.$collected['meta_description'];
+        }
+        if ($collected['stats'] ?? null) {
+            $parts[] = 'Estadísticas públicas: '.$collected['stats'];
+        }
+        if (($collected['colors'] ?? []) !== []) {
+            $parts[] = 'Colores de la foto de perfil: '.implode(', ', $collected['colors']);
+        }
+        if (! ($collected['ok'] ?? false)) {
+            $parts[] = "No se pudo leer el perfil de {$label}; apóyate en el nombre y los posts de ejemplo.";
+        }
+        foreach ($posts as $i => $post) {
+            $parts[] = 'Post de ejemplo '.($i + 1).":\n".$post;
+        }
+
+        $parts[] = 'Infiere sector, tono y audiencia de la bio y los posts de ejemplo; no inventes datos que no estén ahí.';
+
+        return implode("\n\n", [...$parts, ...$this->closingInstructions($networks)]);
+    }
+
+    /**
+     * @param  array<int, Network>  $networks
+     * @return array<int, string>
+     */
+    private function closingInstructions(array $networks): array
+    {
+        return [
+            'Redes del plan contratado (las únicas permitidas): '
+                .implode(', ', array_map(fn (Network $n) => $n->value, $networks)),
+            'Genera la propuesta con emit_result: description (≤300), tone_of_voice, audience, cta, '
+                .'base_hashtags (≤8, con #), 4-6 pillars cuyos weight sumen 100, una strategy por cada red '
+                .'del plan (posts_per_week 1-7, formats solo de los permitidos por la red, focus) y palette '
+                .'{dark, light, accent, secondary} en #RRGGBB eligiendo entre los colores detectados o '
+                .'proponiendo con contraste razonable.',
+        ];
     }
 
     /**

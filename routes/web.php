@@ -121,6 +121,8 @@ Route::middleware(['auth', 'manager', 'onboarded'])->group(function () {
         ->middleware('can:manage,brand')->name('brands.onboarding.apply.strategies');
     Route::post('/brands/{brand}/onboarding/apply/palette', [OnboardingApplyController::class, 'palette'])
         ->middleware('can:manage,brand')->name('brands.onboarding.apply.palette');
+    Route::post('/brands/{brand}/onboarding/apply/logo', [OnboardingApplyController::class, 'logo'])
+        ->middleware('can:manage,brand')->name('brands.onboarding.apply.logo');
     Route::post('/brands/{brand}/contacts', [BrandContactController::class, 'store'])
         ->middleware('can:manage,brand')->name('brands.contacts.store');
     Route::delete('/brands/{brand}/contacts/{contact}', [BrandContactController::class, 'destroy'])

@@ -31,6 +31,7 @@ interface OnboardingProposal {
     pillars?: ProposalPillar[];
     strategies?: ProposalStrategy[];
     palette?: Record<string, string>;
+    logo_candidate_url?: string;
     applied?: Record<string, boolean>;
 }
 
@@ -182,6 +183,17 @@ const paletteForm = useForm({
 const applyPalette = () => {
     paletteForm.post(
         route('brands.onboarding.apply.palette', { brand: props.brandId }),
+        { preserveScroll: true }
+    );
+};
+
+// Foto de perfil de la red social como logo (marcas sin web). El
+// servidor toma la URL de la propuesta guardada, no de este formulario.
+const logoForm = useForm<{ logo?: string }>({});
+
+const applyLogo = () => {
+    logoForm.post(
+        route('brands.onboarding.apply.logo', { brand: props.brandId }),
         { preserveScroll: true }
     );
 };
@@ -450,6 +462,27 @@ const applyPalette = () => {
                 <PrimaryButton :disabled="paletteForm.processing" @click="applyPalette">
                     Aplicar paleta
                 </PrimaryButton>
+            </div>
+            <div
+                v-if="proposal.logo_candidate_url"
+                class="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-4"
+            >
+                <img
+                    :src="proposal.logo_candidate_url"
+                    alt="Foto de perfil"
+                    referrerpolicy="no-referrer"
+                    class="h-14 w-14 rounded-full border border-line object-cover"
+                />
+                <div class="min-w-0 flex-1 text-sm text-muted">
+                    Foto de perfil de la red social. Los colores de arriba salen de ella.
+                    <InputError :message="logoForm.errors.logo" class="mt-1" />
+                </div>
+                <span v-if="applied.logo" class="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    Logo aplicado ✓
+                </span>
+                <SecondaryButton v-else :disabled="logoForm.processing" @click="applyLogo">
+                    Usar foto de perfil como logo
+                </SecondaryButton>
             </div>
         </section>
     </div>

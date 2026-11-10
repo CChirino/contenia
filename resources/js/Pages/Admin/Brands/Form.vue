@@ -112,6 +112,10 @@ const proposal = computed(() => props.brand?.onboarding_proposal ?? null);
 
 const onboardForm = useForm({ sample_posts: '', social_handle: '' });
 
+// Perfil de red social pegado como "sitio web" (marca sin web).
+const isSocialUrl = (url: string | null | undefined) =>
+    !!url && /(^|\/\/|\.)(instagram|facebook|fb|tiktok|linkedin)\.com/i.test(url);
+
 const runOnboarding = () => {
     if (!props.brand) return;
     onboardForm.post(
@@ -208,8 +212,12 @@ const removeContact = (contact: Contact) => {
                     </div>
 
                     <div>
-                        <InputLabel for="website_url" value="Sitio web" />
+                        <InputLabel for="website_url" value="Sitio web o red social principal" />
                         <TextInput id="website_url" v-model="form.website_url" class="mt-1 block w-full" placeholder="https://" />
+                        <p class="mt-1 text-xs text-muted">
+                            Si la marca no tiene web, pega su perfil de Instagram o Facebook. TikTok y LinkedIn no se
+                            pueden leer sin iniciar sesión: en ese caso pega captions de ejemplo al proponer con IA.
+                        </p>
                         <InputError :message="form.errors.website_url" class="mt-2" />
                     </div>
 
@@ -306,15 +314,17 @@ const removeContact = (contact: Contact) => {
                         :pillars-count="brand.pillars_count ?? 0"
                     />
 
-                    <div v-if="!brand.website_url" class="mt-3 text-sm text-muted">
-                        Guarda primero el sitio web de la marca para poder proponer con IA.
-                    </div>
-
                     <form
-                        v-else
                         class="mt-4 space-y-4"
                         @submit.prevent="runOnboarding"
                     >
+                        <p
+                            v-if="!brand.website_url || isSocialUrl(brand.website_url)"
+                            class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200"
+                        >
+                            Sin web: los posts de ejemplo son la mejor fuente para que la IA aprenda el tono.
+                            Pega 3–5 captions reales de la marca.
+                        </p>
                         <div>
                             <InputLabel for="sample_posts" value="Posts de ejemplo (uno por párrafo, máx. 5)" />
                             <textarea
@@ -327,7 +337,7 @@ const removeContact = (contact: Contact) => {
                             <InputError :message="onboardForm.errors.sample_posts" class="mt-1" />
                         </div>
                         <div>
-                            <InputLabel for="social_handle" value="Usuario de Instagram/LinkedIn (opcional)" />
+                            <InputLabel for="social_handle" value="Usuario de Instagram o URL de la red (opcional)" />
                             <TextInput
                                 id="social_handle"
                                 v-model="onboardForm.social_handle"

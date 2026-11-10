@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -135,12 +136,6 @@ class BrandController extends Controller
             'social_handle' => ['nullable', 'string', 'max:100'],
         ]);
 
-        abort_unless(
-            filled($brand->website_url),
-            422,
-            'La marca necesita un sitio web para generar la propuesta con IA.'
-        );
-
         // Posts de ejemplo separados por líneas en blanco, máx. 5.
         $posts = collect(preg_split('/\R\s*\R/u', (string) ($data['sample_posts'] ?? '')) ?: [])
             ->map(fn ($t) => trim($t))
@@ -148,6 +143,14 @@ class BrandController extends Controller
             ->take(5)
             ->values()
             ->all();
+
+        // Basta una fuente: web (o perfil social en ese campo), usuario
+        // social o posts de ejemplo — marcas sin web también se proponen.
+        if (blank($brand->website_url) && blank($data['social_handle'] ?? null) && $posts === []) {
+            throw ValidationException::withMessages([
+                'sample_posts' => 'Indica un sitio web o red social, un usuario social o pega posts de ejemplo.',
+            ]);
+        }
 
         $samples = array_filter([
             'social_handle' => $data['social_handle'] ?? null,
