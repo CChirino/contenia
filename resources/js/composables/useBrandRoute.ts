@@ -25,11 +25,12 @@ export function useBrandRoute() {
         const brand = page.props.brand?.slug ?? page.props.brands?.[0]?.slug;
 
         if (
-            brand
-            && BRAND_ROUTE_PREFIXES.some((p) => name.startsWith(p))
+            BRAND_ROUTE_PREFIXES.some((p) => name.startsWith(p))
             && (params === undefined || (typeof params === 'object' && params !== null))
         ) {
-            return route(name, { brand, ...(params ?? {}) });
+            // Sin marca (usuario sin asignaciones) la ruta de marca no se
+            // puede resolver: '#', la UI oculta esos enlaces.
+            return brand ? route(name, { brand, ...(params ?? {}) }) : '#';
         }
 
         return route(name, params);

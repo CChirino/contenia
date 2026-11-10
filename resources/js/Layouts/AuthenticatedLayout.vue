@@ -24,6 +24,9 @@ const fromOnboarding = computed(() =>
 );
 const activeBrand = computed(() => page.props.brand);
 const assignedBrands = computed(() => page.props.brands ?? []);
+// El menú de Configuración necesita una marca activa/asignada; sin ella
+// se oculta (operadores sin marcas, gestores recién creados).
+const hasBrand = computed(() => activeBrand.value !== null || assignedBrands.value.length > 0);
 
 const brandPlanUrl = (slug: string) => {
     const now = new Date();
@@ -112,7 +115,7 @@ const brandPlanUrl = (slug: string) => {
                                     Grilla
                                 </NavLink>
 
-                                <div class="relative flex items-stretch">
+                                <div v-if="hasBrand" class="relative flex items-stretch">
                                     <Dropdown align="left" width="48">
                                         <template #trigger>
                                             <button
@@ -325,12 +328,13 @@ const brandPlanUrl = (slug: string) => {
                         >
                             Grilla
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            :href="route('settings.brand.edit')"
-                            :active="route().current('settings.brand.edit')"
-                        >
-                            Perfil de marca
-                        </ResponsiveNavLink>
+                        <template v-if="hasBrand">
+                            <ResponsiveNavLink
+                                :href="route('settings.brand.edit')"
+                                :active="route().current('settings.brand.edit')"
+                            >
+                                Perfil de marca
+                            </ResponsiveNavLink>
                         <ResponsiveNavLink
                             :href="route('settings.networks.index')"
                             :active="route().current('settings.networks.index')"
@@ -349,12 +353,13 @@ const brandPlanUrl = (slug: string) => {
                         >
                             Calendario
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            :href="route('settings.guidelines.index')"
-                            :active="route().current('settings.guidelines.index')"
-                        >
-                            Pautas
-                        </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                :href="route('settings.guidelines.index')"
+                                :active="route().current('settings.guidelines.index')"
+                            >
+                                Pautas
+                            </ResponsiveNavLink>
+                        </template>
                     </div>
 
                     <!-- Responsive Settings Options -->

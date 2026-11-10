@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureManager;
 use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveReviewToken;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin' => EnsureAdmin::class,
+            'manager' => EnsureManager::class,
             'brand' => SetActiveBrand::class,
             'onboarded' => EnsureOnboarded::class,
             'review.token' => ResolveReviewToken::class,
