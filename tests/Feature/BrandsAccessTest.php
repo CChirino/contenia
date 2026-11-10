@@ -265,4 +265,20 @@ class BrandsAccessTest extends TestCase
         $this->get('/dashboard')->assertOk()
             ->assertInertia(fn ($page) => $page->component('Onboarding/NoBrands'));
     }
+
+    public function test_gestor_con_track_operador_antiguo_sale_del_bucle_al_completar(): void
+    {
+        $user = User::factory()->create([
+            'role' => UserRole::Manager,
+            'onboarding_state' => ['track' => 'operator', 'step' => 5],
+        ]);
+
+        // Sin marca y con track 'operator' obsoleto, completar el
+        // recorrido cambiaba a show con el mismo track → bucle infinito.
+        $this->actingAs($user)
+            ->post(route('onboarding.complete'))
+            ->assertRedirect(route('onboarding.show'));
+
+        $this->assertSame('admin', $user->fresh()->onboarding_state['track']);
+    }
 }

@@ -152,10 +152,15 @@ class OnboardingController extends Controller
             : $this->tourBrands($user)->first();
 
         if ($brand === null) {
-            // Quien puede crear marcas vuelve al wizard (track de
-            // creación); el operador sin marcas ve la página amable
-            // en vez del antiguo 422 "No hay marca a la que ir.".
+            // Quien puede crear marcas va al track de creación — sea cual
+            // sea el track guardado (un 'operator' obsoleto, p. ej. tras
+            // subir de rol, buclearía de vuelta a este mismo recorrido).
+            // El operador sin marcas ve la página amable en vez del
+            // antiguo 422 "No hay marca a la que ir.".
             if ($user->canCreateBrands()) {
+                $state['track'] = 'admin';
+                $user->forceFill(['onboarding_state' => $state])->save();
+
                 return redirect()->route('onboarding.show');
             }
 
