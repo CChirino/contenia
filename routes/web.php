@@ -24,12 +24,35 @@ use Illuminate\Support\Facades\Route;
 
 /**
  * Marca por defecto para redirecciones: la última usada o la primera
- * asignada (los admin ven todas las marcas).
+ * asignada (los admin ven todas las marcas). Para no-admin solo cuentan
+ * marcas asignadas — null si no tiene ninguna.
  */
 $defaultBrand = function () {
     $user = auth()->user();
 
-    return $user?->lastBrand ?? $user?->brands()->first() ?? Brand::first();
+    if (! $user) {
+        return null;
+    }
+
+    if ($user->isAdmin()) {
+        return $user->lastBrand ?? Brand::first();
+    }
+
+    return $user->last_brand_id
+        ? $user->brands()->find($user->last_brand_id) ?? $user->brands()->first()
+        : $user->brands()->first();
+};
+
+/**
+ * A dónde va un usuario sin marca: quien puede crear marcas entra al
+ * wizard; el resto ve la página "sin marcas" en vez de un 403.
+ */
+$noBrandResponse = function () {
+    $user = auth()->user();
+
+    return $user?->canCreateBrands()
+        ? redirect()->route('onboarding.show')
+        : Inertia\Inertia::render('Onboarding/NoBrands');
 };
 
 Route::get('/', function () {
@@ -146,23 +169,31 @@ Route::prefix('review/{token}')->middleware(['throttle:60,1', 'review.token'])->
 });
 
 // URL antigua sin marca: redirige a la marca del usuario (301).
-Route::get('/plans/{year}/{month}', function (int $year, int $month) use ($defaultBrand) {
+Route::get('/plans/{year}/{month}', function (int $year, int $month) use ($defaultBrand, $noBrandResponse) {
     if (! auth()->check()) {
         return redirect()->route('login');
     }
 
+    if (($brand = $defaultBrand()) === null) {
+        return $noBrandResponse();
+    }
+
     return redirect()->route('plans.show', [
-        'brand' => $defaultBrand()?->slug,
+        'brand' => $brand->slug,
         'year' => $year,
         'month' => $month,
     ], 301);
 });
 
-Route::get('/dashboard', function () use ($defaultBrand) {
+Route::get('/dashboard', function () use ($defaultBrand, $noBrandResponse) {
     $now = now('America/Caracas');
 
+    if (($brand = $defaultBrand()) === null) {
+        return $noBrandResponse();
+    }
+
     return redirect()->route('plans.show', [
-        'brand' => $defaultBrand()?->slug,
+        'brand' => $brand->slug,
         'year' => $now->year,
         'month' => $now->month,
     ]);

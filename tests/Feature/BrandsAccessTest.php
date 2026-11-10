@@ -250,4 +250,19 @@ class BrandsAccessTest extends TestCase
         $brand = Brand::where('name', 'Marca del Gestor')->firstOrFail();
         $this->assertTrue($user->fresh()->brands()->whereKey($brand->id)->exists());
     }
+
+    public function test_gestor_sin_marcas_redirige_al_wizard_desde_dashboard(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Manager]));
+
+        $this->get('/dashboard')->assertRedirect(route('onboarding.show'));
+    }
+
+    public function test_operador_sin_marcas_ve_pagina_amable_en_dashboard(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Operator]));
+
+        $this->get('/dashboard')->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Onboarding/NoBrands'));
+    }
 }
