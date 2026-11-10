@@ -94,18 +94,18 @@ Los puertos 9000, 3306, 5500 y 5173 están ocupados por otros proyectos en esta 
 
 ## Marcas
 
-- Tabla `brands`: Saberé = `id=1`, slug `sabere`. Planes en `plans` (Básico/Pro/Interno). `brand_user` asigna operadores; `users.role` = `admin|operator`.
+- Tabla `brands`: Saberé = `id=1`, slug `sabere`. Planes en `plans` (Básico/Pro/Interno). `brand_user` asigna usuarios a marcas; `users.role` = `admin|gestor|operator`.
 - Toda la app cuelga de `/b/{brand:slug}/...` (plans, posts, settings). `/plans/{a}/{m}` antiguo → 301 a la marca del usuario (`last_brand_id` o primera asignada).
 - **Marca activa**: `SetActiveBrand` (alias `brand`) resuelve el slug, autoriza `BrandPolicy::view` (admin o asignado), hace `app()->instance('brand', $brand)` y guarda `last_brand_id`. `BrandScope` filtra las consultas del dominio cuando hay marca en el contenedor; `CalendarEvent` usa scope propio (null=o=activa). Va **antes** de `SubstituteBindings` (`prependToPriorityList` en `bootstrap/app.php`) para que el route-model-binding ya filtre → post de otra marca = 404.
 - **Jobs**: ningún job puede depender de `app('brand')` de sesión — cada `handle()` empieza con `app()->instance('brand', $model->brand)` (`GenerateMonthlyPlan`, `RegeneratePost`, `RenderPost`). El worker `queue` es residente: tras tocar código de jobs, `sail restart queue`.
 - **Comandos**: `plan:generate`, `posts:enrich-photos` y `render:post` aceptan `--brand=slug` (en `render:post` se deduce del post si falta).
-- **Admin**: `/brands` (crear/editar/pausar, sin borrado; logo SVG/PNG ≤1 MB) y `/users` (operadores, roles, asignación) bajo middleware `admin`. El selector de marca del nav lista las asignadas (todas para admin).
+- **Roles**: `admin` lo ve todo; `gestor` crea marcas y administra solo las asignadas (queda auto-asignado a las que crea: perfil, redes, pilares, contactos, onboarding IA, destilar pautas, pausar y vincular/desvincular operadores existentes); `operator` solo trabaja la grilla de sus marcas. `/brands*` va bajo middleware `manager` (admin|gestor) + `can:manage,brand` por marca y `can:create` para crear; `/users`, `/plans` y `/portfolio` quedan bajo `admin`. `POST /brands/{brand}/users` (`brands.users.sync`, `{user_ids:[]}`) sincroniza solo operadores; `POST/DELETE /brands/{brand}/users/{user}` (`brands.users.attach/detach`) alta/baja individual. El selector de marca del nav lista las asignadas (todas para admin).
 - **Logo por marca**: `GET /b/{brand}/logo` (pública, solo lectura — Chromium la usa en el render) sirve `logo_path` o el SVG del repo.
 - **Paleta por marca**: `brands.palette` llega a las plantillas de render vía variables CSS `--brand-dark/light/accent/secondary` que `BrandFrame` fija en el contenedor (más `wordmark` = `brand.name.`). La UI de la app NO usa la paleta de marca: sigue con Tailwind `brand-*` (producto).
 - **Calendario**: feriados globales (`brand_id=null`) compartidos por todas las marcas — solo lectura para operadores, CRUD para admin; los eventos de la marca llevan `brand_id` activo (el servidor lo decide, ignora el del cliente).
-- **Crear una marca**: UI `/brands/create` (admin) o `DefaultsSeeder::forBrand($brand)` — siembra perfil vacío + estrategias por red; nunca duplica feriados globales.
+- **Crear una marca**: UI `/brands/create` (admin o gestor) o `DefaultsSeeder::forBrand($brand)` — siembra perfil vacío + estrategias por red; nunca duplica feriados globales. El creador queda auto-asignado en `brand_user`.
 - **Assets por marca**: `storage/app/brands/{brand_id}/posts/{post_id}/` (frames, bg.png, final.mp4). Migración del layout plano viejo: `sail artisan brands:migrate-assets` (idempotente; reescribe `posts.asset_path`).
-- **Tests**: helpers `actingAsAdminFor(?Brand)` / `actingAsOperatorFor(?Brand)` en `TestCase` (setUp bindea Saberé; libera con `app()->forgetInstance('brand')`).
+- **Tests**: helpers `actingAsAdminFor(?Brand)` / `actingAsManagerFor(?Brand)` / `actingAsOperatorFor(?Brand)` en `TestCase` (setUp bindea Saberé; libera con `app()->forgetInstance('brand')`).
 
 ## Revisión del cliente (Fase 2 multimarca)
 

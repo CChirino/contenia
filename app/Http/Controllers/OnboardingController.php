@@ -33,8 +33,9 @@ use Inertia\Response;
 class OnboardingController extends Controller
 {
     /**
-     * Decide el recorrido: operador → B; admin sin marcas → A; admin
-     * con marcas sin track elegido → selector "¿Por dónde empezamos?".
+     * Decide el recorrido: operador → B; admin sin marcas (o gestor sin
+     * marcas asignadas) → A; con marcas sin track elegido → selector
+     * "¿Por dónde empezamos?".
      */
     public function show(Request $request): Response
     {
@@ -43,9 +44,9 @@ class OnboardingController extends Controller
         $track = $state['track'] ?? null;
 
         if ($track === null) {
-            if (! $user->isAdmin()) {
+            if (! $user->canCreateBrands()) {
                 $track = 'operator';
-            } elseif (Brand::count() === 0) {
+            } elseif ($user->isManager() ? $user->brands()->doesntExist() : Brand::count() === 0) {
                 $track = 'admin';
             } else {
                 return Inertia::render('Onboarding/Choose', ['state' => $state]);
@@ -141,18 +142,27 @@ class OnboardingController extends Controller
      * Cierra el wizard y lleva a la grilla: marca del estado o la
      * última usada por el usuario; mes del estado o el siguiente.
      */
-    public function complete(Request $request): RedirectResponse
+    public function complete(Request $request): RedirectResponse|Response
     {
         $user = $request->user();
         $state = $user->onboarding_state ?? [];
-
-        $user->forceFill(['onboarded_at' => now()])->save();
 
         $brand = isset($state['brand_id'])
             ? Brand::find($state['brand_id'])
             : $this->tourBrands($user)->first();
 
-        abort_unless($brand !== null, 422, 'No hay marca a la que ir.');
+        if ($brand === null) {
+            // Quien puede crear marcas vuelve al wizard (track de
+            // creación); el operador sin marcas ve la página amable
+            // en vez del antiguo 422 "No hay marca a la que ir.".
+            if ($user->canCreateBrands()) {
+                return redirect()->route('onboarding.show');
+            }
+
+            return Inertia::render('Onboarding/NoBrands');
+        }
+
+        $user->forceFill(['onboarded_at' => now()])->save();
 
         [$year, $month] = isset($state['month'])
             ? explode('-', $state['month'])
@@ -166,12 +176,13 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Recorrido A paso 2: crea la primera marca (solo admin) reutilizando
-     * DefaultsSeeder::forBrand. Si el estado ya tiene brand_id, actualiza.
+     * Recorrido A paso 2: crea la primera marca (admin o gestor)
+     * reutilizando DefaultsSeeder::forBrand. Si el estado ya tiene
+     * brand_id, actualiza.
      */
     public function storeBrand(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($request->user()->canCreateBrands(), 403);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -265,6 +276,9 @@ class OnboardingController extends Controller
     {
         $brand = $this->stateBrand($request);
         abort_unless($brand !== null, 422, 'No hay marca en el asistente.');
+
+        // Quien configura la marca queda asignado a ella (gestor incluido).
+        $request->user()->brands()->syncWithoutDetaching([$brand->id]);
 
         $data = $request->validate([
             'description' => ['nullable', 'string', 'max:300'],

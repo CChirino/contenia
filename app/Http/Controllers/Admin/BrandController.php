@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\BrandStatus;
 use App\Enums\Network;
 use App\Enums\PostFormat;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBrandRequest;
 use App\Http\Requests\Admin\UpdateBrandRequest;
@@ -13,6 +14,7 @@ use App\Jobs\OnboardBrand;
 use App\Models\Brand;
 use App\Models\MonthlyPlan;
 use App\Models\Plan;
+use App\Models\User;
 use Database\Seeders\DefaultsSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,12 +26,21 @@ use Inertia\Response;
 
 class BrandController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $now = now('America/Caracas');
+        $user = $request->user();
 
+        // El gestor solo ve sus marcas asignadas; el admin las ve todas.
         $brands = Brand::with('plan:id,name,price_label')
             ->withCount('users')
+            ->when(
+                ! $user->isAdmin(),
+                fn ($query) => $query->whereHas(
+                    'users',
+                    fn ($users) => $users->where('users.id', $user->id)
+                )
+            )
             ->orderBy('name')
             ->get()
             ->map(function (Brand $brand) use ($now) {
@@ -69,13 +80,16 @@ class BrandController extends Controller
         $brand->status = BrandStatus::Active;
         $brand->save();
 
+        // El creador queda asignado: un gestor solo gestiona sus marcas.
+        $brand->users()->syncWithoutDetaching([$request->user()->id]);
+
         $this->storeLogo($request, $brand);
         DefaultsSeeder::forBrand($brand);
 
         return redirect()->route('brands.index');
     }
 
-    public function edit(Brand $brand): Response
+    public function edit(Request $request, Brand $brand): Response
     {
         return Inertia::render('Admin/Brands/Form', [
             'brand' => [
@@ -89,6 +103,11 @@ class BrandController extends Controller
             ],
             'plans' => Plan::orderBy('name')->get(['id', 'name', 'price_label']),
             'onboarding_pending' => Cache::has("onboarding:{$brand->id}"),
+            // Operadores vinculables (tarjeta "Operadores asignados"): solo
+            // si quien entra puede gestionar la marca.
+            'operators' => $request->user()->can('manage', $brand)
+                ? $this->operatorOptions($brand)
+                : null,
             // Formatos permitidos por red (espejo de PostFormat::allowedFor).
             'allowed_formats' => collect(Network::cases())
                 ->mapWithKeys(fn (Network $n) => [
@@ -151,6 +170,59 @@ class BrandController extends Controller
         return back()->with('success', 'Destilando el feedback del último mes en pautas…');
     }
 
+    /**
+     * Sincroniza los operadores de la marca desde la UI de checkboxes:
+     * {user_ids: []} reemplaza SOLO los usuarios con role=operator (los
+     * gestores/admins asignados se conservan, vía /users del admin).
+     */
+    public function syncOperators(Request $request, Brand $brand): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_ids' => ['present', 'array'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $operators = User::whereIn('id', $data['user_ids'])
+            ->where('role', UserRole::Operator)
+            ->pluck('id');
+
+        abort_if(
+            $operators->count() !== count($data['user_ids']),
+            422,
+            'Solo se pueden vincular usuarios con rol operador.'
+        );
+
+        $nonOperators = $brand->users()
+            ->where('role', '!=', UserRole::Operator->value)
+            ->pluck('users.id');
+
+        $brand->users()->sync($operators->merge($nonOperators)->all());
+
+        return back()->with('success', 'Operadores de la marca actualizados.');
+    }
+
+    /**
+     * Vincula un operador existente a la marca (no crea usuarios).
+     */
+    public function attachOperator(Brand $brand, User $user): RedirectResponse
+    {
+        abort_unless($user->isOperator(), 422, 'Solo se pueden vincular operadores.');
+
+        $brand->users()->syncWithoutDetaching([$user->id]);
+
+        return back()->with('success', "{$user->name} vinculado a {$brand->name}.");
+    }
+
+    /**
+     * Desvincula un usuario de la marca.
+     */
+    public function detachOperator(Brand $brand, User $user): RedirectResponse
+    {
+        $brand->users()->detach($user->id);
+
+        return back()->with('success', "{$user->name} desvinculado de {$brand->name}.");
+    }
+
     public function toggle(Brand $brand): RedirectResponse
     {
         $brand->status = $brand->status === BrandStatus::Active
@@ -159,6 +231,28 @@ class BrandController extends Controller
         $brand->save();
 
         return redirect()->route('brands.index');
+    }
+
+    /**
+     * Usuarios con role=operator para la tarjeta "Operadores asignados"
+     * del formulario de marca, con el flag de asignación actual.
+     *
+     * @return array<int, array{id: int, name: string, email: string, assigned: bool}>
+     */
+    private function operatorOptions(Brand $brand): array
+    {
+        $assigned = $brand->users()->pluck('users.id');
+
+        return User::where('role', UserRole::Operator)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'assigned' => $assigned->contains($user->id),
+            ])
+            ->all();
     }
 
     private function uniqueSlug(string $name): string

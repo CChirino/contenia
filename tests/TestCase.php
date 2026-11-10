@@ -62,6 +62,24 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Gestor autenticado asignado a la marca indicada (o Saberé).
+     */
+    protected function actingAsManagerFor(?Brand $brand = null): User
+    {
+        $brand ??= Brand::where('slug', 'sabere')->first() ?? Brand::factory()->create();
+
+        $user = User::factory()->create(['role' => UserRole::Manager]);
+        $user->brands()->syncWithoutDetaching([$brand->id]);
+
+        app()->instance('brand', $brand);
+        URL::defaults(['brand' => $brand->slug]);
+
+        $this->actingAs($user);
+
+        return $user;
+    }
+
+    /**
      * Operador autenticado asignado a la marca indicada (o Saberé).
      */
     protected function actingAsOperatorFor(?Brand $brand = null): User

@@ -3,6 +3,19 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
 
+const roleLabels: Record<string, string> = {
+    admin: 'Admin',
+    gestor: 'Gestor',
+    operator: 'Operador',
+};
+
+const roleBadgeClass = (role: string) =>
+    role === 'admin'
+        ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/30 dark:text-indigo-200'
+        : role === 'gestor'
+          ? 'bg-teal-100 text-teal-800 dark:bg-teal-500/30 dark:text-teal-200'
+          : 'bg-surface-3 text-fg-2';
+
 defineProps<{
     users: {
         id: number;
@@ -49,9 +62,9 @@ defineProps<{
                                 <td class="px-6 py-4">
                                     <span
                                         class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
-                                        :class="user.role === 'admin' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/30 dark:text-indigo-200' : 'bg-surface-3 text-fg-2'"
+                                        :class="roleBadgeClass(user.role)"
                                     >
-                                        {{ user.role === 'admin' ? 'Admin' : 'Operador' }}
+                                        {{ roleLabels[user.role] ?? user.role }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-fg-2">

@@ -15,6 +15,7 @@ const page = usePage();
 const showingNavigationDropdown = ref(false);
 
 const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
+const isManager = computed(() => page.props.auth.user?.role === 'gestor');
 
 // La guía de inicio enlaza pantallas reales con ?from=onboarding: se
 // muestra un banner fino para volver al asistente.
@@ -159,7 +160,7 @@ const brandPlanUrl = (slug: string) => {
                                     </Dropdown>
                                 </div>
 
-                                <div v-if="isAdmin" class="relative flex items-stretch">
+                                <div v-if="isAdmin || isManager" class="relative flex items-stretch">
                                     <Dropdown align="left" width="48">
                                         <template #trigger>
                                             <button
@@ -192,13 +193,13 @@ const brandPlanUrl = (slug: string) => {
                                             <DropdownLink :href="route('brands.index')">
                                                 Marcas
                                             </DropdownLink>
-                                            <DropdownLink :href="route('users.index')">
+                                            <DropdownLink v-if="isAdmin" :href="route('users.index')">
                                                 Usuarios
                                             </DropdownLink>
-                                            <DropdownLink :href="route('admin.plans.index')">
+                                            <DropdownLink v-if="isAdmin" :href="route('admin.plans.index')">
                                                 Planes
                                             </DropdownLink>
-                                            <DropdownLink :href="route('portfolio.index')">
+                                            <DropdownLink v-if="isAdmin" :href="route('portfolio.index')">
                                                 Cartera
                                             </DropdownLink>
                                         </template>

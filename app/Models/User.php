@@ -62,6 +62,24 @@ class User extends Authenticatable
         return $this->role === UserRole::Admin;
     }
 
+    public function isManager(): bool
+    {
+        return $this->role === UserRole::Manager;
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->role === UserRole::Operator;
+    }
+
+    /**
+     * Quien puede dar de alta marcas: admin o gestor (el operador no).
+     */
+    public function canCreateBrands(): bool
+    {
+        return $this->isAdmin() || $this->isManager();
+    }
+
     public function brands(): BelongsToMany
     {
         return $this->belongsToMany(Brand::class, 'brand_user');

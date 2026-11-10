@@ -61,31 +61,51 @@ Route::prefix('onboarding')->middleware('auth')->name('onboarding.')->group(func
     Route::get('/preview', [OnboardingController::class, 'preview'])->name('preview');
 });
 
-// Administración de marcas y usuarios: solo admin.
-Route::middleware(['auth', 'admin', 'onboarded'])->group(function () {
+// Gestión de marcas: admin (todas) y gestor (solo las asignadas — lo
+// verifica `can:manage,brand` en cada ruta con {brand}).
+Route::middleware(['auth', 'manager', 'onboarded'])->group(function () {
     Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
-    Route::get('/brands/create', [BrandController::class, 'create'])->name('brands.create');
-    Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
-    Route::get('/brands/{brand}/edit', [BrandController::class, 'edit'])->name('brands.edit');
-    Route::put('/brands/{brand}', [BrandController::class, 'update'])->name('brands.update');
-    Route::post('/brands/{brand}/toggle', [BrandController::class, 'toggle'])->name('brands.toggle');
+    Route::get('/brands/create', [BrandController::class, 'create'])
+        ->middleware('can:create,'.Brand::class)->name('brands.create');
+    Route::post('/brands', [BrandController::class, 'store'])
+        ->middleware('can:create,'.Brand::class)->name('brands.store');
+    Route::get('/brands/{brand}/edit', [BrandController::class, 'edit'])
+        ->middleware('can:manage,brand')->name('brands.edit');
+    Route::put('/brands/{brand}', [BrandController::class, 'update'])
+        ->middleware('can:manage,brand')->name('brands.update');
+    Route::post('/brands/{brand}/toggle', [BrandController::class, 'toggle'])
+        ->middleware('can:manage,brand')->name('brands.toggle');
     Route::post('/brands/{brand}/onboarding', [BrandController::class, 'runOnboarding'])
-        ->name('brands.onboarding.run');
+        ->middleware('can:manage,brand')->name('brands.onboarding.run');
     Route::post('/brands/{brand}/guidelines/distill', [BrandController::class, 'distillGuidelines'])
-        ->name('brands.guidelines.distill');
+        ->middleware('can:manage,brand')->name('brands.guidelines.distill');
+
+    // Operadores de la marca: sync desde la UI y alta/baja individuales
+    // (solo usuarios con role=operator; la policy `manage` fija el alcance).
+    Route::post('/brands/{brand}/users', [BrandController::class, 'syncOperators'])
+        ->middleware('can:manage,brand')->name('brands.users.sync');
+    Route::post('/brands/{brand}/users/{user}', [BrandController::class, 'attachOperator'])
+        ->middleware('can:manage,brand')->name('brands.users.attach');
+    Route::delete('/brands/{brand}/users/{user}', [BrandController::class, 'detachOperator'])
+        ->middleware('can:manage,brand')->name('brands.users.detach');
 
     // Aplicar la propuesta de onboarding por secciones (borrador → datos reales).
     Route::post('/brands/{brand}/onboarding/apply/profile', [OnboardingApplyController::class, 'profile'])
-        ->name('brands.onboarding.apply.profile');
+        ->middleware('can:manage,brand')->name('brands.onboarding.apply.profile');
     Route::post('/brands/{brand}/onboarding/apply/pillars', [OnboardingApplyController::class, 'pillars'])
-        ->name('brands.onboarding.apply.pillars');
+        ->middleware('can:manage,brand')->name('brands.onboarding.apply.pillars');
     Route::post('/brands/{brand}/onboarding/apply/strategies', [OnboardingApplyController::class, 'strategies'])
-        ->name('brands.onboarding.apply.strategies');
+        ->middleware('can:manage,brand')->name('brands.onboarding.apply.strategies');
     Route::post('/brands/{brand}/onboarding/apply/palette', [OnboardingApplyController::class, 'palette'])
-        ->name('brands.onboarding.apply.palette');
-    Route::post('/brands/{brand}/contacts', [BrandContactController::class, 'store'])->name('brands.contacts.store');
-    Route::delete('/brands/{brand}/contacts/{contact}', [BrandContactController::class, 'destroy'])->name('brands.contacts.destroy');
+        ->middleware('can:manage,brand')->name('brands.onboarding.apply.palette');
+    Route::post('/brands/{brand}/contacts', [BrandContactController::class, 'store'])
+        ->middleware('can:manage,brand')->name('brands.contacts.store');
+    Route::delete('/brands/{brand}/contacts/{contact}', [BrandContactController::class, 'destroy'])
+        ->middleware('can:manage,brand')->name('brands.contacts.destroy');
+});
 
+// Administración global (usuarios, cartera y catálogo de planes): solo admin.
+Route::middleware(['auth', 'admin', 'onboarded'])->group(function () {
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');

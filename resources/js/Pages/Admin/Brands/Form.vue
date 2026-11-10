@@ -16,6 +16,13 @@ interface Contact {
     whatsapp: string | null;
 }
 
+interface OperatorOption {
+    id: number;
+    name: string;
+    email: string;
+    assigned: boolean;
+}
+
 interface OnboardingProposal {
     error?: string;
     generated_at?: string;
@@ -49,6 +56,8 @@ const props = defineProps<{
     plans: { id: number; name: string; price_label: string | null }[];
     onboarding_pending?: boolean;
     allowed_formats?: Record<string, string[]>;
+    // Operadores vinculables: solo llega si el usuario puede gestionar la marca.
+    operators?: OperatorOption[] | null;
 }>();
 
 const paletteFields = [
@@ -136,6 +145,19 @@ watch(
 );
 
 onBeforeUnmount(stopPolling);
+
+// Operadores asignados: checkboxes que se guardan con brands.users.sync.
+const operatorsForm = useForm<{ user_ids: number[] }>({
+    user_ids: (props.operators ?? []).filter((o) => o.assigned).map((o) => o.id),
+});
+
+const saveOperators = () => {
+    if (!props.brand) return;
+    operatorsForm.post(
+        route('brands.users.sync', { brand: props.brand.id }),
+        { preserveScroll: true }
+    );
+};
 
 const contactForm = useForm({ name: '', email: '', whatsapp: '' });
 
@@ -318,6 +340,44 @@ const removeContact = (contact: Contact) => {
                             {{ onboarding_pending ? 'Generando propuesta…' : 'Proponer con IA' }}
                         </PrimaryButton>
                     </form>
+                </div>
+
+                <div
+                    v-if="brand && operators"
+                    class="mt-6 overflow-hidden bg-surface p-6 shadow-sm sm:rounded-lg"
+                >
+                    <h3 class="text-base font-semibold text-fg">Operadores asignados</h3>
+                    <p class="mt-1 text-sm text-muted">
+                        Los operadores marcados trabajan en la grilla de esta marca.
+                    </p>
+
+                    <div v-if="operators.length" class="mt-4 space-y-2">
+                        <label
+                            v-for="operator in operators"
+                            :key="operator.id"
+                            class="flex items-center gap-2"
+                        >
+                            <Checkbox v-model:checked="operatorsForm.user_ids" :value="operator.id" />
+                            <span class="text-sm text-fg-2">
+                                {{ operator.name }}
+                                <span class="text-muted">· {{ operator.email }}</span>
+                            </span>
+                        </label>
+                    </div>
+                    <p v-else class="mt-4 text-sm text-muted">
+                        No hay operadores dados de alta: créalos desde Administración → Usuarios.
+                    </p>
+
+                    <div class="mt-4 flex items-center gap-4">
+                        <PrimaryButton
+                            type="button"
+                            :disabled="operatorsForm.processing || operators.length === 0"
+                            @click="saveOperators"
+                        >
+                            Guardar operadores
+                        </PrimaryButton>
+                        <InputError :message="operatorsForm.errors.user_ids" />
+                    </div>
                 </div>
 
                 <div

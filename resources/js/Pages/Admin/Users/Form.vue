@@ -19,6 +19,12 @@ const props = defineProps<{
     roles: string[];
 }>();
 
+const roleLabels: Record<string, string> = {
+    admin: 'Admin',
+    gestor: 'Gestor (crea y administra sus marcas)',
+    operator: 'Operador',
+};
+
 const form = useForm({
     name: props.editUser?.name ?? '',
     email: props.editUser?.email ?? '',
@@ -87,7 +93,7 @@ const submit = () => {
                             class="mt-1 block w-full rounded-md border-line-strong bg-surface text-fg shadow-sm focus:border-brand-primary focus:ring-brand-primary"
                         >
                             <option v-for="role in roles" :key="role" :value="role">
-                                {{ role === 'admin' ? 'Admin' : 'Operador' }}
+                                {{ roleLabels[role] ?? role }}
                             </option>
                         </select>
                         <InputError :message="form.errors.role" class="mt-2" />
