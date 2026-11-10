@@ -25,5 +25,11 @@ class AdminUserSeeder extends Seeder
                 'onboarded_at' => now(),
             ]
         );
+
+        // La migración asigna al admin a Saberé solo si el usuario ya
+        // existía; en instalaciones nuevas no había ninguno y el
+        // seeder debe hacer la asignación.
+        $user = User::where('email', 'admin@sabere.com')->first();
+        $user?->brands()->syncWithoutDetaching(\App\Models\Brand::pluck('id')->all());
     }
 }
