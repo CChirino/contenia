@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Detrás de Cloudflare/Nginx: respeta X-Forwarded-Proto/Host para que
+        // las URLs firmadas (assets, render) se generen y validen en https.
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES', '*'));
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

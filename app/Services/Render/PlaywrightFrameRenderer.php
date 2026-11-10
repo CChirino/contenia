@@ -17,7 +17,11 @@ class PlaywrightFrameRenderer implements FrameRenderer
 
         // La firma cubre la URL completa (incluido el frame), así que se
         // genera una URL firmada por frame y se pasan vía --urls-file.
-        URL::forceRootUrl(config('render.internal_url'));
+        // El esquema sigue a la URL interna (p. ej. http://localhost con
+        // Sail) aunque la app fuerce https para el navegador.
+        $internal = (string) config('render.internal_url');
+        URL::forceRootUrl($internal);
+        URL::forceScheme((string) parse_url($internal, PHP_URL_SCHEME) ?: 'http');
         $urls = collect(range(1, $frames))
             ->map(fn (int $i) => URL::temporarySignedRoute('render.frame', now()->addMinutes(10), [
                 'brand' => $post->brand->slug,
@@ -26,6 +30,7 @@ class PlaywrightFrameRenderer implements FrameRenderer
             ]))
             ->all();
         URL::forceRootUrl(config('app.url'));
+        URL::forceScheme((string) parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'http');
 
         if (! is_dir($outDir)) {
             mkdir($outDir, 0755, true);

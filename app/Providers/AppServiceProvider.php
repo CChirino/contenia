@@ -23,6 +23,7 @@ use App\Services\Render\FfmpegVideoAssembler;
 use App\Services\Render\FrameRenderer;
 use App\Services\Render\PlaywrightFrameRenderer;
 use App\Services\Render\VideoAssembler;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -92,6 +93,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Si la app se publica en https, todas las URLs generadas (firmadas
+        // incluidas) van en https aunque el proxy hable http con el origen.
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
 
         LlmLog::observe(LlmLogObserver::class);
     }
