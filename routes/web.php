@@ -157,7 +157,10 @@ Route::middleware(['auth', 'admin', 'onboarded'])->group(function () {
 
 Route::get('/render/{brand:slug}/{post}/{frame}', RenderFrameController::class)
     ->middleware('signed')->name('render.frame');
-Route::get('/assets/{brand:slug}/{post}/{file}', AssetController::class)
+// El nombre del archivo va en la query (?file=frame-01.png): si la ruta
+// terminara en .png/.mp4, Nginx (p. ej. CloudPanel) la serviría como
+// estático de public/ y devolvería 404 sin pasar por Laravel.
+Route::get('/assets/{brand:slug}/{post}', AssetController::class)
     ->middleware('signed')->name('assets.show');
 
 // Portal público del cliente: sin auth ni marca; el token la resuelve

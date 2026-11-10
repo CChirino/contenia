@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Post;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -11,8 +12,10 @@ class AssetController extends Controller
 {
     private const ALLOWED_PATTERN = '/^(bg\.png|bg-alt\.png|frame-\d{2}\.png|final\.png|final\.mp4|source\.[A-Za-z0-9]+)$/';
 
-    public function __invoke(Brand $brand, string $post, string $file): BinaryFileResponse
+    public function __invoke(Request $request, Brand $brand, string $post): BinaryFileResponse
     {
+        $file = (string) $request->query('file', '');
+
         // Sin scope de marca: un asset de otra marca es 403, no 404.
         $post = Post::withoutGlobalScopes()->findOrFail((int) $post);
         abort_unless($post->brand_id === $brand->id, 403);
