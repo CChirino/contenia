@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@sabere.com'],
             [
                 'name' => 'Admin Saberé',
+                'role' => UserRole::Admin,
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
                 // El admin semilla no es un "usuario nuevo": ya conoce la app.
