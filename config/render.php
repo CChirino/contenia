@@ -14,7 +14,10 @@ return [
     |
     */
 
-    'internal_url' => env('RENDER_INTERNAL_URL', 'http://localhost'),
+    // Por defecto APP_URL (servidor real). Con Sail se fija a
+    // http://localhost en .env: dentro del contenedor la app está en el
+    // puerto 80, no en el APP_PORT publicado.
+    'internal_url' => env('RENDER_INTERNAL_URL', env('APP_URL', 'http://localhost')),
 
     'node_binary' => env('RENDER_NODE_BINARY', 'node'),
 
