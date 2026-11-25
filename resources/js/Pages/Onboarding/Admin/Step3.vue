@@ -74,12 +74,16 @@ const generate = () => {
     });
 };
 
-const applyAllForm = useForm({});
+const applyAllForm = useForm<Record<string, any>>({});
+const proposalRef = ref<{ currentData: () => Record<string, any> } | null>(null);
+const applyAllErrors = computed(() => Object.values(applyAllForm.errors));
 const applyAll = () =>
-    applyAllForm.post('/onboarding/apply-all', {
-        preserveScroll: true,
-        onFinish: () => router.reload({ only: ['brand'] }),
-    });
+    applyAllForm
+        .transform(() => proposalRef.value?.currentData() ?? {})
+        .post('/onboarding/apply-all', {
+            preserveScroll: true,
+            onFinish: () => router.reload({ only: ['brand'] }),
+        });
 
 const manualForm = useForm({ description: '', tone_of_voice: '', audience: '' });
 const saveManual = () =>
@@ -164,6 +168,7 @@ onMounted(() => {
         <!-- Propuesta lista -->
         <div v-if="hasProposal" class="mt-4">
             <OnboardingProposal
+                ref="proposalRef"
                 :brand-id="brand.id"
                 :proposal="proposal"
                 :plan-networks="brand.plan_networks ?? []"
@@ -179,6 +184,11 @@ onMounted(() => {
                     Perfil y pilares aplicados ✓
                 </span>
             </div>
+            <ul v-if="applyAllErrors.length" class="mt-2 space-y-1">
+                <li v-for="(e, i) in applyAllErrors" :key="i">
+                    <InputError :message="e" />
+                </li>
+            </ul>
         </div>
 
         <!-- Error de la IA -->

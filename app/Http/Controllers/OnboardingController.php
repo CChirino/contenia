@@ -13,6 +13,7 @@ use App\Models\Plan;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Onboarding\ProposalApplier;
+use App\Services\Onboarding\ProposalRules;
 use App\Services\Render\TemplateRegistry;
 use App\Support\BrandPalette;
 use Database\Seeders\DefaultsSeeder;
@@ -267,7 +268,11 @@ class OnboardingController extends Controller
         $brand = $this->stateBrand($request);
         abort_unless($brand !== null, 422, 'No hay marca en el asistente.');
 
-        $applier->applyAll($brand);
+        // El wizard puede mandar las ediciones del usuario (mismas reglas
+        // que los endpoints por sección, todas opcionales).
+        $edits = $request->validate(ProposalRules::sometimes());
+
+        $applier->applyAll($brand, $edits);
 
         return back()->with('success', 'Propuesta aplicada: perfil, pilares, estrategias y paleta.');
     }

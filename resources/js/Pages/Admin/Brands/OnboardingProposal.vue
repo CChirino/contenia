@@ -63,15 +63,17 @@ const profileForm = useForm({
     base_hashtags: (props.proposal.base_hashtags ?? []).join(' '),
 });
 
+const profilePayload = () => ({
+    ...profileForm.data(),
+    base_hashtags: profileForm.base_hashtags
+        .split(/[\s,]+/)
+        .map((t) => t.trim())
+        .filter(Boolean),
+});
+
 const applyProfile = () => {
     profileForm
-        .transform((data) => ({
-            ...data,
-            base_hashtags: data.base_hashtags
-                .split(/[\s,]+/)
-                .map((t) => t.trim())
-                .filter(Boolean),
-        }))
+        .transform(() => profilePayload())
         .post(route('brands.onboarding.apply.profile', { brand: props.brandId }), {
             preserveScroll: true,
         });
@@ -101,6 +103,11 @@ const removePillar = (index: number) => {
     pillarsForm.pillars.splice(index, 1);
 };
 
+const pillarsPayload = () => ({
+    ...pillarsForm.data(),
+    pillars: pillarsForm.pillars.map((p) => ({ ...p, weight: Number(p.weight) || 0 })),
+});
+
 const applyPillars = () => {
     if (pillarsSum.value !== 100) return;
 
@@ -113,10 +120,7 @@ const applyPillars = () => {
     }
 
     pillarsForm
-        .transform((data) => ({
-            ...data,
-            pillars: data.pillars.map((p) => ({ ...p, weight: Number(p.weight) || 0 })),
-        }))
+        .transform(() => pillarsPayload())
         .post(
             route('brands.onboarding.apply.pillars', { brand: props.brandId }),
             { preserveScroll: true, onFinish: () => (pillarsForm.replace = false) }
@@ -148,16 +152,18 @@ const toggleFormat = (strategy: StrategyRow, format: string) => {
     }
 };
 
+const strategiesPayload = () => ({
+    strategies: strategiesForm.strategies
+        .filter((s) => s.inPlan)
+        .map(({ inPlan, ...s }) => ({
+            ...s,
+            posts_per_week: Number(s.posts_per_week) || 1,
+        })),
+});
+
 const applyStrategies = () => {
     strategiesForm
-        .transform((data) => ({
-            strategies: data.strategies
-                .filter((s) => s.inPlan)
-                .map(({ inPlan, ...s }) => ({
-                    ...s,
-                    posts_per_week: Number(s.posts_per_week) || 1,
-                })),
-        }))
+        .transform(() => strategiesPayload())
         .post(
             route('brands.onboarding.apply.strategies', { brand: props.brandId }),
             { preserveScroll: true }
@@ -187,6 +193,20 @@ const applyLogo = () => {
         { preserveScroll: true }
     );
 };
+
+// Estado editado actual con las mismas formas que mandan los endpoints
+// por sección. Lo usa el wizard (Step3) para su "Aplicar todo".
+const currentData = () => ({
+    ...profilePayload(),
+    pillars: pillarsPayload().pillars,
+    strategies: strategiesPayload().strategies,
+    palette: {
+        primary: [...paletteForm.palette.primary],
+        secondary: [...paletteForm.palette.secondary],
+    },
+});
+
+defineExpose({ currentData });
 </script>
 
 <template>

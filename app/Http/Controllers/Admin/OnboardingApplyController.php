@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Services\Onboarding\ProposalApplier;
+use App\Services\Onboarding\ProposalRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +23,7 @@ class OnboardingApplyController extends Controller
 {
     public function profile(Request $request, Brand $brand, ProposalApplier $applier): RedirectResponse
     {
-        $data = $request->validate([
-            'description' => ['nullable', 'string', 'max:300'],
-            'tone_of_voice' => ['nullable', 'string', 'max:255'],
-            'audience' => ['nullable', 'string', 'max:255'],
-            'cta' => ['nullable', 'string', 'max:255'],
-            'base_hashtags' => ['nullable', 'array', 'max:8'],
-            'base_hashtags.*' => ['string', 'max:30'],
-        ]);
+        $data = $request->validate(ProposalRules::profile());
 
         DB::transaction(fn () => $applier->applyProfile($brand, $data));
 
@@ -38,13 +32,7 @@ class OnboardingApplyController extends Controller
 
     public function pillars(Request $request, Brand $brand, ProposalApplier $applier): RedirectResponse
     {
-        $data = $request->validate([
-            'pillars' => ['required', 'array', 'min:1', 'max:6'],
-            'pillars.*.name' => ['required', 'string', 'max:100'],
-            'pillars.*.description' => ['nullable', 'string', 'max:500'],
-            'pillars.*.weight' => ['required', 'integer', 'min:1', 'max:100'],
-            'replace' => ['boolean'],
-        ]);
+        $data = $request->validate(ProposalRules::pillars());
 
         DB::transaction(fn () => $applier->applyPillars($brand, $data));
 
@@ -53,14 +41,7 @@ class OnboardingApplyController extends Controller
 
     public function strategies(Request $request, Brand $brand, ProposalApplier $applier): RedirectResponse
     {
-        $data = $request->validate([
-            'strategies' => ['required', 'array', 'min:1'],
-            'strategies.*.network' => ['required', 'string'],
-            'strategies.*.posts_per_week' => ['required', 'integer', 'min:1', 'max:7'],
-            'strategies.*.formats' => ['nullable', 'array'],
-            'strategies.*.formats.*' => ['string'],
-            'strategies.*.focus' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validate(ProposalRules::strategies());
 
         $applied = DB::transaction(fn () => $applier->applyStrategies($brand, $data));
 
@@ -69,15 +50,7 @@ class OnboardingApplyController extends Controller
 
     public function palette(Request $request, Brand $brand, ProposalApplier $applier): RedirectResponse
     {
-        $hex = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
-
-        $data = $request->validate([
-            'palette' => ['required', 'array'],
-            'palette.primary' => ['required', 'array', 'size:3'],
-            'palette.primary.*' => $hex,
-            'palette.secondary' => ['nullable', 'array', 'max:3'],
-            'palette.secondary.*' => $hex,
-        ]);
+        $data = $request->validate(ProposalRules::palette());
 
         DB::transaction(fn () => $applier->applyPalette($brand, $data));
 

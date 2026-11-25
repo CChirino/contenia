@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useForm } from '@inertiajs/vue3';
+import PaletteEditor from '@/Components/PaletteEditor.vue';
 import { normalizePalette } from '@/utils/brandPalette';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
@@ -11,21 +12,33 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 const props = defineProps<{ brand: Record<string, any> | null }>();
 const emit = defineEmits<{ next: [] }>();
 
-const palette = computed(() => normalizePalette(props.brand?.palette));
-const paletteFields = computed(() => [
-    ...palette.value.primary.map((c, i) => ({ key: `p${i}`, label: `Primario ${i + 1}`, color: c })),
-    ...palette.value.secondary.map((c, i) => ({ key: `s${i}`, label: `Secundario ${i + 1}`, color: c })),
-]);
+// La paleta vive en el editor: se puede ajustar aquí y el guardado de
+// logo la manda junto al resto para no revertirla.
+const editedPalette = ref(normalizePalette(props.brand?.palette));
 
 // Reusa brands.update con _method=put + el resto de campos requeridos.
 const form = useForm<Record<string, any>>({
     name: props.brand?.name ?? '',
     website_url: props.brand?.website_url ?? '',
     plan_id: props.brand?.plan_id ?? null,
-    palette: props.brand?.palette ?? {},
+    palette: editedPalette.value,
     requires_client_approval: props.brand?.requires_client_approval ?? true,
     logo: null as File | null,
 });
+
+const paletteForm = useForm<{ palette: { primary: string[]; secondary: string[] } }>({
+    palette: editedPalette.value,
+});
+const paletteErrors = computed(
+    () => paletteForm.errors['palette.primary'] ?? paletteForm.errors.palette ?? undefined,
+);
+const savePalette = () => {
+    paletteForm.palette = editedPalette.value;
+    paletteForm.post(route('brands.onboarding.apply.palette', { brand: props.brand?.id }), {
+        preserveScroll: true,
+        onSuccess: () => previewKey.value++,
+    });
+};
 
 const previewKey = ref(0);
 
@@ -48,7 +61,8 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
 const onLogo = (e: Event) => {
     form.logo = (e.target as HTMLInputElement).files?.[0] ?? null;
 };
-const upload = () =>
+const upload = () => {
+    form.palette = editedPalette.value;
     form
         .transform((d) => ({ ...d, _method: 'put' }))
         .post(route('brands.update', { brand: props.brand?.id }), {
@@ -56,6 +70,7 @@ const upload = () =>
             preserveScroll: true,
             onSuccess: () => previewKey.value++,
         });
+};
 </script>
 
 <template>
@@ -87,21 +102,15 @@ const upload = () =>
 
                 <div>
                     <InputLabel value="Paleta" />
-                    <div class="mt-2 grid grid-cols-2 gap-3">
-                        <div v-for="f in paletteFields" :key="f.key" class="flex items-center gap-2">
-                            <span
-                                class="h-8 w-8 rounded border border-line"
-                                :style="{ backgroundColor: f.color }"
-                            />
-                            <div class="text-xs">
-                                <div class="text-fg">{{ f.label }}</div>
-                                <div class="font-mono text-muted">{{ f.color }}</div>
-                            </div>
-                        </div>
+                    <div class="mt-2">
+                        <PaletteEditor v-model="editedPalette" />
                     </div>
-                    <p class="mt-2 text-xs text-muted">
-                        ¿Otro color? Vuelve al paso anterior y edita la propuesta antes de aplicar.
-                    </p>
+                    <InputError :message="paletteErrors" class="mt-1" />
+                    <div class="mt-3 flex justify-end">
+                        <SecondaryButton :disabled="paletteForm.processing" @click="savePalette">
+                            Guardar paleta
+                        </SecondaryButton>
+                    </div>
                 </div>
             </div>
 

@@ -139,6 +139,56 @@ class OnboardingAdminTrackTest extends TestCase
         );
     }
 
+    public function test_apply_all_with_edited_palette_applies_and_persists_it(): void
+    {
+        $brand = $this->brandWithProposal();
+
+        $palette = [
+            'primary' => ['#112233', '#445566', '#778899'],
+            'secondary' => ['#AABBCC'],
+        ];
+
+        $this->post(route('onboarding.apply-all'), ['palette' => $palette])
+            ->assertRedirect();
+
+        $brand->refresh();
+        $this->assertSame($palette['primary'], $brand->palette['primary']);
+        $this->assertSame($palette['secondary'], $brand->palette['secondary']);
+        $this->assertSame($palette, $brand->onboarding_proposal['palette']);
+    }
+
+    public function test_apply_all_with_edited_profile_and_pillars(): void
+    {
+        $brand = $this->brandWithProposal();
+
+        $this->post(route('onboarding.apply-all'), [
+            'description' => 'Descripción editada por el usuario.',
+            'pillars' => [
+                ['name' => 'Pilar editado', 'description' => 'x', 'weight' => 100],
+            ],
+        ])->assertRedirect();
+
+        $brand->refresh();
+        $profile = BrandProfile::withoutGlobalScopes()->where('brand_id', $brand->id)->first();
+        $this->assertSame('Descripción editada por el usuario.', $profile->description);
+        $this->assertSame(['Pilar editado'], $brand->pillars()->pluck('name')->all());
+        $this->assertSame('Descripción editada por el usuario.', $brand->onboarding_proposal['description']);
+        $this->assertSame('Pilar editado', $brand->onboarding_proposal['pillars'][0]['name']);
+    }
+
+    public function test_apply_all_with_invalid_palette_fails_and_changes_nothing(): void
+    {
+        $brand = $this->brandWithProposal();
+        $before = $brand->palette;
+
+        $this->post(route('onboarding.apply-all'), [
+            'palette' => ['primary' => ['#112233', '#445566']],
+        ])->assertSessionHasErrors(['palette.primary']);
+
+        $this->assertSame($before, $brand->fresh()->palette);
+        $this->assertFalse($brand->fresh()->onboarding_proposal['applied']['palette'] ?? false);
+    }
+
     public function test_manual_setup_writes_profile_and_generic_pillars(): void
     {
         $plan = $this->plan();

@@ -30,13 +30,36 @@ class ProposalApplier
 
     /**
      * Aplica las cuatro secciones en una sola transacción con los datos
-     * de la propuesta (replace=true para pilares).
+     * de la propuesta (replace=true para pilares). `$edits` mezcla las
+     * ediciones del usuario del wizard por clave de nivel superior y se
+     * persisten en onboarding_proposal para que al volver se vean.
+     *
+     * @param  array<string, mixed>  $edits
      */
-    public function applyAll(Brand $brand): void
+    public function applyAll(Brand $brand, array $edits = []): void
     {
-        $proposal = $brand->onboarding_proposal ?? [];
+        $stored = $brand->onboarding_proposal ?? [];
 
-        abort_if(($proposal['error'] ?? null) !== null, 422, 'La propuesta tiene un error.');
+        abort_if(($stored['error'] ?? null) !== null, 422, 'La propuesta tiene un error.');
+
+        $editable = [
+            'description', 'tone_of_voice', 'audience', 'cta',
+            'base_hashtags', 'pillars', 'strategies', 'palette',
+        ];
+        $proposal = $stored;
+        foreach ($editable as $key) {
+            if (array_key_exists($key, $edits)) {
+                $proposal[$key] = $edits[$key];
+            }
+        }
+
+        // Los cambios editados se guardan también en la propuesta.
+        if ($edits !== []) {
+            if (isset($proposal['palette'])) {
+                $proposal['palette'] = BrandPalette::normalize($proposal['palette']);
+            }
+            $brand->forceFill(['onboarding_proposal' => $proposal])->save();
+        }
 
         DB::transaction(function () use ($brand, $proposal) {
             $this->applyProfile($brand, $proposal);
