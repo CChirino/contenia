@@ -132,7 +132,7 @@ class OnboardingAdminTrackTest extends TestCase
         }
         $this->assertNotNull($brand->onboarded_at);
         $this->assertSame(2, $brand->pillars()->count());
-        $this->assertSame('#AA3300', $brand->palette['accent']);
+        $this->assertSame('#AA3300', $brand->palette['primary'][0]);
         $this->assertSame(
             'Café de especialidad.',
             BrandProfile::withoutGlobalScopes()->where('brand_id', $brand->id)->first()->description

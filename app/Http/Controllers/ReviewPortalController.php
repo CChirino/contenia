@@ -9,6 +9,7 @@ use App\Events\ReviewSubmitted;
 use App\Models\Post;
 use App\Models\ReviewItem;
 use App\Models\ReviewRequest;
+use App\Support\BrandPalette;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ class ReviewPortalController extends Controller
             'brand' => [
                 'name' => $review->brand->name,
                 'logo_url' => $review->brand->logoUrl(),
-                'palette' => $review->brand->palette,
+                'palette' => BrandPalette::roles($review->brand->palette),
             ],
             'review' => [
                 'from_date' => $review->from_date->format('Y-m-d'),

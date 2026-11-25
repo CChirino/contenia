@@ -26,10 +26,8 @@ class BrandAdminTest extends TestCase
             'website_url' => 'https://ejemplo.com',
             'plan_id' => Plan::firstOrFail()->id,
             'palette' => [
-                'dark' => '#111111',
-                'light' => '#EEEEEE',
-                'accent' => '#FFAA00',
-                'secondary' => '#00AAFF',
+                'primary' => ['#FFAA00', '#00AAFF', '#111111'],
+                'secondary' => ['#EEEEEE'],
             ],
             'requires_client_approval' => false,
         ], $overrides);
@@ -70,7 +68,7 @@ class BrandAdminTest extends TestCase
         $brand = Brand::where('slug', 'marca-nueva')->firstOrFail();
 
         $this->assertSame(BrandStatus::Active, $brand->status);
-        $this->assertEquals('#111111', $brand->palette['dark']);
+        $this->assertEquals('#FFAA00', $brand->palette['primary'][0]);
         $this->assertNotNull($brand->plan_id);
 
         // Defaults por marca: perfil + estrategias de las 3 redes.
@@ -80,6 +78,45 @@ class BrandAdminTest extends TestCase
         // Los feriados globales no se duplican.
         $this->assertSame($globalCount, CalendarEvent::whereNull('brand_id')->count());
         $this->assertSame(0, CalendarEvent::where('brand_id', $brand->id)->count());
+    }
+
+    public function test_admin_saves_brand_with_3_primary_and_2_secondary(): void
+    {
+        $this->actingAsAdminFor();
+
+        $this->post('/brands', $this->brandPayload([
+            'palette' => [
+                'primary' => ['#FFAA00', '#00AAFF', '#111111'],
+                'secondary' => ['#EEEEEE', '#335566'],
+            ],
+        ]))->assertRedirect('/brands');
+
+        $palette = Brand::where('slug', 'marca-nueva')->firstOrFail()->palette;
+        $this->assertCount(3, $palette['primary']);
+        $this->assertCount(2, $palette['secondary']);
+    }
+
+    public function test_brand_palette_validation_rejects_bad_shapes(): void
+    {
+        $this->actingAsAdminFor();
+
+        // 2 primarios → 422
+        $this->post('/brands', $this->brandPayload([
+            'palette' => ['primary' => ['#FFAA00', '#00AAFF']],
+        ]))->assertSessionHasErrors();
+
+        // 4 secundarios → 422
+        $this->post('/brands', $this->brandPayload([
+            'palette' => [
+                'primary' => ['#FFAA00', '#00AAFF', '#111111'],
+                'secondary' => ['#EEEEEE', '#DDDDDD', '#CCCCCC', '#BBBBBB'],
+            ],
+        ]))->assertSessionHasErrors();
+
+        // hex inválido → 422
+        $this->post('/brands', $this->brandPayload([
+            'palette' => ['primary' => ['rojo', '#00AAFF', '#111111']],
+        ]))->assertSessionHasErrors();
     }
 
     public function test_brand_slug_is_unique(): void

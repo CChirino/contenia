@@ -14,6 +14,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\Onboarding\ProposalApplier;
 use App\Services\Render\TemplateRegistry;
+use App\Support\BrandPalette;
 use Database\Seeders\DefaultsSeeder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -207,10 +208,8 @@ class OnboardingController extends Controller
             $brand->slug = $this->uniqueSlug($brand->name);
             $brand->status = BrandStatus::Active;
             $brand->palette = [
-                'dark' => '#14122B',
-                'light' => '#F5F4FF',
-                'accent' => '#4F46E5',
-                'secondary' => '#8B5CF6',
+                'primary' => ['#4F46E5', '#8B5CF6', '#14122B'],
+                'secondary' => ['#F5F4FF'],
             ];
             $brand->save();
 
@@ -380,7 +379,7 @@ class OnboardingController extends Controller
             'icon' => PostIcon::default()->value,
             'logoUrl' => $brand->logoUrl(),
             'wordmark' => $brand->name.'.',
-            'palette' => $brand->palette,
+            'palette' => BrandPalette::roles($brand->palette),
             'brand' => [
                 'url' => $profile->url,
                 'cta' => $profile->cta,

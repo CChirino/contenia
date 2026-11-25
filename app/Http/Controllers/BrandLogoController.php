@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Support\BrandPalette;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -37,8 +38,9 @@ class BrandLogoController extends Controller
      */
     private function initialLogo(Brand $brand): string
     {
-        $accent = htmlspecialchars($brand->palette['accent'] ?? '#27C2A5', ENT_QUOTES);
-        $dark = htmlspecialchars($brand->palette['dark'] ?? '#1A2A42', ENT_QUOTES);
+        $roles = BrandPalette::roles($brand->palette);
+        $accent = htmlspecialchars($roles['accent'], ENT_QUOTES);
+        $dark = htmlspecialchars($roles['dark'], ENT_QUOTES);
         $initial = mb_strtoupper(mb_substr($brand->name, 0, 1));
 
         return <<<SVG

@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\BrandProfile;
 use App\Models\Post;
 use App\Services\Render\TemplateRegistry;
+use App\Support\BrandPalette;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
@@ -53,7 +54,7 @@ class RenderFrameController extends Controller
             'icon' => $post->icon?->value ?? 'lightbulb',
             'logoUrl' => $brand->logoUrl(),
             'wordmark' => $brand->name.'.',
-            'palette' => $brand->palette,
+            'palette' => BrandPalette::roles($brand->palette),
             'brand' => [
                 'url' => $profile->url,
                 'cta' => $profile->cta,

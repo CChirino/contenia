@@ -136,11 +136,24 @@ export interface Post {
     published_at: string | null;
 }
 
+export interface BrandPalette {
+    primary: string[];
+    secondary: string[];
+}
+
+export interface PaletteRoles {
+    dark: string;
+    light: string;
+    accent: string;
+    secondary: string;
+}
+
 export interface ActiveBrand {
     id: number;
     slug: string;
     name: string;
-    palette: Record<string, string>;
+    palette: BrandPalette;
+    palette_roles?: PaletteRoles;
     logo_url: string;
     requires_client_approval?: boolean;
 }

@@ -91,14 +91,21 @@ class OnboardingSchema
                 ],
                 'palette' => [
                     'type' => 'object',
-                    'description' => 'Paleta de la marca en hex #RRGGBB; elige entre los colores detectados o propone con contraste razonable',
+                    'description' => 'Paleta de la marca en hex #RRGGBB: primary = los 3 colores de marca por importancia (el 1 es el principal); secondary = colores de apoyo; no incluyas blanco/negro puros salvo que sean de la marca',
                     'properties' => [
-                        'dark' => ['type' => 'string'],
-                        'light' => ['type' => 'string'],
-                        'accent' => ['type' => 'string'],
-                        'secondary' => ['type' => 'string'],
+                        'primary' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'minItems' => 3,
+                            'maxItems' => 3,
+                        ],
+                        'secondary' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'maxItems' => 3,
+                        ],
                     ],
-                    'required' => ['dark', 'light', 'accent', 'secondary'],
+                    'required' => ['primary'],
                     'additionalProperties' => false,
                 ],
             ],

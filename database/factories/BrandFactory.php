@@ -22,10 +22,8 @@ class BrandFactory extends Factory
             'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 9999),
             'logo_path' => null,
             'palette' => [
-                'dark' => '#1A2A42',
-                'light' => '#F8F5F0',
-                'accent' => '#27C2A5',
-                'secondary' => '#7854D2',
+                'primary' => ['#27C2A5', '#7854D2', '#1A2A42'],
+                'secondary' => ['#F8F5F0'],
             ],
             'website_url' => null,
             'status' => BrandStatus::Active,

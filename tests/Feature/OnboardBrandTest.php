@@ -67,10 +67,8 @@ class OnboardBrandTest extends TestCase
                 ],
             ],
             'palette' => [
-                'dark' => '1a2a42',
-                'light' => '#f8f5f0',
-                'accent' => 'no-es-hex',
-                'secondary' => '#27c2a5',
+                'primary' => ['1a2a42', 'no-es-hex', '#27c2a5'],
+                'secondary' => ['#f8f5f0'],
             ],
         ];
     }
@@ -120,12 +118,15 @@ class OnboardBrandTest extends TestCase
             $linkedin['formats']
         );
 
-        // Paleta saneada a #RRGGBB (con fallback para valores inválidos).
-        foreach (['dark', 'light', 'accent', 'secondary'] as $key) {
-            $this->assertMatchesRegularExpression('/^#[0-9A-F]{6}$/', $proposal['palette'][$key]);
+        // Paleta: 3 primarios saneados a #RRGGBB (con fallback para los inválidos).
+        $this->assertCount(3, $proposal['palette']['primary']);
+        foreach ($proposal['palette']['primary'] as $color) {
+            $this->assertMatchesRegularExpression('/^#[0-9A-F]{6}$/', $color);
         }
-        $this->assertSame('#1A2A42', $proposal['palette']['dark']);
-        $this->assertSame('#F8F5F0', $proposal['palette']['light']);
+        $this->assertSame('#1A2A42', $proposal['palette']['primary'][0]);
+        $this->assertSame('#27C2A5', $proposal['palette']['primary'][1]);
+        // El secundario de la IA rellenó el tercer primario al faltar uno válido.
+        $this->assertSame('#F8F5F0', $proposal['palette']['primary'][2]);
 
         // Hashtags con # y ≤8.
         $this->assertLessThanOrEqual(8, count($proposal['base_hashtags']));

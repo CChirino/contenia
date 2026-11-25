@@ -22,7 +22,7 @@ class UpdateBrandProfileRequest extends FormRequest
             'base_hashtags.*' => ['string', 'max:100'],
             'cta' => ['required', 'string', 'max:255'],
             'url' => ['required', 'url', 'max:255'],
-            'palette' => ['required', 'array'],
+            'palette' => ['nullable', 'array'],
             'palette.*' => ['string', 'max:20'],
         ];
     }

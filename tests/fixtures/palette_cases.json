@@ -1,0 +1,42 @@
+[
+    {
+        "name": "a_vino_crema_cobre",
+        "in": { "primary": ["#771339", "#BF8660", "#FFFCF3"], "secondary": ["#2B2B2B"] },
+        "roles": {
+            "accent": "#771339",
+            "dark": "#2B2B2B",
+            "light": "#FFFCF3",
+            "secondary": "#BF8660"
+        }
+    },
+    {
+        "name": "b_todo_claro",
+        "in": { "primary": ["#F0E6D2", "#FAF3E7", "#E8DCC8"], "secondary": [] },
+        "roles": {
+            "accent": "#F0E6D2",
+            "dark": "#54514A",
+            "light": "#FAF3E7",
+            "secondary": "#E8DCC8"
+        }
+    },
+    {
+        "name": "c_todo_oscuro",
+        "in": { "primary": ["#1A1A2E", "#16213E", "#0F3460"], "secondary": [] },
+        "roles": {
+            "accent": "#1A1A2E",
+            "dark": "#16213E",
+            "light": "#FFFFFF",
+            "secondary": "#0F3460"
+        }
+    },
+    {
+        "name": "d_primarios_repetidos",
+        "in": { "primary": ["#336699", "#336699", "#336699"], "secondary": [] },
+        "roles": {
+            "accent": "#336699",
+            "dark": "#122436",
+            "light": "#FFFFFF",
+            "secondary": "#8FABC7"
+        }
+    }
+]

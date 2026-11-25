@@ -183,16 +183,14 @@ class ApplyProposalTest extends TestCase
 
         $this->post(route('brands.onboarding.apply.palette', $this->brand), [
             'palette' => [
-                'dark' => '#111111',
-                'light' => '#eeeeee',
-                'accent' => '#aa3300',
-                'secondary' => '#224466',
+                'primary' => ['#aa3300', '#224466', '#111111'],
+                'secondary' => ['#eeeeee'],
             ],
         ])->assertRedirect();
 
         $this->brand->refresh();
-        $this->assertSame('#111111', $this->brand->palette['dark']);
-        $this->assertSame('#EEEEEE', $this->brand->palette['light']);
+        $this->assertSame('#AA3300', $this->brand->palette['primary'][0]);
+        $this->assertSame('#EEEEEE', $this->brand->palette['secondary'][0]);
         $this->assertTrue($this->brand->onboarding_proposal['applied']['palette'] ?? false);
     }
 
@@ -202,10 +200,8 @@ class ApplyProposalTest extends TestCase
 
         $this->postJson(route('brands.onboarding.apply.palette', $this->brand), [
             'palette' => [
-                'dark' => 'rojo',
-                'light' => '#EEEEEE',
-                'accent' => '#AA3300',
-                'secondary' => '#224466',
+                'primary' => ['rojo', '#224466', '#111111'],
+                'secondary' => ['#EEEEEE'],
             ],
         ])->assertStatus(422);
     }
@@ -219,10 +215,8 @@ class ApplyProposalTest extends TestCase
 
         $this->post(route('brands.onboarding.apply.palette', $this->brand), [
             'palette' => [
-                'dark' => '#111111',
-                'light' => '#EEEEEE',
-                'accent' => '#AA3300',
-                'secondary' => '#224466',
+                'primary' => ['#AA3300', '#224466', '#111111'],
+                'secondary' => ['#EEEEEE'],
             ],
         ])->assertRedirect();
 

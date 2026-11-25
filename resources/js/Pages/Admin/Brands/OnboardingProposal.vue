@@ -4,6 +4,8 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { normalizePalette } from '@/utils/brandPalette';
+import PaletteEditor from '@/Components/PaletteEditor.vue';
 import { useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -30,7 +32,7 @@ interface OnboardingProposal {
     base_hashtags?: string[];
     pillars?: ProposalPillar[];
     strategies?: ProposalStrategy[];
-    palette?: Record<string, string>;
+    palette?: { primary?: string[]; secondary?: string[] } & Record<string, unknown>;
     logo_candidate_url?: string;
     applied?: Record<string, boolean>;
 }
@@ -50,13 +52,6 @@ const props = withDefaults(
 );
 
 const applied = computed(() => props.proposal.applied ?? {});
-
-const paletteFields = [
-    { key: 'dark', label: 'Fondo oscuro' },
-    { key: 'light', label: 'Fondo claro' },
-    { key: 'accent', label: 'Acento' },
-    { key: 'secondary', label: 'Secundario' },
-];
 
 // --- Perfil ---------------------------------------------------------------
 
@@ -172,12 +167,7 @@ const applyStrategies = () => {
 // --- Paleta -----------------------------------------------------------------
 
 const paletteForm = useForm({
-    palette: {
-        dark: props.proposal.palette?.dark ?? '#1A2A42',
-        light: props.proposal.palette?.light ?? '#F8F5F0',
-        accent: props.proposal.palette?.accent ?? '#27C2A5',
-        secondary: props.proposal.palette?.secondary ?? '#7854D2',
-    } as Record<string, string>,
+    palette: normalizePalette(props.proposal.palette) as { primary: string[]; secondary: string[] },
 });
 
 const applyPalette = () => {
@@ -440,23 +430,9 @@ const applyLogo = () => {
                     Aplicada ✓
                 </span>
             </div>
-            <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div v-for="field in paletteFields" :key="field.key">
-                    <InputLabel :for="`ob-palette-${field.key}`" :value="field.label" />
-                    <div class="mt-1 flex items-center gap-2">
-                        <input
-                            :id="`ob-palette-${field.key}`"
-                            v-model="paletteForm.palette[field.key]"
-                            type="color"
-                            class="h-9 w-12 cursor-pointer rounded border border-line-strong"
-                        />
-                        <TextInput
-                            v-model="paletteForm.palette[field.key]"
-                            class="block w-full font-mono text-sm"
-                        />
-                    </div>
-                    <InputError :message="paletteForm.errors[`palette.${field.key}`]" class="mt-1" />
-                </div>
+            <div class="mt-4">
+                <PaletteEditor v-model="paletteForm.palette" />
+                <InputError :message="paletteForm.errors['palette.primary'] ?? paletteForm.errors.palette" class="mt-1" />
             </div>
             <div v-if="!compact" class="mt-4 flex justify-end">
                 <PrimaryButton :disabled="paletteForm.processing" @click="applyPalette">

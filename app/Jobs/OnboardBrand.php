@@ -10,6 +10,7 @@ use App\Services\Llm\LlmException;
 use App\Services\Onboarding\BrandScraper;
 use App\Services\Onboarding\OnboardingSchema;
 use App\Services\Onboarding\SocialProfile;
+use App\Support\BrandPalette;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
@@ -221,8 +222,9 @@ class OnboardBrand implements ShouldQueue
             'Genera la propuesta con emit_result: description (≤300), tone_of_voice, audience, cta, '
                 .'base_hashtags (≤8, con #), 4-6 pillars cuyos weight sumen 100, una strategy por cada red '
                 .'del plan (posts_per_week 1-7, formats solo de los permitidos por la red, focus) y palette '
-                .'{dark, light, accent, secondary} en #RRGGBB eligiendo entre los colores detectados o '
-                .'proponiendo con contraste razonable.',
+                .'{primary: [3 hex], secondary: [0-3 hex]} en #RRGGBB: primary = los 3 colores de marca '
+                .'por importancia (el 1 es el principal); secondary = colores de apoyo; no incluyas '
+                .'blanco/negro puros salvo que sean de la marca. Elige entre los detectados o propón.',
         ];
     }
 
@@ -353,37 +355,41 @@ class OnboardBrand implements ShouldQueue
     }
 
     /**
-     * Paleta {dark, light, accent, secondary} sanitizada a #RRGGBB;
-     * fallback por clave: colores detectados y luego defaults.
+     * Paleta {primary: [3], secondary: [0-3]} sanitizada; fallback con los
+     * colores detectados (los más frecuentes → primarios) y la derivación
+     * de BrandPalette si faltan.
      *
      * @param  array<string, mixed>  $palette
      * @param  array<int, string>  $detectedColors
-     * @return array{dark: string, light: string, accent: string, secondary: string}
+     * @return array{primary: array<int, string>, secondary: array<int, string>}
      */
     private function normalizePalette(array $palette, array $detectedColors): array
     {
-        $defaults = [
-            'dark' => '#1A2A42',
-            'light' => '#F8F5F0',
-            'accent' => '#27C2A5',
-            'secondary' => '#7854D2',
-        ];
-
         $detected = collect($detectedColors)
             ->map(fn ($c) => $this->sanitizeHex((string) $c))
             ->filter()
             ->values();
 
-        $normalized = [];
-        $i = 0;
-        foreach ($defaults as $key => $fallback) {
-            $normalized[$key] = $this->sanitizeHex((string) ($palette[$key] ?? ''))
-                ?? $detected->get($i)
-                ?? $fallback;
-            $i++;
+        $primary = collect($palette['primary'] ?? [])
+            ->map(fn ($c) => $this->sanitizeHex((string) $c))
+            ->filter()
+            ->values();
+        $secondary = collect(is_array($palette['secondary'] ?? null) ? $palette['secondary'] : [])
+            ->map(fn ($c) => $this->sanitizeHex((string) $c))
+            ->filter()
+            ->values();
+
+        while ($primary->count() < 3 && $secondary->isNotEmpty()) {
+            $primary->push($secondary->shift());
+        }
+        while ($primary->count() < 3 && $detected->isNotEmpty()) {
+            $primary->push($detected->shift());
         }
 
-        return $normalized;
+        return BrandPalette::normalize([
+            'primary' => $primary->take(3)->all(),
+            'secondary' => $secondary->take(3)->all(),
+        ]);
     }
 
     private function sanitizeHex(string $color): ?string

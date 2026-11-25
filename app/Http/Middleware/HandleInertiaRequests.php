@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Brand;
+use App\Support\BrandPalette;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +41,7 @@ class HandleInertiaRequests extends Middleware
             'brand' => fn () => app()->bound('brand')
                 ? [
                     ...app('brand')->only('id', 'slug', 'name', 'palette', 'requires_client_approval'),
+                    'palette_roles' => BrandPalette::roles(app('brand')->palette),
                     'logo_url' => app('brand')->logoUrl(),
                 ]
                 : null,

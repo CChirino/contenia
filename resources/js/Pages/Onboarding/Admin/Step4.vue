@@ -3,19 +3,19 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useForm } from '@inertiajs/vue3';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { normalizePalette } from '@/utils/brandPalette';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 // Identidad: logo + paleta aplicada + vista previa real (iframe a
 // onboarding.preview, que renderiza la plantilla instagram-quote).
 const props = defineProps<{ brand: Record<string, any> | null }>();
 const emit = defineEmits<{ next: [] }>();
 
-const paletteFields = [
-    { key: 'dark', label: 'Oscuro' },
-    { key: 'light', label: 'Claro' },
-    { key: 'accent', label: 'Acento' },
-    { key: 'secondary', label: 'Secundario' },
-];
+const palette = computed(() => normalizePalette(props.brand?.palette));
+const paletteFields = computed(() => [
+    ...palette.value.primary.map((c, i) => ({ key: `p${i}`, label: `Primario ${i + 1}`, color: c })),
+    ...palette.value.secondary.map((c, i) => ({ key: `s${i}`, label: `Secundario ${i + 1}`, color: c })),
+]);
 
 // Reusa brands.update con _method=put + el resto de campos requeridos.
 const form = useForm<Record<string, any>>({
@@ -91,11 +91,11 @@ const upload = () =>
                         <div v-for="f in paletteFields" :key="f.key" class="flex items-center gap-2">
                             <span
                                 class="h-8 w-8 rounded border border-line"
-                                :style="{ backgroundColor: brand.palette?.[f.key] }"
+                                :style="{ backgroundColor: f.color }"
                             />
                             <div class="text-xs">
                                 <div class="text-fg">{{ f.label }}</div>
-                                <div class="font-mono text-muted">{{ brand.palette?.[f.key] }}</div>
+                                <div class="font-mono text-muted">{{ f.color }}</div>
                             </div>
                         </div>
                     </div>

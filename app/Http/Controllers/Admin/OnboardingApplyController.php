@@ -73,10 +73,10 @@ class OnboardingApplyController extends Controller
 
         $data = $request->validate([
             'palette' => ['required', 'array'],
-            'palette.dark' => $hex,
-            'palette.light' => $hex,
-            'palette.accent' => $hex,
-            'palette.secondary' => $hex,
+            'palette.primary' => ['required', 'array', 'size:3'],
+            'palette.primary.*' => $hex,
+            'palette.secondary' => ['nullable', 'array', 'max:3'],
+            'palette.secondary.*' => $hex,
         ]);
 
         DB::transaction(fn () => $applier->applyPalette($brand, $data));

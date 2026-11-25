@@ -4,6 +4,7 @@ import OnboardingProposal from '@/Pages/Admin/Brands/OnboardingProposal.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import PaletteEditor from '@/Components/PaletteEditor.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
@@ -33,7 +34,7 @@ interface OnboardingProposal {
     base_hashtags?: string[];
     pillars?: { name: string; description: string; weight: number }[];
     strategies?: { network: string; posts_per_week: number; formats: string[]; focus: string }[];
-    palette?: Record<string, string>;
+    palette?: { primary?: string[]; secondary?: string[] } & Record<string, unknown>;
     applied?: Record<string, boolean>;
 }
 
@@ -43,7 +44,7 @@ const props = defineProps<{
         name: string;
         slug: string;
         website_url: string | null;
-        palette: Record<string, string> | null;
+        palette: { primary: string[]; secondary: string[] } | null;
         requires_client_approval: boolean;
         plan_id: number | null;
         logo_url: string;
@@ -60,32 +61,25 @@ const props = defineProps<{
     operators?: OperatorOption[] | null;
 }>();
 
-const paletteFields = [
-    { key: 'dark', label: 'Fondo oscuro' },
-    { key: 'light', label: 'Fondo claro' },
-    { key: 'accent', label: 'Acento' },
-    { key: 'secondary', label: 'Secundario' },
-];
-
-const defaults: Record<string, string> = {
-    dark: '#1A2A42',
-    light: '#F8F5F0',
-    accent: '#27C2A5',
-    secondary: '#7854D2',
+const paletteDefaults = {
+    primary: ['#27C2A5', '#7854D2', '#1A2A42'],
+    secondary: ['#F8F5F0'],
 };
 
 const form = useForm<{
     name: string;
     website_url: string;
     plan_id: number | null;
-    palette: Record<string, string>;
+    palette: { primary: string[]; secondary: string[] };
     requires_client_approval: boolean;
     logo: File | null;
 }>({
     name: props.brand?.name ?? '',
     website_url: props.brand?.website_url ?? '',
     plan_id: props.brand?.plan_id ?? props.plans[0]?.id ?? null,
-    palette: { ...defaults, ...(props.brand?.palette ?? {}) },
+    palette: props.brand?.palette?.primary
+        ? { primary: [...props.brand.palette.primary], secondary: [...(props.brand.palette.secondary ?? [])] }
+        : { ...paletteDefaults, primary: [...paletteDefaults.primary], secondary: [...paletteDefaults.secondary] },
     requires_client_approval: props.brand?.requires_client_approval ?? true,
     logo: null,
 });
@@ -237,24 +231,10 @@ const removeContact = (contact: Contact) => {
 
                     <fieldset>
                         <legend class="text-sm font-medium text-fg-2">Paleta</legend>
-                        <div class="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            <div v-for="field in paletteFields" :key="field.key">
-                                <InputLabel :for="`palette-${field.key}`" :value="field.label" />
-                                <div class="mt-1 flex items-center gap-2">
-                                    <input
-                                        :id="`palette-${field.key}`"
-                                        v-model="form.palette[field.key]"
-                                        type="color"
-                                        class="h-9 w-12 cursor-pointer rounded border border-line-strong"
-                                    />
-                                    <TextInput
-                                        v-model="form.palette[field.key]"
-                                        class="block w-full font-mono text-sm"
-                                    />
-                                </div>
-                                <InputError :message="form.errors[`palette.${field.key}`]" class="mt-1" />
-                            </div>
+                        <div class="mt-2">
+                            <PaletteEditor v-model="form.palette" />
                         </div>
+                        <InputError :message="form.errors['palette.primary'] ?? form.errors.palette" class="mt-1" />
                     </fieldset>
 
                     <div>

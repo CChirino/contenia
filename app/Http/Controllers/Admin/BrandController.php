@@ -15,6 +15,7 @@ use App\Models\Brand;
 use App\Models\MonthlyPlan;
 use App\Models\Plan;
 use App\Models\User;
+use App\Support\BrandPalette;
 use Database\Seeders\DefaultsSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -75,6 +76,7 @@ class BrandController extends Controller
     public function store(StoreBrandRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $data['palette'] = BrandPalette::normalize($data['palette'] ?? []);
 
         $brand = new Brand($data);
         $brand->slug = $this->uniqueSlug($brand->name);
@@ -119,7 +121,9 @@ class BrandController extends Controller
 
     public function update(UpdateBrandRequest $request, Brand $brand): RedirectResponse
     {
-        $brand->update($request->validated());
+        $data = $request->validated();
+        $data['palette'] = BrandPalette::normalize($data['palette'] ?? []);
+        $brand->update($data);
         $this->storeLogo($request, $brand);
 
         return redirect()->route('brands.index');

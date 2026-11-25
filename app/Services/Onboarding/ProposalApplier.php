@@ -5,6 +5,7 @@ namespace App\Services\Onboarding;
 use App\Enums\Network;
 use App\Enums\PostFormat;
 use App\Models\Brand;
+use App\Support\BrandPalette;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -182,20 +183,17 @@ class ProposalApplier
     }
 
     /**
-     * Paleta: cuatro colores #RRGGBB en brands.palette.
+     * Paleta: {primary: [3 hex], secondary: [0–3 hex]} en brands.palette.
      *
-     * @param  array{palette: array<string, string>}  $data
+     * @param  array{palette: array<string, mixed>}  $data
      */
     public function applyPalette(Brand $brand, array $data): void
     {
         app()->instance('brand', $brand);
 
-        $palette = collect($data['palette'] ?? [])
-            ->only(['dark', 'light', 'accent', 'secondary'])
-            ->map(fn ($c) => Str::upper((string) $c))
-            ->all();
+        $palette = BrandPalette::normalize($data['palette'] ?? []);
 
-        abort_if($palette === [], 422, 'La propuesta no trae paleta.');
+        abort_if(($data['palette'] ?? []) === [] || $palette['primary'] === [], 422, 'La propuesta no trae paleta.');
 
         $brand->palette = $palette;
         $brand->save();

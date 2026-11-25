@@ -5,11 +5,16 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { BrandProfile } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { normalizePalette } from '@/utils/brandPalette';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import { useBrandRoute } from '@/composables/useBrandRoute';
 
 const route = useBrandRoute();
+const page = usePage();
+const activeBrand = computed(() => (page.props as any).brand ?? null);
+const canManageBrand = computed(() => ['admin', 'gestor'].includes((page.props.auth as any)?.user?.role ?? ''));
+const brandPalette = computed(() => normalizePalette(activeBrand.value?.palette));
 
 const props = defineProps<{
     brandProfile: BrandProfile;
@@ -24,15 +29,10 @@ const form = useForm({
     base_hashtags: props.brandProfile.base_hashtags,
     cta: props.brandProfile.cta,
     url: props.brandProfile.url,
+    // brand_profile.palette queda sin uso: la paleta vive en brands.palette
+    // y se edita en Administración → Marcas (solo lectura aquí).
     palette: { ...props.brandProfile.palette },
 });
-
-const paletteLabels: Record<string, string> = {
-    dark: 'Azul oscuro',
-    light: 'Crema',
-    accent: 'Teal',
-    purple: 'Morado',
-};
 
 const submit = () => {
     form.transform((data) => ({
@@ -128,26 +128,29 @@ const submit = () => {
 
                         <div>
                             <InputLabel value="Paleta de colores" />
-                            <div class="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                                <div v-for="(color, key) in form.palette" :key="key">
-                                    <label class="block text-sm text-fg-2">
-                                        {{ paletteLabels[key] ?? key }}
-                                    </label>
-                                    <div class="mt-1 flex items-center gap-2">
-                                        <input
-                                            type="color"
-                                            v-model="form.palette[key]"
-                                            class="h-9 w-9 rounded border border-line-strong"
-                                        />
-                                        <TextInput
-                                            v-model="form.palette[key]"
-                                            type="text"
-                                            class="block w-full"
-                                        />
-                                    </div>
-                                </div>
+                            <div class="mt-2 flex flex-wrap items-center gap-3">
+                                <span
+                                    v-for="(c, i) in brandPalette.primary"
+                                    :key="`p-${i}`"
+                                    class="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 text-xs"
+                                >
+                                    <span class="h-4 w-4 rounded" :style="{ backgroundColor: c }" />
+                                    Primario {{ i + 1 }} · <span class="font-mono">{{ c }}</span>
+                                </span>
+                                <span
+                                    v-for="(c, i) in brandPalette.secondary"
+                                    :key="`s-${i}`"
+                                    class="inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 text-xs"
+                                >
+                                    <span class="h-4 w-4 rounded" :style="{ backgroundColor: c }" />
+                                    Secundario {{ i + 1 }} · <span class="font-mono">{{ c }}</span>
+                                </span>
                             </div>
-                            <InputError :message="form.errors.palette" class="mt-2" />
+                            <p v-if="canManageBrand" class="mt-2 text-xs text-muted">
+                                <a href="/brands" class="text-brand-primary hover:underline">
+                                    Editar en Administración → Marcas
+                                </a>
+                            </p>
                         </div>
 
                         <div class="flex items-center gap-4">

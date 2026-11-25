@@ -26,10 +26,8 @@ class BrandsAccessTest extends TestCase
             'website_url' => 'https://ejemplo.com',
             'plan_id' => Plan::firstOrFail()->id,
             'palette' => [
-                'dark' => '#111111',
-                'light' => '#EEEEEE',
-                'accent' => '#FFAA00',
-                'secondary' => '#00AAFF',
+                'primary' => ['#FFAA00', '#00AAFF', '#111111'],
+                'secondary' => ['#EEEEEE'],
             ],
             'requires_client_approval' => false,
         ], $overrides);
